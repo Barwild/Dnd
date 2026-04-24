@@ -5,9 +5,9 @@ import {
   getCampaign, getCharacters, getMonsters, getMonster,
   getEncounters, createEncounter, updateEncounter, deleteEncounter,
   getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote,
-  rollDice, getDiceLog
+  rollDice, getDiceLog, getCampaignMembers, updateCharacter, createCharacter
 } from '../api';
-import { Users, Sword, BookOpen, Plus, Trash2, Play, Pause, SkipForward, Dice5, ScrollText, ChevronDown, ChevronUp, Search, Shield, Heart, Zap, AlertTriangle, Hammer, X } from 'lucide-react';
+import { Users, Sword, BookOpen, Plus, Trash2, Play, Pause, SkipForward, Dice5, ScrollText, ChevronDown, ChevronUp, Search, Shield, Heart, Zap, AlertTriangle, Hammer, X, UserCog } from 'lucide-react';
 
 const CONDITIONS_LIST = [
   'Cegado', 'Encantado', 'Ensordecido', 'Asustado', 'Agarrado',
@@ -46,6 +46,7 @@ export default function MasterDashboard() {
   const { user } = useAuth();
 
   const [campaign, setCampaign] = useState(null);
+  const [campaignMembers, setCampaignMembers] = useState([]);
   const [characters, setCharacters] = useState([]);
   const [tab, setTab] = useState('combat');
 
@@ -101,11 +102,66 @@ export default function MasterDashboard() {
 
   useEffect(() => {
     getCampaign(campaignId).then(r => setCampaign(r.data));
+    getCampaignMembers(campaignId).then(r => setCampaignMembers(r.data || []));
     getCharacters(campaignId).then(r => setCharacters(r.data || []));
     getEncounters(campaignId).then(r => setEncounters(r.data || []));
     getSessionNotes(campaignId).then(r => setNotes(r.data || []));
     getDiceLog(campaignId, 20).then(r => setDiceLog(r.data || [])).catch(() => {});
   }, [campaignId]);
+
+  const assignCharacter = async (charId, userId) => {
+    await updateCharacter(charId, { user_id: parseInt(userId) });
+    getCharacters(campaignId).then(r => setCharacters(r.data || []));
+  };
+
+  const unlinkCharacter = async (charId) => {
+    if (window.confirm('¿Desvincular este personaje de la campaña?')) {
+      await updateCharacter(charId, { campaign_id: null });
+      getCharacters(campaignId).then(r => setCharacters(r.data || []));
+    }
+  };
+
+  const createMonsterCharacter = async (monster) => {
+    const detailRes = await getMonster(monster.id);
+    const detail = detailRes.data;
+    const name = window.prompt(`¿Nombre para el personaje basado en ${detail.name}?`, detail.name);
+    if (!name) return;
+
+    let notes = `*Tipo: ${detail.type} | Tamaño: ${detail.size} | Alineamiento: ${detail.alignment}*\n`;
+    notes += `**AC:** ${detail.armor_class} | **Velocidad:** ${detail.speed}\n\n`;
+
+    const addSection = (title, jsonStr) => {
+      try {
+        const arr = JSON.parse(jsonStr || '[]');
+        if (arr.length > 0) {
+          notes += `### ${title}\n`;
+          arr.forEach(a => { notes += `- **${t(a.name)}:** ${a.desc}\n`; });
+          notes += '\n';
+        }
+      } catch {}
+    };
+
+    addSection('Habilidades Especiales', detail.special_abilities);
+    addSection('Acciones', detail.actions);
+    addSection('Acciones Legendarias', detail.legendary_actions);
+
+    const stats = {
+      STR: detail.strength, DEX: detail.dexterity, CON: detail.constitution,
+      INT: detail.intelligence, WIS: detail.wisdom, CHA: detail.charisma,
+      maxHP: detail.hit_points, currHP: detail.hit_points
+    };
+
+    await createCharacter({
+      name,
+      level: parseInt(detail.challenge_rating) || 1,
+      campaign_id: parseInt(campaignId),
+      stats: JSON.stringify(stats),
+      notes: notes.trim()
+    });
+
+    getCharacters(campaignId).then(r => setCharacters(r.data || []));
+    alert(`${name} creado exitosamente y añadido a la mesa.`);
+  };
 
   // Load encounter from EncounterBuilder
   useEffect(() => {
@@ -323,11 +379,27 @@ export default function MasterDashboard() {
               {characters.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay personajes en esta campaña.</p>
               ) : characters.map(ch => (
-                <div key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid #222' }}>
-                  <span style={{ color: '#ddd' }}>{ch.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Nv{ch.level} {ch.class_name}</span></span>
-                  <button className="btn btn-secondary btn-sm" onClick={() => addCombatant(ch, 'player')} style={{ padding: '0.2rem 0.5rem' }}>
-                    <Plus size={12} /> Inic
-                  </button>
+                <div key={ch.id} style={{ padding: '0.6rem 0', borderBottom: '1px solid #222' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <span style={{ color: '#ddd', fontWeight: 'bold' }}>{ch.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 'normal' }}>{ch.class_name ? `Nv${ch.level} ${ch.class_name}` : '(Monstruo)'}</span></span>
+                    <button className="btn btn-secondary btn-sm" onClick={() => addCombatant(ch, 'player')} style={{ padding: '0.2rem 0.5rem' }}>
+                      <Plus size={12} /> Inic
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: '#888' }}>
+                      <UserCog size={12} /> Dueño:
+                      <select value={ch.user_id} onChange={(e) => assignCharacter(ch.id, e.target.value)}
+                        style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #333', color: 'var(--accent-gold)', borderRadius: '4px', padding: '0.1rem 0.3rem', fontSize: '0.75rem' }}>
+                        {campaignMembers.map(m => (
+                          <option key={m.id} value={m.id}>{m.display_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button className="btn btn-ghost btn-sm" style={{ color: '#d44', padding: '0.2rem', fontSize: '0.7rem' }} onClick={() => unlinkCharacter(ch.id)}>
+                      Expulsar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -355,11 +427,16 @@ export default function MasterDashboard() {
                           CR {m.challenge_rating} • CA {m.armor_class} • PG {m.hit_points} • {t(m.type)}
                         </div>
                       </div>
-                      <button className="btn btn-primary btn-sm" onClick={() => {
-                        getMonster(m.id).then(res => addCombatant(res.data, 'monster'));
-                      }} style={{ padding: '0.2rem 0.5rem' }}>
-                        <Plus size={12} /> Añadir
-                      </button>
+                      <div className="flex-row" style={{ gap: '0.3rem' }}>
+                        <button className="btn btn-gold btn-sm" onClick={() => createMonsterCharacter(m)} style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} title="Crear como Personaje">
+                          <UserCog size={12} /> A Ficha
+                        </button>
+                        <button className="btn btn-primary btn-sm" onClick={() => {
+                          getMonster(m.id).then(res => addCombatant(res.data, 'monster'));
+                        }} style={{ padding: '0.2rem 0.5rem' }}>
+                          <Plus size={12} /> Añadir
+                        </button>
+                      </div>
                     </div>
                     {expandedMonster === m.id && monsterDetail && (
                       <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.4)', padding: '0.8rem', borderRadius: '4px', fontSize: '0.8rem' }}>

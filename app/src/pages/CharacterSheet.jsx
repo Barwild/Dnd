@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice } from '../api';
-import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target } from 'lucide-react';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters } from '../api';
+import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
 const STAT_NAMES = { STR: 'FUE', DEX: 'DES', CON: 'CON', INT: 'INT', WIS: 'SAB', CHA: 'CAR' };
 const STAT_KEYS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
@@ -13,7 +14,9 @@ const CLASS_HIT_DICE = { 'bárbaro': 12, 'guerrero': 10, 'paladín': 10, 'explor
 export default function CharacterSheet() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [character, setCharacter] = useState(null);
+  const [campaignCharacters, setCampaignCharacters] = useState([]);
   const [stats, setStats] = useState({});
   const [raceName, setRaceName] = useState('');
   const [className, setClassName] = useState('');
@@ -36,6 +39,13 @@ export default function CharacterSheet() {
 
       if (char.race_id) getRace(char.race_id).then(r => setRaceName(r.data.name)).catch(() => {});
       if (char.class_id) getClassApi(char.class_id).then(c => { setClassName(c.data.name); setHitDie(c.data.hit_die); }).catch(() => {});
+      
+      if (char.campaign_id) {
+        getCharacters(char.campaign_id).then(res => {
+          const myChars = (res.data || []).filter(c => c.user_id === user?.id);
+          setCampaignCharacters(myChars);
+        }).catch(() => {});
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -136,10 +146,25 @@ export default function CharacterSheet() {
       )}
 
       {/* Character Name & Identity */}
-      <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-gold)', marginBottom: '1.5rem' }}>
+      <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-gold)', marginBottom: '1.5rem', position: 'relative' }}>
+        
+        {campaignCharacters.length > 1 && (
+          <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
+            <select 
+              value={id} 
+              onChange={e => navigate(`/character/${e.target.value}`)}
+              style={{ background: 'rgba(0,0,0,0.5)', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+            >
+              {campaignCharacters.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#fff' }}>{character.name}</h1>
         <p style={{ color: 'var(--accent-gold)', fontSize: '1rem', margin: '0.3rem 0' }}>
-          Nivel {character.level} • {raceName} • {className}
+          Nivel {character.level} {raceName ? `• ${raceName}` : ''} {className ? `• ${className}` : ''} {!raceName && !className && '• Monstruo'}
         </p>
         <span className="badge badge-gold">Competencia: +{profBonus}</span>
       </div>

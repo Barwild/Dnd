@@ -69,8 +69,8 @@ class CampaignJoin(BaseModel):
 class CharacterCreate(BaseModel):
     name: str
     level: int = 1
-    race_id: int
-    class_id: int
+    race_id: Optional[int] = None
+    class_id: Optional[int] = None
     subclass_id: Optional[int] = None
     background_id: Optional[int] = None
     campaign_id: Optional[int] = None
@@ -86,6 +86,7 @@ class CharacterUpdate(BaseModel):
     level: Optional[int] = None
     subclass_id: Optional[int] = None
     campaign_id: Optional[int] = None
+    user_id: Optional[int] = None
     stats: Optional[str] = None
     equipment: Optional[str] = None
     spell_list: Optional[str] = None
@@ -97,8 +98,8 @@ class CharacterResponse(BaseModel):
     id: int
     name: str
     level: int
-    race_id: int
-    class_id: int
+    race_id: Optional[int] = None
+    class_id: Optional[int] = None
     subclass_id: Optional[int] = None
     background_id: Optional[int] = None
     campaign_id: Optional[int] = None

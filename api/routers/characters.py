@@ -38,10 +38,15 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
 @router.get("", response_model=List[schemas.CharacterResponse])
 def get_characters(campaign_id: int = None, db: Session = Depends(get_db),
                    current_user: models.User = Depends(get_current_user)):
-    """Obtener personajes. Si campaign_id se pasa, devuelve los de esa campaña."""
+    """Obtener personajes. Si campaign_id se pasa, el DM ve todos, jugadores ven los suyos."""
     q = db.query(models.Character)
     if campaign_id is not None:
         q = q.filter(models.Character.campaign_id == campaign_id)
+        # Check if user is DM of this campaign
+        campaign = db.query(models.Campaign).filter(models.Campaign.id == campaign_id).first()
+        is_dm = campaign and campaign.dm_user_id == current_user.id
+        if not is_dm:
+            q = q.filter(models.Character.user_id == current_user.id)
     else:
         # Only show user's own characters when not filtering by campaign
         q = q.filter(models.Character.user_id == current_user.id)
@@ -91,8 +96,16 @@ def delete_character(char_id: int, db: Session = Depends(get_db),
     character = db.query(models.Character).filter(models.Character.id == char_id).first()
     if not character:
         raise HTTPException(status_code=404, detail="Personaje no encontrado")
-    if character.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Solo el dueño puede eliminar el personaje")
+        
+    is_owner = character.user_id == current_user.id
+    is_dm = False
+    if character.campaign_id:
+        campaign = db.query(models.Campaign).filter(models.Campaign.id == character.campaign_id).first()
+        is_dm = campaign and campaign.dm_user_id == current_user.id
+        
+    if not is_owner and not is_dm:
+        raise HTTPException(status_code=403, detail="Solo el dueño o el DM pueden eliminar el personaje")
+        
     db.delete(character)
     db.commit()
     return {"message": "Personaje eliminado"}

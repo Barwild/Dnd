@@ -126,6 +126,23 @@ def leave_campaign(campaign_id: int, db: Session = Depends(get_db),
     return {"message": "Has salido de la campaña"}
 
 
+@router.get("/{campaign_id}/members", response_model=List[schemas.UserResponse])
+def get_campaign_members(campaign_id: int, db: Session = Depends(get_db),
+                         current_user: models.User = Depends(get_current_user)):
+    """Obtener lista de miembros de una campaña (jugadores y DM)."""
+    campaign = db.query(models.Campaign).filter(models.Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaña no encontrada")
+        
+    members = db.query(models.CampaignMember).filter(models.CampaignMember.campaign_id == campaign_id).all()
+    user_ids = [m.user_id for m in members]
+    if campaign.dm_user_id not in user_ids:
+        user_ids.append(campaign.dm_user_id)
+        
+    users = db.query(models.User).filter(models.User.id.in_(user_ids)).all()
+    return users
+
+
 def _campaign_response(campaign, db):
     member_count = db.query(models.CampaignMember).filter(
         models.CampaignMember.campaign_id == campaign.id

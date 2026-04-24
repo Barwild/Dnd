@@ -43,6 +43,7 @@ export const getCampaign = (id) => api.get(`/campaigns/${id}`);
 export const joinCampaign = (code) => api.post('/campaigns/join', { code });
 export const leaveCampaign = (id) => api.post(`/campaigns/${id}/leave`);
 export const deleteCampaign = (id) => api.delete(`/campaigns/${id}`);
+export const getCampaignMembers = (id) => api.get(`/campaigns/${id}/members`);
 
 // ── Characters ─────────────────────────────────────────
 export const getCharacters = (campaignId) =>
