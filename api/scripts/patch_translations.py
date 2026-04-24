@@ -333,7 +333,7 @@ FEATS_ES = {
 
 def patch_items():
     """Translate item names from English to Spanish."""
-    print("\n🗡️ Traduciendo Objetos...")
+    print("\n Traduciendo Objetos...")
     items = db.query(models.Item).all()
     count = 0
     for item in items:
@@ -342,12 +342,12 @@ def patch_items():
             item.name = es_name
             count += 1
     db.commit()
-    print(f"  ✅ {count} objetos traducidos")
+    print(f"   {count} objetos traducidos")
 
 
 def patch_magic_items():
     """Translate magic item names where possible (keep English in name_en)."""
-    print("\n💎 Traduciendo Objetos Mágicos...")
+    print("\n Traduciendo Objetos Mágicos...")
     # Magic items are very numerous and varied, they're hard to translate automatically
     # For now, just translate common patterns
     items = db.query(models.MagicItem).all()
@@ -376,12 +376,12 @@ def patch_magic_items():
             item.name = new_name
             count += 1
     db.commit()
-    print(f"  ✅ {count} objetos mágicos traducidos")
+    print(f"   {count} objetos mágicos traducidos")
 
 
 def patch_conditions():
     """Translate condition descriptions to Spanish."""
-    print("\n💀 Traduciendo Condiciones...")
+    print("\n Traduciendo Condiciones...")
     conditions = db.query(models.Condition).all()
     count = 0
     for cond in conditions:
@@ -390,12 +390,12 @@ def patch_conditions():
             cond.description = es_desc
             count += 1
     db.commit()
-    print(f"  ✅ {count} condiciones traducidas")
+    print(f"   {count} condiciones traducidas")
 
 
 def patch_feats():
     """Translate feat names to Spanish."""
-    print("\n⭐ Traduciendo Dotes...")
+    print("\n Traduciendo Dotes...")
     feats = db.query(models.Feat).all()
     count = 0
     for feat in feats:
@@ -404,12 +404,12 @@ def patch_feats():
             feat.name = es_name
             count += 1
     db.commit()
-    print(f"  ✅ {count} dotes traducidas")
+    print(f"   {count} dotes traducidas")
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("🔧 Patch de Traducciones al Español")
+    print("Patch de Traducciones al Español")
     print("=" * 60)
 
     patch_items()
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     patch_feats()
 
     print(f"\n{'=' * 60}")
-    print("✅ Patch completado")
+    print(" Patch completado")
     print(f"{'=' * 60}")
 
     db.close()
