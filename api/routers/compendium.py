@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -47,7 +47,6 @@ def count_monsters(search: str = "", cr: str = "", type: str = "", db: Session =
 def get_monster(monster_id: int, db: Session = Depends(get_db)):
     monster = db.query(models.Monster).filter(models.Monster.id == monster_id).first()
     if not monster:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Monstruo no encontrado")
     return monster
 
@@ -56,7 +55,6 @@ def get_monster(monster_id: int, db: Session = Depends(get_db)):
 def get_monster_by_index(index: str, db: Session = Depends(get_db)):
     monster = db.query(models.Monster).filter(models.Monster.index == index).first()
     if not monster:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Monstruo no encontrado")
     return monster
 
@@ -99,7 +97,6 @@ def count_spells(search: str = "", level: Optional[int] = None, db: Session = De
 def get_spell(spell_id: int, db: Session = Depends(get_db)):
     spell = db.query(models.Spell).filter(models.Spell.id == spell_id).first()
     if not spell:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Hechizo no encontrado")
     return spell
 
@@ -127,7 +124,6 @@ def list_items(
 def get_item(item_id: int, db: Session = Depends(get_db)):
     item = db.query(models.Item).filter(models.Item.id == item_id).first()
     if not item:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Objeto no encontrado")
     return item
 
@@ -161,7 +157,6 @@ def list_races(db: Session = Depends(get_db)):
 def get_race(race_id: int, db: Session = Depends(get_db)):
     race = db.query(models.Race).filter(models.Race.id == race_id).first()
     if not race:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Raza no encontrada")
     return race
 
@@ -179,7 +174,6 @@ def list_classes(db: Session = Depends(get_db)):
 def get_class(class_id: int, db: Session = Depends(get_db)):
     cls = db.query(models.Class).filter(models.Class.id == class_id).first()
     if not cls:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Clase no encontrada")
     return cls
 

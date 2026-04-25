@@ -16,7 +16,9 @@ if 'characters' in inspector.get_table_names():
     columns = [c['name'] for c in inspector.get_columns('characters')]
     if 'starting_equipment' not in columns:
         try:
-            engine.execute(text("ALTER TABLE characters ADD COLUMN starting_equipment TEXT DEFAULT '[]'"))
+            with engine.connect() as connection:
+                connection.execute(text("ALTER TABLE characters ADD COLUMN starting_equipment TEXT DEFAULT '[]'"))
+                connection.commit()
         except Exception:
             pass
 
