@@ -7,7 +7,7 @@ import {
   getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote,
   rollDice, getDiceLog, getCampaignMembers, updateCharacter, createCharacter
 } from '../api';
-import { Users, Sword, BookOpen, Plus, Trash2, Play, Pause, SkipForward, Dice5, ScrollText, ChevronDown, ChevronUp, Search, Shield, Heart, Zap, AlertTriangle, Hammer, X, UserCog } from 'lucide-react';
+import { Users, Sword, BookOpen, Plus, Trash2, Play, Pause, SkipForward, Dice5, ScrollText, ChevronDown, ChevronUp, Search, Shield, Heart, Zap, AlertTriangle, Hammer, X, UserCog, ArrowRight } from 'lucide-react';
 
 const CONDITIONS_LIST = [
   'Cegado', 'Encantado', 'Ensordecido', 'Asustado', 'Agarrado',
@@ -261,6 +261,11 @@ export default function MasterDashboard() {
     setExpandedMonster(monsterId);
   };
 
+  const promptCombatantName = (defaultName) => {
+    const name = window.prompt('Nombre para el monstruo en combate:', defaultName);
+    return name ? name.trim() : defaultName;
+  };
+
   const addCombatant = (entity, type = 'monster') => {
     const mod = (v) => Math.floor(((v || 10) - 10) / 2);
     const parsedStats = type === 'player'
@@ -276,9 +281,12 @@ export default function MasterDashboard() {
         }
       : {};
 
+    const defaultName = entity.name + (type === 'monster' ? ` #${combatants.filter(c => c.baseName === entity.name).length + 1}` : '');
+    const combatName = type === 'monster' ? promptCombatantName(defaultName) : defaultName;
+
     const newC = {
       id: Date.now() + Math.random(),
-      name: entity.name + (type === 'monster' ? ` #${combatants.filter(c => c.baseName === entity.name).length + 1}` : ''),
+      name: combatName,
       baseName: entity.name,
       type,
       hp: type === 'monster' ? entity.hit_points : 0,
@@ -290,6 +298,7 @@ export default function MasterDashboard() {
       charId: type === 'player' ? entity.id : null,
       conditions: [],
       stats: parsedStats,
+      monsterDetail: type === 'monster' ? entity : undefined,
     };
     if (type === 'player') {
       try {
@@ -521,7 +530,7 @@ export default function MasterDashboard() {
 
               <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 {monsterResults.map(m => (
-                  <div key={m.index} style={{ marginBottom: '0.5rem', borderBottom: '1px solid #222', paddingBottom: '0.5rem' }}>
+                  <div key={m.id} style={{ marginBottom: '0.5rem', borderBottom: '1px solid #222', paddingBottom: '0.5rem' }}>
                     <div className="flex-row flex-between">
                       <div style={{ cursor: 'pointer' }} onClick={() => loadMonsterDetail(m.id)}>
                         <strong style={{ color: 'var(--accent-gold)' }}>{m.name}</strong>
@@ -530,17 +539,17 @@ export default function MasterDashboard() {
                         </div>
                       </div>
                       <div className="flex-row" style={{ gap: '0.3rem' }}>
-                        <button className="btn btn-gold btn-sm" onClick={() => createMonsterCharacter(m)} style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} title="Crear como Personaje">
+                        <button className="btn btn-gold btn-sm" onClick={() => createMonsterCharacter(m)} style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} title="Crear como Personaje y asignar a jugador">
                           <UserCog size={12} /> A Ficha
                         </button>
                         <button className="btn btn-primary btn-sm" onClick={() => {
                           getMonster(m.id).then(res => addCombatant(res.data, 'monster'));
-                        }} style={{ padding: '0.2rem 0.5rem' }}>
-                          <Plus size={12} /> Añadir
+                        }} style={{ padding: '0.2rem 0.5rem' }} title="Añadir al combate">
+                          <ArrowRight size={12} /> Combate
                         </button>
                       </div>
                     </div>
-                    {expandedMonster === m.index && monsterDetail && (
+                    {expandedMonster === m.id && monsterDetail && (
                       <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.4)', padding: '0.8rem', borderRadius: '4px', fontSize: '0.8rem' }}>
                         <div className="stats-grid" style={{ marginBottom: '0.5rem', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.4rem' }}>
                           {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map(stat => (
