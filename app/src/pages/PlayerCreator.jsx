@@ -204,6 +204,7 @@ export default function PlayerCreator() {
         ...final, currHP: Math.max(maxHP, 1), maxHP: Math.max(maxHP, 1),
         spells: [], spell_slots: spellSlots,
         skillProficiencies: Array.from(new Set([...bgSkills, ...charData.skill_proficiencies])), 
+        background_skills: bgSkills,
         saveProficiencies: [], expertise: [],
         background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0
       };

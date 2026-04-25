@@ -92,23 +92,67 @@ export default function SkillsSheet() {
   const profBonus = Math.ceil((character?.level || 1) / 4) + 1;
 
   const toggleSkillProf = (skillIndex) => {
+    const cn = className.toLowerCase();
+    const limit = CLASS_SKILL_COUNT[cn] || 2;
+    const options = CLASS_SKILL_LIST[cn] || [];
+    
+    // Background skills are locked
+    const bgSkills = stats.background_skills || [];
+    if (bgSkills.includes(skillIndex)) {
+      alert("Esta habilidad proviene de tu trasfondo y no se puede quitar.");
+      return;
+    }
+
     setStats(prev => {
       const list = prev.skillProficiencies || [];
       const expertList = prev.expertise || [];
-      if (expertList.includes(skillIndex)) {
-        // Remove expertise → remove prof
-        return { ...prev, expertise: expertList.filter(s => s !== skillIndex), skillProficiencies: list.filter(s => s !== skillIndex) };
+      const isProf = list.includes(skillIndex);
+      const isExpert = expertList.includes(skillIndex);
+
+      if (isExpert) {
+        // Downgrade to just Prof
+        return { ...prev, expertise: expertList.filter(s => s !== skillIndex) };
       }
-      if (list.includes(skillIndex)) {
-        // Has prof → upgrade to expertise
-        return { ...prev, expertise: [...expertList, skillIndex] };
+      
+      if (isProf) {
+        // Can we upgrade to expertise? (Only Rogue/Bard)
+        if (cn === 'pícaro' || cn === 'bardo') {
+          const expLimit = cn === 'pícaro' ? (character.level >= 6 ? 4 : 2) : (character.level >= 10 ? 4 : (character.level >= 3 ? 2 : 0));
+          if (expertList.length >= expLimit) {
+            alert(`Como ${className} de nivel ${character.level}, solo puedes tener ${expLimit} pericias.`);
+            return prev;
+          }
+          return { ...prev, expertise: [...expertList, skillIndex] };
+        }
+        // Otherwise remove prof
+        return { ...prev, skillProficiencies: list.filter(s => s !== skillIndex) };
       }
-      // Not proficient → add prof
+
+      // Not proficient → check limit
+      const currentFromClass = list.filter(s => options.includes(s) && !bgSkills.includes(SKILLS.find(sk => sk.index === s)?.name)).length;
+      if (currentFromClass >= limit) {
+        alert(`Ya has alcanzado el límite de habilidades para un ${className} (${limit}).`);
+        return prev;
+      }
+      
+      // If not even in class options, alert
+      if (!options.includes(skillIndex)) {
+        alert("Esta habilidad no está en la lista de opciones de tu clase.");
+        return prev;
+      }
+
       return { ...prev, skillProficiencies: [...list, skillIndex] };
     });
   };
 
   const toggleSaveProf = (ability) => {
+    const cn = className.toLowerCase();
+    const classSaves = CLASS_SAVES[cn] || [];
+    if (classSaves.includes(ability)) {
+      alert(`Como ${className}, ya eres competente en salvaciones de ${ABILITY_NAMES[ability]}.`);
+      return;
+    }
+
     setStats(prev => {
       const list = prev.saveProficiencies || [];
       if (list.includes(ability)) {
@@ -124,6 +168,12 @@ export default function SkillsSheet() {
     const isExpert = (stats.expertise || []).includes(skill.index);
     if (isExpert) return abilityMod + profBonus * 2;
     if (isProf) return abilityMod + profBonus;
+    
+    // Jack of All Trades (Bard level 2+)
+    if (className.toLowerCase() === 'bardo' && (character.level || 1) >= 2) {
+      return abilityMod + Math.floor(profBonus / 2);
+    }
+    
     return abilityMod;
   };
 
