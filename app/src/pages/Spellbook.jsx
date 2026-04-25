@@ -21,11 +21,46 @@ const SPELLS_KNOWN = {
 
 const PREPARED_CASTERS = ['mago', 'clérigo', 'druida', 'paladín'];
 const NON_CASTERS = ['bárbaro', 'guerrero', 'monje', 'pícaro'];
+const FULL_CASTERS = ['bardo', 'clérigo', 'druida', 'hechicero', 'mago'];
+const HALF_CASTERS = ['paladín', 'explorador'];
 
 const SPELLCASTING_ABILITY = {
   'mago': 'INT', 'hechicero': 'CHA', 'bardo': 'CHA', 'paladín': 'CHA',
   'clérigo': 'WIS', 'druida': 'WIS', 'explorador': 'WIS', 'brujo': 'CHA',
 };
+
+const SPELL_SLOTS_TABLE = [
+  [0,0,0,0,0,0,0,0,0], // Lvl 0
+  [2,0,0,0,0,0,0,0,0], // Lvl 1
+  [3,0,0,0,0,0,0,0,0], // Lvl 2
+  [4,2,0,0,0,0,0,0,0], // Lvl 3
+  [4,3,0,0,0,0,0,0,0], // Lvl 4
+  [4,3,2,0,0,0,0,0,0], // Lvl 5
+  [4,3,3,0,0,0,0,0,0], // Lvl 6
+  [4,3,3,1,0,0,0,0,0], // Lvl 7
+  [4,3,3,2,0,0,0,0,0], // Lvl 8
+  [4,3,3,3,1,0,0,0,0], // Lvl 9
+  [4,3,3,3,2,0,0,0,0], // Lvl 10
+  [4,3,3,3,2,1,0,0,0], // Lvl 11
+  [4,3,3,3,2,1,0,0,0], // Lvl 12
+  [4,3,3,3,2,1,1,0,0], // Lvl 13
+  [4,3,3,3,2,1,1,0,0], // Lvl 14
+  [4,3,3,3,2,1,1,1,0], // Lvl 15
+  [4,3,3,3,2,1,1,1,0], // Lvl 16
+  [4,3,3,3,2,1,1,1,1], // Lvl 17
+  [4,3,3,3,3,1,1,1,1], // Lvl 18
+  [4,3,3,3,3,2,1,1,1], // Lvl 19
+  [4,3,3,3,3,2,2,1,1], // Lvl 20
+];
+
+const WARLOCK_SLOTS = [
+  { count: 0, level: 0 },
+  { count: 1, level: 1 }, { count: 2, level: 1 }, { count: 2, level: 2 }, { count: 2, level: 2 },
+  { count: 2, level: 3 }, { count: 2, level: 3 }, { count: 2, level: 4 }, { count: 2, level: 4 },
+  { count: 2, level: 5 }, { count: 2, level: 5 }, { count: 3, level: 5 }, { count: 3, level: 5 },
+  { count: 3, level: 5 }, { count: 3, level: 5 }, { count: 3, level: 5 }, { count: 3, level: 5 },
+  { count: 4, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 },
+];
 
 export default function Spellbook() {
   const { id } = useParams();
@@ -121,6 +156,41 @@ export default function Spellbook() {
     }
   };
 
+  const restoreSpellSlots = () => {
+    const newSlots = {};
+    const lvlIdx = Math.min((character?.level || 1) - 1, 19);
+    
+    if (cn === 'brujo') {
+      // Warlocks use pact magic (different slots)
+      const warlockInfo = WARLOCK_SLOTS[lvlIdx] || { count: 1, level: 1 };
+      for (let i = 1; i <= 9; i++) {
+        newSlots[i] = { max: i <= warlockInfo.level ? warlockInfo.count : 0, used: 0 };
+      }
+    } else if (HALF_CASTERS.includes(cn)) {
+      // Half-casters get half the spell slots
+      const fullSlots = SPELL_SLOTS_TABLE[Math.min(lvlIdx, 19)];
+      for (let i = 1; i <= 9; i++) {
+        const halfLevel = Math.max(0, lvlIdx - 6) + 1;
+        const slotLevel = Math.min(halfLevel, 19);
+        const slots = SPELL_SLOTS_TABLE[slotLevel] || [0,0,0,0,0,0,0,0,0];
+        newSlots[i] = { max: slots[i-1] || 0, used: 0 };
+      }
+    } else if (FULL_CASTERS.includes(cn)) {
+      // Full casters (wizard, sorcerer, etc.)
+      const slots = SPELL_SLOTS_TABLE[lvlIdx] || [0,0,0,0,0,0,0,0,0];
+      for (let i = 1; i <= 9; i++) {
+        newSlots[i] = { max: slots[i-1] || 0, used: 0 };
+      }
+    } else {
+      // Non-casters get no spell slots
+      for (let i = 1; i <= 9; i++) {
+        newSlots[i] = { max: 0, used: 0 };
+      }
+    }
+    
+    setStatsObj(prev => ({ ...prev, spellSlots: newSlots }));
+  };
+
   // Spellcasting stats
   const abilityKey = SPELLCASTING_ABILITY[cn] || 'INT';
   const abilityScore = statsObj[abilityKey] || 10;
@@ -157,7 +227,10 @@ export default function Spellbook() {
           )}
         </div>
         <h1 style={{ margin: 0, fontSize: '1.6rem' }}>📖 Grimorio Mágico</h1>
-        <button className="btn btn-gold btn-sm" onClick={saveSpells}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
+        <div className="flex-row" style={{ gap: '0.5rem' }}>
+          {!isNonCaster && <button className="btn btn-blue btn-sm" onClick={restoreSpellSlots} title="Restaurar todos los espacios de conjuro">⚡ Restaurar Espacios</button>}
+          <button className="btn btn-gold btn-sm" onClick={saveSpells}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
+        </div>
       </div>
 
       {/* Spellcasting stats bar */}
@@ -175,6 +248,45 @@ export default function Spellbook() {
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-red-bright)' }}>{attackBonus >= 0 ? '+' : ''}{attackBonus}</div>
         </div>
       </div>
+
+      {/* Spell slots info panel */}
+      {!isNonCaster && (
+        <div className="glass-panel" style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(200,155,60,0.1), rgba(139,0,0,0.1))', borderTop: '2px solid var(--accent-gold)', borderLeft: '4px solid var(--accent-gold)' }}>
+          <h3 style={{ color: 'var(--accent-gold)', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ⚡ Espacios de Conjuro Disponibles
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.8rem' }}>
+            {[1,2,3,4,5,6,7,8,9].map(lvl => {
+              const slot = statsObj.spellSlots?.[lvl] || { max: 0, used: 0 };
+              if (slot.max === 0) return null;
+              const remaining = Math.max(0, slot.max - slot.used);
+              const percentage = Math.round((remaining / slot.max) * 100);
+              return (
+                <div key={lvl} style={{ background: 'rgba(0,0,0,0.3)', padding: '0.8rem', borderRadius: '6px', border: `1px solid ${remaining === 0 ? 'rgba(220,20,60,0.5)' : 'rgba(200,155,60,0.3)'}` }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Nivel {lvl}</div>
+                  <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.4rem' }}>
+                    {Array.from({ length: slot.max }).map((_, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          flex: 1,
+                          height: '4px',
+                          background: i < (slot.max - slot.used) ? 'var(--accent-gold)' : 'rgba(139,0,0,0.5)',
+                          borderRadius: '2px',
+                          transition: 'all 0.3s'
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: remaining === 0 ? 'var(--accent-red)' : 'var(--accent-gold)' }}>
+                    {remaining}/{slot.max} disponibles
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         {/* Search side */}
@@ -252,40 +364,68 @@ export default function Spellbook() {
               if (lvl > 0 && slot.max <= 0 && spellsAtLevel.length === 0 && lvl > 1) return null;
 
               return (
-                <div key={lvl}>
-                  <div style={{ background: 'rgba(139,0,0,0.3)', padding: '0.4rem 0.8rem', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ color: '#fff', fontSize: '0.85rem' }}>{lvl === 0 ? 'TRUCOS' : `NIVEL ${lvl}`}</strong>
-                    {lvl > 0 && (
-                      <div className="flex-row" style={{ gap: '0.3rem' }}>
-                        {Array.from({ length: Math.max(slot.max, 0) }).map((_, i) => (
-                          <input key={i} type="checkbox" checked={i < slot.used}
-                            onChange={(e) => {
-                              const newUsed = e.target.checked ? slot.used + 1 : slot.used - 1;
-                              setStatsObj(prev => ({
-                                ...prev, spellSlots: { ...prev.spellSlots, [lvl]: { ...slot, used: newUsed } }
-                              }));
-                            }}
-                            style={{ width: '16px', height: '16px', accentColor: 'var(--accent-red)', cursor: 'pointer' }} />
-                        ))}
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.3rem' }}>
-                          Max: <input type="number" value={slot.max}
-                            onChange={e => setStatsObj(prev => ({ ...prev, spellSlots: { ...prev.spellSlots, [lvl]: { ...slot, max: parseInt(e.target.value) || 0 } } }))}
-                            style={{ width: '30px', background: 'transparent', border: 'none', borderBottom: '1px solid #444', color: '#fff', textAlign: 'center' }} />
-                        </span>
+                <div key={lvl} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(139,0,0,0.2)' }}>
+                  <div style={{ background: 'linear-gradient(90deg, rgba(139,0,0,0.4), rgba(139,0,0,0.1))', padding: '0.8rem', borderBottom: '1px solid rgba(139,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                    <div>
+                      <strong style={{ color: '#fff', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{lvl === 0 ? '✨ TRUCOS' : `📖 NIVEL ${lvl}`}</strong>
+                    </div>
+                    {lvl > 0 && slot.max > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                        <div className="flex-row" style={{ gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {Array.from({ length: Math.max(slot.max, 0) }).map((_, i) => (
+                            <div
+                              key={i}
+                              onClick={() => {
+                                const newUsed = i < slot.used ? slot.used - 1 : i + 1;
+                                setStatsObj(prev => ({
+                                  ...prev, spellSlots: { ...prev.spellSlots, [lvl]: { ...slot, used: newUsed } }
+                                }));
+                              }}
+                              style={{
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                background: i < slot.used ? 'var(--accent-red)' : 'rgba(255,255,255,0.1)',
+                                border: `2px solid ${i < slot.used ? 'var(--accent-red-bright)' : 'rgba(255,255,255,0.3)'}`,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.65rem',
+                                color: '#fff',
+                                fontWeight: 'bold'
+                              }}
+                              title={i < slot.used ? 'Espacio usado' : 'Espacio disponible'}
+                            >
+                              {i < slot.used ? '✓' : ''}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                          {slot.used}/{slot.max} espacios usados
+                        </div>
                       </div>
                     )}
                   </div>
-                  <div style={{ padding: '0.3rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                    {spellsAtLevel.length === 0 && <span style={{ color: '#555', fontSize: '0.75rem', padding: '0.3rem' }}>—</span>}
-                    {spellsAtLevel.map(sIdx => {
-                      const sp = allSpells.find(s => s.index === sIdx);
-                      return (
-                        <div key={sIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '0.4rem 0.6rem', borderLeft: `3px solid ${lvl === 0 ? 'var(--accent-gold)' : 'var(--accent-red)'}` }}>
-                          <span style={{ fontSize: '0.9rem', color: '#ddd' }}>{sp?.name || sIdx}</span>
-                          <button className="btn btn-ghost btn-sm" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={() => toggleSpell(sIdx)}>Olvidar</button>
-                        </div>
-                      );
-                    })}
+                  <div style={{ padding: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {spellsAtLevel.length === 0 ? (
+                      <span style={{ color: '#555', fontSize: '0.85rem', padding: '0.4rem', fontStyle: 'italic' }}>Sin conjuros de este nivel</span>
+                    ) : (
+                      spellsAtLevel.map(sIdx => {
+                        const sp = allSpells.find(s => s.index === sIdx);
+                        return (
+                          <div key={sIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.6rem 0.8rem', borderRadius: '6px', borderLeft: `4px solid ${lvl === 0 ? 'var(--accent-gold)' : 'var(--accent-red)'}` }}>
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: '0.95rem', color: '#ddd', fontWeight: '500' }}>{sp?.name || sIdx}</span>
+                              {sp?.ritual && <span style={{ fontSize: '0.65rem', color: 'var(--accent-gold)', marginLeft: '0.5rem', padding: '0.1rem 0.3rem', background: 'rgba(200,155,60,0.2)', borderRadius: '3px' }}>[R]</span>}
+                              {sp?.concentration && <span style={{ fontSize: '0.65rem', color: 'var(--accent-red-bright)', marginLeft: '0.3rem', padding: '0.1rem 0.3rem', background: 'rgba(220,20,60,0.2)', borderRadius: '3px' }}>[C]</span>}
+                            </div>
+                            <button className="btn btn-ghost btn-sm" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', color: 'var(--accent-red)' }} onClick={() => toggleSpell(sIdx)}>✕ Olvidar</button>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               );
