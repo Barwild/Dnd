@@ -66,6 +66,7 @@ export default function SkillsSheet() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [character, setCharacter] = useState(null);
+  const [campaignCharacters, setCampaignCharacters] = useState([]);
   const [stats, setStats] = useState({});
   const [className, setClassName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -84,6 +85,15 @@ export default function SkillsSheet() {
       setCharacter(c);
       setStats(s);
       if (c.class_id) getClassApi(c.class_id).then(r => setClassName(r.data.name)).catch(() => {});
+      
+      if (c.campaign_id) {
+        import('../api').then(api => {
+          api.getCharacters(c.campaign_id).then(res => {
+            const myChars = (res.data || []).filter(char => char.user_id === c.user_id);
+            setCampaignCharacters(myChars);
+          });
+        });
+      }
     });
   }, [id]);
 
@@ -225,11 +235,24 @@ export default function SkillsSheet() {
   return (
     <div className="container fade-in" style={{ maxWidth: '900px', paddingBottom: '3rem' }}>
       {/* Header */}
-      <div className="flex-row flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/character/${id}`)}>← Ficha de {character.name}</button>
-        <button className="btn btn-gold btn-sm" onClick={save} disabled={saving}>
-          <Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}
-        </button>
+      <div className="flex-row flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.8rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex-row" style={{ gap: '0.8rem' }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/character/${id}`)}>← Ficha de {character.name}</button>
+          {campaignCharacters.length > 1 && (
+            <div className="flex-row" style={{ gap: '0.5rem', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1px solid var(--accent-gold)' }}>
+              <select 
+                value={id} 
+                onChange={e => navigate(`/character/${e.target.value}/skills`)}
+                style={{ background: 'transparent', color: '#fff', border: 'none', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', outline: 'none' }}
+              >
+                {campaignCharacters.map(c => (
+                  <option key={c.id} value={c.id} style={{ background: '#1a1a24' }}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        <button className="btn btn-gold btn-sm" onClick={save} disabled={saving}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
       </div>
 
       {/* Dice notification */}

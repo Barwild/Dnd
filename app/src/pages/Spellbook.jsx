@@ -38,6 +38,7 @@ export default function Spellbook() {
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [expandedSpell, setExpandedSpell] = useState(null);
+  const [campaignCharacters, setCampaignCharacters] = useState([]);
 
   useEffect(() => {
     getCharacter(id).then(res => {
@@ -52,6 +53,15 @@ export default function Spellbook() {
       setCharacter(c);
       setStatsObj(s);
       if (c.class_id) getClassApi(c.class_id).then(r => setCharClass(r.data));
+      
+      if (c.campaign_id) {
+        import('../api').then(api => {
+          api.getCharacters(c.campaign_id).then(res => {
+            const myChars = (res.data || []).filter(char => char.user_id === c.user_id);
+            setCampaignCharacters(myChars);
+          });
+        });
+      }
     });
     getSpells({ limit: 500 }).then(r => setAllSpells(r.data || []));
   }, [id]);
@@ -129,8 +139,23 @@ export default function Spellbook() {
 
   return (
     <div className="container fade-in" style={{ maxWidth: '1200px' }}>
-      <div className="flex-row flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/character/${id}`)}>← Ficha de {character.name}</button>
+      <div className="flex-row flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.8rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex-row" style={{ gap: '0.8rem' }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/character/${id}`)}>← Ficha de {character.name}</button>
+          {campaignCharacters.length > 1 && (
+            <div className="flex-row" style={{ gap: '0.5rem', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1px solid var(--accent-gold)' }}>
+              <select 
+                value={id} 
+                onChange={e => navigate(`/character/${e.target.value}/spells`)}
+                style={{ background: 'transparent', color: '#fff', border: 'none', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', outline: 'none' }}
+              >
+                {campaignCharacters.map(c => (
+                  <option key={c.id} value={c.id} style={{ background: '#1a1a24' }}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         <h1 style={{ margin: 0, fontSize: '1.6rem' }}>📖 Grimorio Mágico</h1>
         <button className="btn btn-gold btn-sm" onClick={saveSpells}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
       </div>

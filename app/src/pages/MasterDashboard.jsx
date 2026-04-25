@@ -84,6 +84,10 @@ export default function MasterDashboard() {
   const [expandedCombatant, setExpandedCombatant] = useState(null);
   const [combatantDetails, setCombatantDetails] = useState({});
   const [expandedAction, setExpandedAction] = useState(null);
+  
+  // Character management
+  const [unassignedChars, setUnassignedChars] = useState([]);
+  const [showLinker, setShowLinker] = useState(false);
 
   const toggleCombatantDetail = async (c) => {
     if (expandedCombatant === c.id) {
@@ -104,10 +108,28 @@ export default function MasterDashboard() {
     getCampaign(campaignId).then(r => setCampaign(r.data));
     getCampaignMembers(campaignId).then(r => setCampaignMembers(r.data || []));
     getCharacters(campaignId).then(r => setCharacters(r.data || []));
+    
+    // Fetch DM's own characters that are not in any campaign
+    getCharacters().then(r => {
+      const unassigned = (r.data || []).filter(c => !c.campaign_id);
+      setUnassignedChars(unassigned);
+    }).catch(() => {});
+
     getEncounters(campaignId).then(r => setEncounters(r.data || []));
     getSessionNotes(campaignId).then(r => setNotes(r.data || []));
     getDiceLog(campaignId, 20).then(r => setDiceLog(r.data || [])).catch(() => {});
   }, [campaignId]);
+
+  const linkCharacter = async (charId) => {
+    await updateCharacter(charId, { campaign_id: parseInt(campaignId) });
+    // Refresh
+    getCharacters(campaignId).then(r => setCharacters(r.data || []));
+    getCharacters().then(r => {
+      const unassigned = (r.data || []).filter(c => !c.campaign_id);
+      setUnassignedChars(unassigned);
+    });
+    alert("Personaje vinculado a la mesa.");
+  };
 
   const assignCharacter = async (charId, userId) => {
     await updateCharacter(charId, { user_id: parseInt(userId) });
@@ -377,6 +399,31 @@ export default function MasterDashboard() {
             {/* Party */}
             <div className="glass-panel" style={{ marginBottom: '1rem', borderTop: '3px solid var(--accent-gold)' }}>
               <h3><Users size={16} /> Mesa de Juego ({characters.length})</h3>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <button className="btn btn-ghost btn-sm" style={{ width: '100%', border: '1px dashed #444', marginBottom: '0.5rem' }} onClick={() => setShowLinker(!showLinker)}>
+                   {showLinker ? '✕ Cerrar Vinculador' : '+ Vincular Personaje Existente'}
+                </button>
+                
+                {showLinker && (
+                  <div className="slide-up" style={{ background: 'rgba(0,0,0,0.4)', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--accent-gold)' }}>
+                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: 'var(--accent-gold)' }}>Tus personajes sin campaña:</h4>
+                    {unassignedChars.length === 0 ? (
+                      <p style={{ fontSize: '0.75rem', color: '#888' }}>No tienes personajes libres para vincular.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {unassignedChars.map(c => (
+                          <div key={c.id} className="flex-row flex-between" style={{ background: 'rgba(255,255,255,0.05)', padding: '0.4rem 0.6rem', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.85rem' }}>{c.name} <span style={{ fontSize: '0.7rem', color: '#888' }}>({c.class_name})</span></span>
+                            <button className="btn btn-gold btn-sm" style={{ padding: '0.1rem 0.4rem', fontSize: '0.7rem' }} onClick={() => linkCharacter(c.id)}>Vincular</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {characters.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No hay personajes en esta campaña.</p>
               ) : characters.map(ch => (

@@ -127,8 +127,24 @@ export default function CharacterSheet() {
   return (
     <div className="container fade-in" style={{ maxWidth: '900px', paddingBottom: '3rem' }}>
       {/* Header */}
-      <div className="flex-row flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/player-lobby')}>← Lobby</button>
+      <div className="flex-row flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.8rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="flex-row" style={{ gap: '0.8rem' }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/player-lobby')}>← Lobby</button>
+          {campaignCharacters.length > 1 && (
+            <div className="flex-row" style={{ gap: '0.5rem', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1px solid var(--accent-gold)' }}>
+              <UserCircle size={16} style={{ color: 'var(--accent-gold)' }} />
+              <select 
+                value={id} 
+                onChange={e => navigate(`/character/${e.target.value}`)}
+                style={{ background: 'transparent', color: '#fff', border: 'none', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', outline: 'none' }}
+              >
+                {campaignCharacters.map(c => (
+                  <option key={c.id} value={c.id} style={{ background: '#1a1a24' }}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         <div className="flex-row" style={{ gap: '0.5rem' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/skills`)}><Target size={16} /> Habilidades</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/spells`)}><BookOpen size={16} /> Grimorio</button>
@@ -147,21 +163,6 @@ export default function CharacterSheet() {
 
       {/* Character Name & Identity */}
       <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-gold)', marginBottom: '1.5rem', position: 'relative' }}>
-        
-        {campaignCharacters.length > 1 && (
-          <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
-            <select 
-              value={id} 
-              onChange={e => navigate(`/character/${e.target.value}`)}
-              style={{ background: 'rgba(0,0,0,0.5)', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
-            >
-              {campaignCharacters.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
         <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#fff' }}>{character.name}</h1>
         <p style={{ color: 'var(--accent-gold)', fontSize: '1rem', margin: '0.3rem 0' }}>
           Nivel {character.level} {raceName ? `• ${raceName}` : ''} {className ? `• ${className}` : ''} {!raceName && !className && '• Monstruo'}
