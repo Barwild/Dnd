@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">DM DnD</string>
-    <string name="title_activity_main">DM DnD</string>
+    <string name="app_name">DnD-nexus</string>
+    <string name="title_activity_main">DnD-nexus</string>
     <string name="package_name">com.bafee.dmdnd</string>
     <string name="custom_url_scheme">com.bafee.dmdnd</string>
 </resources>
