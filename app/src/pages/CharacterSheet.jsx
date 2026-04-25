@@ -113,8 +113,13 @@ export default function CharacterSheet() {
       let statsObj = {};
       try { statsObj = JSON.parse(char.stats || '{}'); } catch {}
       statsObj.coins = normalizeCoins(parseCoins(statsObj.coins));
+
       let eq = [];
       try { eq = JSON.parse(char.equipment || '[]'); } catch {}
+      if ((!eq || eq.length === 0) && char.starting_equipment) {
+        try { eq = JSON.parse(char.starting_equipment || '[]'); } catch {}
+      }
+
       setCharacter(char);
       setStats(statsObj);
       setEquipment(eq);
