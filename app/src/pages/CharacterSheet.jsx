@@ -89,10 +89,18 @@ export default function CharacterSheet() {
   const formatCoins = (coins) => {
     const normalized = normalizeCoins(parseCoins(coins));
     return Object.entries(normalized)
-      .filter(([, value]) => value && value !== 0)
+      .filter(([, value]) => value !== undefined && value !== null && value !== 0)
       .map(([coin, value]) => `${value}${coin}`)
       .join(' ') || '0cp';
   };
+  const setCoinValue = (coin, value) => {
+    const amount = Math.max(0, parseInt(value, 10) || 0);
+    setStats(prev => ({
+      ...prev,
+      coins: { ...normalizeCoins(prev.coins), [coin]: amount }
+    }));
+  };
+  const totalValueSummary = copperToCoins(totalCopper(stats.coins));
   const renderCost = (item) => {
     if (!item.cost_quantity) return 'Gratis';
     return `${item.cost_quantity} ${item.cost_unit || 'gp'}`;
@@ -488,9 +496,14 @@ export default function CharacterSheet() {
           {Object.entries(normalizeCoins(stats.coins)).map(([coin, value]) => (
             <div key={coin} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.7rem', borderRadius: '8px', textAlign: 'center' }}>
               <div style={{ fontSize: '0.7rem', color: '#888' }}>{coin.toUpperCase()}</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fff' }}>{value}</div>
+              <input type="number" min="0" value={value}
+                onChange={e => setCoinValue(coin, e.target.value)}
+                style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.25rem', fontWeight: 'bold', textAlign: 'center' }} />
             </div>
           ))}
+        </div>
+        <div style={{ marginBottom: '1rem', fontSize: '0.85rem', color: '#ccc' }}>
+          <strong>Total equivalente:</strong> {formatCoins(totalValueSummary)} ({totalCopper(stats.coins)} cp)
         </div>
 
         <div className="flex-row" style={{ gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
