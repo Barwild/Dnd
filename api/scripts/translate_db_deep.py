@@ -69,23 +69,66 @@ def translate_magic_items():
     db.commit()
     print(f"Magic Items translated: {count}")
 
+def translate_json_list(json_str):
+    if not json_str or json_str == '[]':
+        return json_str
+    try:
+        data = json.loads(json_str)
+        changed = False
+        for item in data:
+            if 'name' in item:
+                es_name = translate_text(item['name'])
+                if es_name != item['name']:
+                    item['name'] = es_name
+                    changed = True
+            if 'desc' in item:
+                es_desc = translate_text(item['desc'])
+                if es_desc != item['desc']:
+                    item['desc'] = es_desc
+                    changed = True
+        return json.dumps(data) if changed else json_str
+    except:
+        return json_str
+
 def translate_monsters():
     monsters = db.query(models.Monster).all()
     count = 0
     print(f"Checking {len(monsters)} Monsters...")
     for m in monsters:
+        monster_changed = False
         if m.name == m.name_en:
             es_name = translate_text(m.name_en)
             if es_name != m.name_en:
                 m.name = es_name
-                count += 1
-                print(f"Monster: {m.name_en} -> {es_name}")
+                monster_changed = True
+                print(f"Monster Name: {m.name_en} -> {es_name}")
+        
+        # Translate actions
+        new_actions = translate_json_list(m.actions)
+        if new_actions != m.actions:
+            m.actions = new_actions
+            monster_changed = True
+            
+        # Translate special abilities
+        new_abilities = translate_json_list(m.special_abilities)
+        if new_abilities != m.special_abilities:
+            m.special_abilities = new_abilities
+            monster_changed = True
+            
+        # Translate legendary actions
+        new_legendary = translate_json_list(m.legendary_actions)
+        if new_legendary != m.legendary_actions:
+            m.legendary_actions = new_legendary
+            monster_changed = True
+            
+        if monster_changed:
+            count += 1
                 
-        if count > 0 and count % 20 == 0:
+        if count > 0 and count % 10 == 0:
             db.commit()
             
     db.commit()
-    print(f"Monsters translated: {count}")
+    print(f"Monsters updated/translated: {count}")
 
 if __name__ == "__main__":
     print("Iniciando traductor profundo...")

@@ -20,6 +20,38 @@ const ABILITY_MAP = {
 const CASTER_CANTRIPS = { 'bardo': 2, 'clérigo': 3, 'druida': 2, 'hechicero': 4, 'mago': 3, 'brujo': 2 };
 const CASTER_SLOTS = { 'bardo': { 1: 2 }, 'clérigo': { 1: 2 }, 'druida': { 1: 2 }, 'hechicero': { 1: 2 }, 'mago': { 1: 2 }, 'brujo': { 1: 1 } };
 
+const SKILLS_MASTER = [
+  { index: 'acrobatics', name: 'Acrobacias' }, { index: 'animal-handling', name: 'Trato con Animales' },
+  { index: 'arcana', name: 'Arcanos' }, { index: 'athletics', name: 'Atletismo' },
+  { index: 'deception', name: 'Engaño' }, { index: 'history', name: 'Historia' },
+  { index: 'insight', name: 'Perspicacia' }, { index: 'intimidation', name: 'Intimidación' },
+  { index: 'investigation', name: 'Investigación' }, { index: 'medicine', name: 'Medicina' },
+  { index: 'nature', name: 'Naturaleza' }, { index: 'perception', name: 'Percepción' },
+  { index: 'performance', name: 'Interpretación' }, { index: 'persuasion', name: 'Persuasión' },
+  { index: 'religion', name: 'Religión' }, { index: 'sleight-of-hand', name: 'Juego de Manos' },
+  { index: 'stealth', name: 'Sigilo' }, { index: 'survival', name: 'Supervivencia' }
+];
+
+const CLASS_SKILL_COUNT = {
+  'bárbaro': 2, 'bardo': 3, 'clérigo': 2, 'druida': 2, 'guerrero': 2, 'monje': 2,
+  'paladín': 2, 'explorador': 3, 'pícaro': 4, 'hechicero': 2, 'brujo': 2, 'mago': 2
+};
+
+const CLASS_SKILL_LIST = {
+  'bárbaro': ['animal-handling', 'athletics', 'intimidation', 'nature', 'perception', 'survival'],
+  'bardo': SKILLS_MASTER.map(s => s.index),
+  'clérigo': ['history', 'insight', 'medicine', 'persuasion', 'religion'],
+  'druida': ['animal-handling', 'arcana', 'insight', 'medicine', 'nature', 'perception', 'religion', 'survival'],
+  'guerrero': ['acrobatics', 'animal-handling', 'athletics', 'history', 'insight', 'intimidation', 'perception', 'survival'],
+  'monje': ['acrobatics', 'athletics', 'history', 'insight', 'religion', 'stealth'],
+  'paladín': ['athletics', 'insight', 'intimidation', 'medicine', 'persuasion', 'religion'],
+  'explorador': ['animal-handling', 'athletics', 'insight', 'investigation', 'nature', 'perception', 'stealth', 'survival'],
+  'pícaro': ['acrobatics', 'athletics', 'deception', 'insight', 'intimidation', 'investigation', 'perception', 'performance', 'persuasion', 'sleight-of-hand', 'stealth'],
+  'hechicero': ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'],
+  'brujo': ['arcana', 'deception', 'history', 'intimidation', 'investigation', 'nature', 'religion'],
+  'mago': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion']
+};
+
 export default function PlayerCreator() {
   const [races, setRaces] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -34,7 +66,8 @@ export default function PlayerCreator() {
   const [charData, setCharData] = useState({
     name: '', race_id: '', subrace_index: null, class_id: '', subclass_id: null, background_id: null, campaign_id: null,
     stats: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
-    spell_list: []
+    spell_list: [],
+    skill_proficiencies: []
   });
 
   const [statPool, setStatPool] = useState([]);
@@ -169,8 +202,9 @@ export default function PlayerCreator() {
 
       const statsPayload = {
         ...final, currHP: Math.max(maxHP, 1), maxHP: Math.max(maxHP, 1),
-        spells: [], spellSlots,
-        skillProficiencies: bgSkills, saveProficiencies: [], expertise: [],
+        spells: [], spell_slots: spellSlots,
+        skillProficiencies: Array.from(new Set([...bgSkills, ...charData.skill_proficiencies])), 
+        saveProficiencies: [], expertise: [],
         background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0
       };
 
@@ -196,13 +230,14 @@ export default function PlayerCreator() {
     if (name === 'Identidad') return 1;
     if (name === 'Linaje') return 2;
     if (name === 'Vocación') return 3;
-    if (name === 'Magia' && needsMagicStep) return 4;
-    if (name === 'Atributos') return needsMagicStep ? 5 : 4;
-    if (name === 'Resumen') return needsMagicStep ? 6 : 5;
+    if (name === 'Habilidades') return 4;
+    if (name === 'Magia' && needsMagicStep) return 5;
+    if (name === 'Atributos') return needsMagicStep ? 6 : 5;
+    if (name === 'Resumen') return needsMagicStep ? 7 : 6;
     return -1;
   };
-  const stepCount = needsMagicStep ? 6 : 5;
-  const stepTitles = ['Identidad', 'Linaje', 'Vocación', ...(needsMagicStep ? ['Magia'] : []), 'Atributos', 'Resumen'];
+  const stepCount = needsMagicStep ? 7 : 6;
+  const stepTitles = ['Identidad', 'Linaje', 'Vocación', 'Habilidades', ...(needsMagicStep ? ['Magia'] : []), 'Atributos', 'Resumen'];
 
   return (
     <div className="container fade-in" style={{ maxWidth: '900px', paddingBottom: '3rem' }}>
@@ -405,8 +440,90 @@ export default function PlayerCreator() {
 
             <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
               <button className="btn btn-ghost" onClick={() => setStep(getStepNumber('Linaje'))}><ChevronLeft size={16} /> Raza</button>
-              <button className="btn btn-gold" onClick={() => setStep(getStepNumber(needsMagicStep ? 'Magia' : 'Atributos'))} disabled={!charData.class_id}>
-                {needsMagicStep ? 'Elegir Trucos' : 'Atributos'} <ChevronRight size={16} />
+              <button className="btn btn-gold" onClick={() => setStep(getStepNumber('Habilidades'))} disabled={!charData.class_id}>
+                Habilidades <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ STEP 4: Skills ═══ */}
+        {step === getStepNumber('Habilidades') && (
+          <div className="fade-in">
+            <h2>🎯 Elige tus Habilidades</h2>
+            {(() => {
+              const bgSkills = selectedBg ? (() => { try { return JSON.parse(selectedBg.skill_proficiencies || '[]'); } catch { return []; } })() : [];
+              const classLimit = CLASS_SKILL_COUNT[classNameLow] || 2;
+              const classOptions = CLASS_SKILL_LIST[classNameLow] || [];
+              const selectedFromClass = charData.skill_proficiencies.filter(s => classOptions.includes(s));
+              
+              return (
+                <>
+                  <p style={{ color: 'var(--text-muted)' }}>
+                    Como <strong>{selectedClass?.name}</strong>, puedes elegir <strong>{classLimit}</strong> habilidades de tu lista de clase.
+                  </p>
+                  
+                  {bgSkills.length > 0 && (
+                    <div style={{ marginBottom: '1rem', padding: '0.8rem', background: 'rgba(200,155,60,0.1)', borderRadius: '8px', border: '1px solid var(--accent-gold)' }}>
+                      <span style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>✨ Otorgadas por {selectedBg.name}: <strong>{bgSkills.join(', ')}</strong></span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
+                    {SKILLS_MASTER.map(skill => {
+                      const isBg = bgSkills.includes(skill.name);
+                      const isClassOption = classOptions.includes(skill.index);
+                      const isSelected = charData.skill_proficiencies.includes(skill.index);
+                      const disabled = !isSelected && selectedFromClass.length >= classLimit;
+
+                      return (
+                        <div key={skill.index} className={`glass-panel ${isClassOption && !isBg ? 'clickable' : ''}`}
+                          onClick={() => {
+                            if (!isClassOption || isBg) return;
+                            if (isSelected) {
+                              setCharData(prev => ({ ...prev, skill_proficiencies: prev.skill_proficiencies.filter(s => s !== skill.index) }));
+                            } else if (!disabled) {
+                              setCharData(prev => ({ ...prev, skill_proficiencies: [...prev.skill_proficiencies, skill.index] }));
+                            }
+                          }}
+                          style={{
+                            padding: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.6rem',
+                            opacity: isBg ? 0.8 : (isClassOption ? (disabled && !isSelected ? 0.5 : 1) : 0.3),
+                            borderColor: isSelected ? 'var(--accent-gold)' : '',
+                            background: isSelected ? 'rgba(200,155,60,0.1)' : '',
+                            cursor: isClassOption && !isBg ? 'pointer' : 'default'
+                          }}>
+                          <div style={{
+                            width: '16px', height: '16px', borderRadius: '50%',
+                            border: `2px solid ${isSelected || isBg ? 'var(--accent-gold)' : '#555'}`,
+                            background: isSelected || isBg ? 'var(--accent-gold)' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>
+                            {(isSelected || isBg) && <span style={{ fontSize: '10px', color: '#000', fontWeight: 'bold' }}>✓</span>}
+                          </div>
+                          <span style={{ fontSize: '0.9rem', color: isBg ? 'var(--accent-gold)' : '#ddd' }}>{skill.name}</span>
+                          {isBg && <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginLeft: 'auto' }}>(Trasfondo)</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div style={{ textAlign: 'right', color: selectedFromClass.length === classLimit ? 'var(--accent-green)' : 'var(--accent-gold)' }}>
+                    Seleccionadas: {selectedFromClass.length} / {classLimit}
+                  </div>
+                </>
+              );
+            })()}
+
+            <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
+              <button className="btn btn-ghost" onClick={() => setStep(getStepNumber('Vocación'))}><ChevronLeft size={16} /> Clase</button>
+              <button className="btn btn-gold" onClick={() => setStep(getStepNumber(needsMagicStep ? 'Magia' : 'Atributos'))} 
+                disabled={(() => {
+                  const limit = CLASS_SKILL_COUNT[classNameLow] || 2;
+                  const selected = charData.skill_proficiencies.filter(s => (CLASS_SKILL_LIST[classNameLow] || []).includes(s));
+                  return selected.length < limit;
+                })()}>
+                Siguiente <ChevronRight size={16} />
               </button>
             </div>
           </div>

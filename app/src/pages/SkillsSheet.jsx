@@ -42,6 +42,26 @@ const CLASS_SAVES = {
   'hechicero': ['CON', 'CHA'], 'brujo': ['WIS', 'CHA'], 'mago': ['INT', 'WIS'],
 };
 
+const CLASS_SKILL_COUNT = {
+  'bárbaro': 2, 'bardo': 3, 'clérigo': 2, 'druida': 2, 'guerrero': 2, 'monje': 2,
+  'paladín': 2, 'explorador': 3, 'pícaro': 4, 'hechicero': 2, 'brujo': 2, 'mago': 2
+};
+
+const CLASS_SKILL_LIST = {
+  'bárbaro': ['animal-handling', 'athletics', 'intimidation', 'nature', 'perception', 'survival'],
+  'bardo': SKILLS.map(s => s.index),
+  'clérigo': ['history', 'insight', 'medicine', 'persuasion', 'religion'],
+  'druida': ['animal-handling', 'arcana', 'insight', 'medicine', 'nature', 'perception', 'religion', 'survival'],
+  'guerrero': ['acrobatics', 'animal-handling', 'athletics', 'history', 'insight', 'intimidation', 'perception', 'survival'],
+  'monje': ['acrobatics', 'athletics', 'history', 'insight', 'religion', 'stealth'],
+  'paladín': ['athletics', 'insight', 'intimidation', 'medicine', 'persuasion', 'religion'],
+  'explorador': ['animal-handling', 'athletics', 'insight', 'investigation', 'nature', 'perception', 'stealth', 'survival'],
+  'pícaro': ['acrobatics', 'athletics', 'deception', 'insight', 'intimidation', 'investigation', 'perception', 'performance', 'persuasion', 'sleight-of-hand', 'stealth'],
+  'hechicero': ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'],
+  'brujo': ['arcana', 'deception', 'history', 'intimidation', 'investigation', 'nature', 'religion'],
+  'mago': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion']
+};
+
 export default function SkillsSheet() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -171,17 +191,27 @@ export default function SkillsSheet() {
         </div>
       )}
 
-      {/* Title */}
       <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-purple)', marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--accent-purple)' }}>🎯 Habilidades y Salvaciones</h1>
         <p style={{ color: 'var(--text-muted)', margin: '0.3rem 0' }}>
           {character.name} • Nivel {character.level} • {className}
         </p>
-        <div className="flex-row flex-center" style={{ gap: '1rem', marginTop: '0.5rem' }}>
+        <div className="flex-row flex-center" style={{ gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
           <span className="badge badge-gold">Competencia: +{profBonus}</span>
           <span className="badge badge-blue">
             <Eye size={12} /> Percepción Pasiva: {passivePerception}
           </span>
+          {(() => {
+             const cn = className.toLowerCase();
+             const limit = CLASS_SKILL_COUNT[cn] || 2;
+             const options = CLASS_SKILL_LIST[cn] || [];
+             const current = (stats.skillProficiencies || []).filter(s => options.includes(s)).length;
+             return (
+               <span className={`badge ${current > limit ? 'badge-red' : 'badge-gold'}`} title="Habilidades de clase usadas">
+                 Libro: {current} / {limit}
+               </span>
+             );
+          })()}
         </div>
       </div>
 

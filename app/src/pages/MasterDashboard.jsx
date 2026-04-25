@@ -122,13 +122,13 @@ export default function MasterDashboard() {
   };
 
   const createMonsterCharacter = async (monster) => {
-    const detailRes = await getMonster(monster.id);
+    const detailRes = await getMonster(monster.index);
     const detail = detailRes.data;
     const name = window.prompt(`¿Nombre para el personaje basado en ${detail.name}?`, detail.name);
     if (!name) return;
 
     let notes = `*Tipo: ${detail.type} | Tamaño: ${detail.size} | Alineamiento: ${detail.alignment}*\n`;
-    notes += `**AC:** ${detail.armor_class} | **Velocidad:** ${detail.speed}\n\n`;
+    notes += `**AC:** ${detail.armor_class} | **Velocidad:** ${JSON.stringify(detail.speed)}\n\n`;
 
     const addSection = (title, jsonStr) => {
       try {
@@ -148,7 +148,8 @@ export default function MasterDashboard() {
     const stats = {
       STR: detail.strength, DEX: detail.dexterity, CON: detail.constitution,
       INT: detail.intelligence, WIS: detail.wisdom, CHA: detail.charisma,
-      maxHP: detail.hit_points, currHP: detail.hit_points
+      maxHP: detail.hit_points, currHP: detail.hit_points, ac: detail.armor_class,
+      skillProficiencies: [], saveProficiencies: [], expertise: []
     };
 
     await createCharacter({
@@ -419,9 +420,9 @@ export default function MasterDashboard() {
 
               <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 {monsterResults.map(m => (
-                  <div key={m.id} style={{ marginBottom: '0.5rem', borderBottom: '1px solid #222', paddingBottom: '0.5rem' }}>
+                  <div key={m.index} style={{ marginBottom: '0.5rem', borderBottom: '1px solid #222', paddingBottom: '0.5rem' }}>
                     <div className="flex-row flex-between">
-                      <div style={{ cursor: 'pointer' }} onClick={() => loadMonsterDetail(m.id)}>
+                      <div style={{ cursor: 'pointer' }} onClick={() => loadMonsterDetail(m.index)}>
                         <strong style={{ color: 'var(--accent-gold)' }}>{m.name}</strong>
                         <div style={{ fontSize: '0.7rem', color: '#888' }}>
                           CR {m.challenge_rating} • CA {m.armor_class} • PG {m.hit_points} • {t(m.type)}
@@ -432,13 +433,13 @@ export default function MasterDashboard() {
                           <UserCog size={12} /> A Ficha
                         </button>
                         <button className="btn btn-primary btn-sm" onClick={() => {
-                          getMonster(m.id).then(res => addCombatant(res.data, 'monster'));
+                          getMonster(m.index).then(res => addCombatant(res.data, 'monster'));
                         }} style={{ padding: '0.2rem 0.5rem' }}>
                           <Plus size={12} /> Añadir
                         </button>
                       </div>
                     </div>
-                    {expandedMonster === m.id && monsterDetail && (
+                    {expandedMonster === m.index && monsterDetail && (
                       <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.4)', padding: '0.8rem', borderRadius: '4px', fontSize: '0.8rem' }}>
                         <div className="stats-grid" style={{ marginBottom: '0.5rem', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.4rem' }}>
                           {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map(stat => (
