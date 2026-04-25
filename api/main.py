@@ -2,12 +2,23 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+from sqlalchemy import inspect, text
 
 import models
 from database import engine
 
 # Create all tables
 models.Base.metadata.create_all(bind=engine)
+
+# Ensure database schema contains the starting_equipment column for characters
+inspector = inspect(engine)
+if 'characters' in inspector.get_table_names():
+    columns = [c['name'] for c in inspector.get_columns('characters')]
+    if 'starting_equipment' not in columns:
+        try:
+            engine.execute(text("ALTER TABLE characters ADD COLUMN starting_equipment TEXT DEFAULT '[]'"))
+        except Exception:
+            pass
 
 app = FastAPI(
     title="D&D 5E Nexus API",
