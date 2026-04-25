@@ -106,12 +106,19 @@ export default function CharacterSheet() {
     return `${item.cost_quantity} ${item.cost_unit || 'gp'}`;
   };
 
+  const normalizeStats = (stats) => {
+    const normalized = { ...stats };
+    if (normalized.spell_slots && !normalized.spellSlots) normalized.spellSlots = normalized.spell_slots;
+    if (normalized.spellSlots && !normalized.spell_slots) normalized.spell_slots = normalized.spellSlots;
+    return normalized;
+  };
+
   const load = async () => {
     try {
       const res = await getCharacter(id);
       const char = res.data;
       let statsObj = {};
-      try { statsObj = JSON.parse(char.stats || '{}'); } catch {}
+      try { statsObj = normalizeStats(JSON.parse(char.stats || '{}')); } catch {}
       statsObj.coins = normalizeCoins(parseCoins(statsObj.coins));
 
       let eq = [];
@@ -196,7 +203,10 @@ export default function CharacterSheet() {
 
   const shortRest = () => {
     const hitDiceAvail = (character?.level || 1) - (stats.hitDiceUsed || 0);
-    if (hitDiceAvail <= 0) { alert('No te quedan dados de golpe.'); }
+    if (hitDiceAvail <= 0) {
+      alert('No te quedan dados de golpe. No puedes recuperar vida en este descanso corto.');
+      return;
+    }
     const roll = Math.floor(Math.random() * hitDie) + 1 + mod(stats.CON || 10);
     const healed = Math.max(0, roll);
     
