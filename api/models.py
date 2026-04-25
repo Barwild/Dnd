@@ -73,6 +73,7 @@ class Character(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     stats = Column(Text, default="{}")  # JSON: STR, DEX, CON, INT, WIS, CHA, currHP, maxHP, etc.
     equipment = Column(Text, default="[]")  # JSON array
+    starting_equipment = Column(Text, default="[]")  # JSON array
     spell_list = Column(Text, default="[]")  # JSON array of spell indexes
     notes = Column(Text, default="")
     portrait_url = Column(String(500), nullable=True)
