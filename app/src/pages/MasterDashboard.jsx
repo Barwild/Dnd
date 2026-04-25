@@ -94,12 +94,18 @@ export default function MasterDashboard() {
       setExpandedCombatant(null);
       return;
     }
-    if (!combatantDetails[c.id] && c.monsterId) {
-      try {
-        const res = await getMonster(c.monsterId);
-        setCombatantDetails(prev => ({...prev, [c.id]: res.data}));
-      } catch (e) { console.error(e); }
+
+    if (!combatantDetails[c.id]) {
+      if (c.type === 'monster' && c.monsterId) {
+        try {
+          const res = await getMonster(c.monsterId);
+          setCombatantDetails(prev => ({ ...prev, [c.id]: res.data }));
+        } catch (e) { console.error(e); }
+      } else if (c.type === 'player' && c.stats) {
+        setCombatantDetails(prev => ({ ...prev, [c.id]: c.stats }));
+      }
     }
+
     setExpandedCombatant(c.id);
     setExpandedAction(null);
   };
@@ -144,7 +150,7 @@ export default function MasterDashboard() {
   };
 
   const createMonsterCharacter = async (monster) => {
-    const detailRes = await getMonster(monster.index);
+    const detailRes = await getMonster(monster.id);
     const detail = detailRes.data;
     const name = window.prompt(`¿Nombre para el personaje basado en ${detail.name}?`, detail.name);
     if (!name) return;
@@ -167,16 +173,42 @@ export default function MasterDashboard() {
     addSection('Acciones', detail.actions);
     addSection('Acciones Legendarias', detail.legendary_actions);
 
+    const monsterProfs = [];
+    const monsterSaves = [];
+    try {
+      const profs = JSON.parse(detail.proficiencies || '[]');
+      profs.forEach(p => {
+        const name = p.proficiency.name.toLowerCase();
+        const index = p.proficiency.index;
+        if (name.includes('saving throw')) {
+          const abi = name.split('saving throw: ')[1].substring(0, 3).toUpperCase();
+          if (['STR','DEX','CON','INT','WIS','CHA'].includes(abi)) monsterSaves.push(abi);
+        } else {
+          monsterProfs.push(index.replace('skill-', ''));
+        }
+      });
+    } catch {}
+
+    let monsterSpeed = 30;
+    try {
+      if (detail.speed?.walk) {
+        monsterSpeed = parseInt(detail.speed.walk) || 30;
+      } else if (typeof detail.speed === 'string') {
+        monsterSpeed = parseInt(detail.speed) || 30;
+      }
+    } catch {}
+
     const stats = {
       STR: detail.strength, DEX: detail.dexterity, CON: detail.constitution,
       INT: detail.intelligence, WIS: detail.wisdom, CHA: detail.charisma,
       maxHP: detail.hit_points, currHP: detail.hit_points, ac: detail.armor_class,
-      skillProficiencies: [], saveProficiencies: [], expertise: []
+      speed: monsterSpeed,
+      skillProficiencies: monsterProfs, saveProficiencies: monsterSaves, expertise: []
     };
 
     await createCharacter({
       name,
-      level: parseInt(detail.challenge_rating) || 1,
+      level: Math.max(1, parseInt(detail.challenge_rating) || 1),
       campaign_id: parseInt(campaignId),
       stats: JSON.stringify(stats),
       notes: notes.trim()
@@ -231,6 +263,19 @@ export default function MasterDashboard() {
 
   const addCombatant = (entity, type = 'monster') => {
     const mod = (v) => Math.floor(((v || 10) - 10) / 2);
+    const parsedStats = type === 'player'
+      ? (() => { try { return JSON.parse(entity.stats || '{}'); } catch { return {}; } })()
+      : type === 'monster'
+      ? {
+          STR: entity.strength || 10,
+          DEX: entity.dexterity || 10,
+          CON: entity.constitution || 10,
+          INT: entity.intelligence || 10,
+          WIS: entity.wisdom || 10,
+          CHA: entity.charisma || 10,
+        }
+      : {};
+
     const newC = {
       id: Date.now() + Math.random(),
       name: entity.name + (type === 'monster' ? ` #${combatants.filter(c => c.baseName === entity.name).length + 1}` : ''),
@@ -241,15 +286,17 @@ export default function MasterDashboard() {
       ac: type === 'monster' ? entity.armor_class : 10,
       initiative: Math.floor(Math.random() * 20) + 1 + mod(entity.dexterity || 10),
       dex: entity.dexterity || 10,
-      monsterId: type === 'monster' ? entity.id : null,
+      monsterId: type === 'monster' ? (entity.id || null) : null,
+      charId: type === 'player' ? entity.id : null,
       conditions: [],
+      stats: parsedStats,
     };
     if (type === 'player') {
       try {
-        const stats = JSON.parse(entity.stats || '{}');
+        const stats = parsedStats;
         newC.hp = stats.currHP || stats.maxHP || 1;
         newC.maxHp = stats.maxHP || 1;
-        newC.ac = 10 + mod(stats.DEX || 10);
+        newC.ac = stats.ac || 10 + mod(stats.DEX || 10);
         newC.initiative = Math.floor(Math.random() * 20) + 1 + mod(stats.DEX || 10);
         newC.dex = stats.DEX || 10;
       } catch {}
@@ -331,6 +378,13 @@ export default function MasterDashboard() {
   const startCombat = () => {
     setRound(1); setTurn(0);
     setCombatLog(prev => [...prev, `⚔️ ¡COMBATE INICIADO! Ronda 1`]);
+  };
+
+  const resetCombat = () => {
+    if (round === 0 && turn === 0) return;
+    setRound(0);
+    setTurn(0);
+    setCombatLog(prev => [...prev, `🛑 Combate detenido.`]);
   };
 
   // ═══ DICE ═══
@@ -469,7 +523,7 @@ export default function MasterDashboard() {
                 {monsterResults.map(m => (
                   <div key={m.index} style={{ marginBottom: '0.5rem', borderBottom: '1px solid #222', paddingBottom: '0.5rem' }}>
                     <div className="flex-row flex-between">
-                      <div style={{ cursor: 'pointer' }} onClick={() => loadMonsterDetail(m.index)}>
+                      <div style={{ cursor: 'pointer' }} onClick={() => loadMonsterDetail(m.id)}>
                         <strong style={{ color: 'var(--accent-gold)' }}>{m.name}</strong>
                         <div style={{ fontSize: '0.7rem', color: '#888' }}>
                           CR {m.challenge_rating} • CA {m.armor_class} • PG {m.hit_points} • {t(m.type)}
@@ -480,7 +534,7 @@ export default function MasterDashboard() {
                           <UserCog size={12} /> A Ficha
                         </button>
                         <button className="btn btn-primary btn-sm" onClick={() => {
-                          getMonster(m.index).then(res => addCombatant(res.data, 'monster'));
+                          getMonster(m.id).then(res => addCombatant(res.data, 'monster'));
                         }} style={{ padding: '0.2rem 0.5rem' }}>
                           <Plus size={12} /> Añadir
                         </button>
@@ -520,9 +574,14 @@ export default function MasterDashboard() {
                     <Play size={14} /> ¡Combatir!
                   </button>
                 ) : (
-                  <button className="btn btn-primary btn-sm" onClick={nextTurn}>
-                    <SkipForward size={14} /> Siguiente
-                  </button>
+                  <>
+                    <button className="btn btn-primary btn-sm" onClick={nextTurn}>
+                      <SkipForward size={14} /> Siguiente
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={resetCombat}>
+                      <Pause size={14} /> Detener
+                    </button>
+                  </>
                 )}
                 <span className="badge badge-red">Ronda {round}</span>
               </div>
