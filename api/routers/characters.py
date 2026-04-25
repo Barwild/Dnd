@@ -25,6 +25,7 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
         user_id=current_user.id,
         stats=data.stats,
         equipment=data.equipment,
+        starting_equipment=data.starting_equipment or data.equipment,
         spell_list=data.spell_list,
         notes=data.notes,
         portrait_url=data.portrait_url
@@ -121,6 +122,7 @@ def _char_response(char, db):
         subclass_id=char.subclass_id, background_id=char.background_id,
         campaign_id=char.campaign_id, user_id=char.user_id,
         stats=char.stats, equipment=char.equipment,
+        starting_equipment=char.starting_equipment,
         spell_list=char.spell_list, notes=char.notes,
         portrait_url=char.portrait_url, created_at=char.created_at,
         owner_name=owner.display_name if owner else "",

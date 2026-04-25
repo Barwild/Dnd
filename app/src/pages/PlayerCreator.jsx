@@ -118,6 +118,32 @@ export default function PlayerCreator() {
   const selectedCantripsCount = charData.spell_list.filter(sIndex => availableCantrips.some(c => c.index === sIndex)).length;
   const selectedLevel1Count = charData.spell_list.filter(sIndex => availableLevel1Spells.some(c => c.index === sIndex)).length;
 
+  const parseJson = (value) => {
+    try { return JSON.parse(value || '[]'); } catch { return []; }
+  };
+
+  const normalizeEquipment = (entry) => {
+    if (!entry) return null;
+    if (typeof entry === 'string') return { name: entry };
+    if (typeof entry === 'object') {
+      if (entry.equipment) {
+        return {
+          name: entry.equipment.name || entry.equipment,
+          quantity: entry.quantity || 1,
+          desc: entry.equipment?.desc || entry.desc || ''
+        };
+      }
+      return { name: entry.name || JSON.stringify(entry), quantity: entry.quantity || 1, ...entry };
+    }
+    return { name: String(entry) };
+  };
+
+  const gatherStartingEquipment = () => {
+    const bgEquip = selectedBg ? parseJson(selectedBg.equipment).map(normalizeEquipment).filter(Boolean) : [];
+    const clsEquip = selectedClass ? parseJson(selectedClass.starting_equipment).map(normalizeEquipment).filter(Boolean) : [];
+    return [...bgEquip, ...clsEquip];
+  };
+
 
   /* Parse racial ability bonuses from DB JSON */
   const getRacialBonuses = () => {
@@ -209,12 +235,18 @@ export default function PlayerCreator() {
         background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0
       };
 
+      const startingEquipment = gatherStartingEquipment();
+      const equipmentPayload = startingEquipment.length ? startingEquipment : [];
+
       await createCharacter({
         name: charData.name, level: 1,
         race_id: parseInt(charData.race_id), class_id: parseInt(charData.class_id),
         subclass_id: charData.subclass_id, background_id: charData.background_id,
         campaign_id: charData.campaign_id,
-        stats: JSON.stringify(statsPayload), equipment: '[]', spell_list: JSON.stringify(charData.spell_list)
+        stats: JSON.stringify(statsPayload),
+        equipment: JSON.stringify(equipmentPayload),
+        starting_equipment: JSON.stringify(startingEquipment),
+        spell_list: JSON.stringify(charData.spell_list)
       });
       navigate('/player-lobby');
     } catch (e) {

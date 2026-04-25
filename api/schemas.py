@@ -76,6 +76,7 @@ class CharacterCreate(BaseModel):
     campaign_id: Optional[int] = None
     stats: str = "{}"
     equipment: str = "[]"
+    starting_equipment: Optional[str] = None
     spell_list: str = "[]"
     notes: str = ""
     portrait_url: Optional[str] = None
@@ -89,6 +90,7 @@ class CharacterUpdate(BaseModel):
     user_id: Optional[int] = None
     stats: Optional[str] = None
     equipment: Optional[str] = None
+    starting_equipment: Optional[str] = None
     spell_list: Optional[str] = None
     notes: Optional[str] = None
     portrait_url: Optional[str] = None
@@ -106,6 +108,7 @@ class CharacterResponse(BaseModel):
     user_id: int
     stats: str
     equipment: str
+    starting_equipment: Optional[str] = None
     spell_list: str
     notes: str
     portrait_url: Optional[str] = None
