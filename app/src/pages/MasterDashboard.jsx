@@ -89,6 +89,28 @@ export default function MasterDashboard() {
   const [unassignedChars, setUnassignedChars] = useState([]);
   const [showLinker, setShowLinker] = useState(false);
 
+  const normalizeCombatantDetail = (detail) => {
+    if (!detail) return null;
+    const normalized = { ...detail };
+    if (normalized.STR !== undefined) normalized.strength = normalized.STR;
+    if (normalized.DEX !== undefined) normalized.dexterity = normalized.DEX;
+    if (normalized.CON !== undefined) normalized.constitution = normalized.CON;
+    if (normalized.INT !== undefined) normalized.intelligence = normalized.INT;
+    if (normalized.WIS !== undefined) normalized.wisdom = normalized.WIS;
+    if (normalized.CHA !== undefined) normalized.charisma = normalized.CHA;
+    return normalized;
+  };
+
+  const parseCombatantActions = (detail) => {
+    if (!detail) return [];
+    if (Array.isArray(detail.actions)) return detail.actions;
+    try {
+      return JSON.parse(detail.actions || '[]');
+    } catch {
+      return [];
+    }
+  };
+
   const toggleCombatantDetail = async (c) => {
     if (expandedCombatant === c.id) {
       setExpandedCombatant(null);
@@ -96,13 +118,17 @@ export default function MasterDashboard() {
     }
 
     if (!combatantDetails[c.id]) {
-      if (c.type === 'monster' && c.monsterId) {
-        try {
-          const res = await getMonster(c.monsterId);
-          setCombatantDetails(prev => ({ ...prev, [c.id]: res.data }));
-        } catch (e) { console.error(e); }
+      if (c.type === 'monster') {
+        if (c.monsterDetail) {
+          setCombatantDetails(prev => ({ ...prev, [c.id]: normalizeCombatantDetail(c.monsterDetail) }));
+        } else if (c.monsterId) {
+          try {
+            const res = await getMonster(c.monsterId);
+            setCombatantDetails(prev => ({ ...prev, [c.id]: normalizeCombatantDetail(res.data) }));
+          } catch (e) { console.error(e); }
+        }
       } else if (c.type === 'player' && c.stats) {
-        setCombatantDetails(prev => ({ ...prev, [c.id]: c.stats }));
+        setCombatantDetails(prev => ({ ...prev, [c.id]: normalizeCombatantDetail(c.stats) }));
       }
     }
 
@@ -280,6 +306,9 @@ export default function MasterDashboard() {
           CHA: entity.charisma || 10,
         }
       : {};
+    const parsedEquipment = type === 'player'
+      ? (() => { try { return JSON.parse(entity.equipment || '[]'); } catch { return []; } })()
+      : [];
 
     const defaultName = entity.name + (type === 'monster' ? ` #${combatants.filter(c => c.baseName === entity.name).length + 1}` : '');
     const combatName = type === 'monster' ? promptCombatantName(defaultName) : defaultName;
@@ -298,6 +327,7 @@ export default function MasterDashboard() {
       charId: type === 'player' ? entity.id : null,
       conditions: [],
       stats: parsedStats,
+      equipment: parsedEquipment,
       monsterDetail: type === 'monster' ? entity : undefined,
     };
     if (type === 'player') {
@@ -686,9 +716,9 @@ export default function MasterDashboard() {
                           </div>
                           
                           {(() => {
-                            try {
-                              const actions = JSON.parse(combatantDetails[c.id].actions || '[]');
-                              if (!actions.length) return null;
+                            const detail = combatantDetails[c.id];
+                            const actions = parseCombatantActions(detail);
+                            if (actions.length > 0) {
                               return (
                                 <div>
                                   <div style={{ fontSize: '0.75rem', color: 'var(--accent-red-bright)', marginBottom: '0.4rem', borderBottom: '1px solid var(--accent-red)', paddingBottom: '0.2rem' }}>ACCIONES & HECHIZOS</div>
@@ -696,9 +726,8 @@ export default function MasterDashboard() {
                                     {actions.map((act, idx) => {
                                       const isExp = expandedAction === `${c.id}-${idx}`;
                                       let desc = act.desc || '';
-                                      // Bonus: Translate some keywords inside the description
                                       Object.keys(TRANSLATIONS).forEach(k => {
-                                        if (k.length > 3) { // skip short ones like 'hit' to avoid mess
+                                        if (k.length > 3) {
                                           const regex = new RegExp(`\\b${k}\\b`, 'gi');
                                           desc = desc.replace(regex, TRANSLATIONS[k]);
                                         }
@@ -723,7 +752,20 @@ export default function MasterDashboard() {
                                   </div>
                                 </div>
                               );
-                            } catch { return null; }
+                            }
+                            if (c.equipment?.length) {
+                              return (
+                                <div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginBottom: '0.4rem', borderBottom: '1px solid var(--accent-gold)', paddingBottom: '0.2rem' }}>EQUIPO</div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                    {c.equipment.map((item, idx) => (
+                                      <span key={idx} className="badge badge-gold" style={{ fontSize: '0.75rem' }}>{item.name || item}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
                           })()}
                         </div>
                       )}
