@@ -113,30 +113,77 @@ export default function PlayerLobby() {
       </div>
 
       <div className="flex-col">
-        {characters.length === 0 ? (
-          <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-            No tienes personajes. ¡Es hora de crear uno!
-          </div>
-        ) : (
-          characters.map(char => (
-            <div key={char.id} className="glass-panel clickable" onClick={() => navigate(`/character/${char.id}`)}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem' }}>{char.name}</h3>
-                <div style={{ color: 'var(--accent-gold)', fontSize: '0.9rem' }}>
-                  Nivel {char.level} • {racesMap[char.race_id] || 'Raza'} • {classesMap[char.class_id] || 'Clase'}
-                </div>
+        {/* Campaigns and their characters */}
+        {campaigns.map(camp => {
+          const campChars = characters.filter(c => c.campaign_id === camp.id);
+          return (
+            <div key={camp.id} style={{ marginBottom: '2rem' }}>
+              <div className="flex-row flex-between" style={{ borderBottom: '1px solid #333', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                <h3 style={{ margin: 0, color: 'var(--accent-gold)' }}>
+                  🏰 {camp.name} <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 'normal' }}> (DM: {camp.dm_name})</span>
+                </h3>
+                {camp.dm_user_id !== user.id && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleLeaveCampaign(camp.id)} style={{ color: 'var(--accent-red)' }}>Abandonar</button>
+                )}
               </div>
-              <div className="flex-row" style={{ gap: '0.5rem' }}>
-                <button className="btn btn-danger btn-sm" onClick={(e) => handleDelete(e, char.id)}>
-                  <Trash2 size={14} />
-                </button>
-                <button className="btn btn-gold btn-sm" onClick={(e) => { e.stopPropagation(); navigate(`/character/${char.id}`); }}>
-                  <Play size={14} /> Jugar
-                </button>
+              
+              <div className="flex-col" style={{ gap: '0.8rem' }}>
+                {campChars.length === 0 ? (
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', fontStyle: 'italic', paddingLeft: '1rem' }}>No tienes personajes en esta campaña.</p>
+                ) : (
+                  campChars.map(char => (
+                    <div key={char.id} className="glass-panel clickable" onClick={() => navigate(`/character/${char.id}`)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 1.2rem', background: 'rgba(255,255,255,0.03)' }}>
+                      <div>
+                        <h4 style={{ margin: 0, color: '#fff' }}>{char.name}</h4>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                          Nivel {char.level} • {racesMap[char.race_id] || 'Raza'} • {classesMap[char.class_id] || 'Clase'}
+                        </div>
+                      </div>
+                      <button className="btn btn-gold btn-sm" onClick={(e) => { e.stopPropagation(); navigate(`/character/${char.id}`); }}>
+                        <Play size={14} /> Jugar
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
-          ))
+          );
+        })}
+
+        {/* Unassigned characters */}
+        {characters.filter(c => !c.campaign_id).length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>Sin Campaña / Otros</h3>
+            <div className="flex-col" style={{ gap: '0.8rem' }}>
+              {characters.filter(c => !c.campaign_id).map(char => (
+                <div key={char.id} className="glass-panel clickable" onClick={() => navigate(`/character/${char.id}`)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 1.2rem' }}>
+                  <div>
+                    <h4 style={{ margin: 0, color: '#fff' }}>{char.name}</h4>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      Nivel {char.level} • {racesMap[char.race_id] || 'Raza'} • {classesMap[char.class_id] || 'Clase'}
+                    </div>
+                  </div>
+                  <div className="flex-row" style={{ gap: '0.5rem' }}>
+                    <button className="btn btn-danger btn-sm" onClick={(e) => handleDelete(e, char.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                    <button className="btn btn-gold btn-sm" onClick={(e) => { e.stopPropagation(); navigate(`/character/${char.id}`); }}>
+                      <Play size={14} /> Abrir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {characters.length === 0 && (
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+            <p>No tienes personajes creados.</p>
+            <button className="btn btn-gold" onClick={() => navigate('/player/create')}>Crear mi primer personaje</button>
+          </div>
         )}
       </div>
     </div>

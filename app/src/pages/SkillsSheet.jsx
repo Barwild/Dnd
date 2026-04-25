@@ -309,10 +309,16 @@ export default function SkillsSheet() {
                       </span>
 
                       {/* Name */}
-                      <span style={{ flex: 1, color: '#ddd' }}>{ABILITY_NAMES[ability]}</span>
+                      <span style={{ flex: 1, color: '#ddd' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--accent-red-bright)', display: 'block', textTransform: 'uppercase' }}>Salvación de</span>
+                        {ABILITY_NAMES[ability]}
+                      </span>
 
-                      {/* Ability score */}
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{stats[ability] || 10}</span>
+                      {/* Ability score & mod */}
+                      <div style={{ textAlign: 'right', minWidth: '50px' }}>
+                        <div style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 'bold' }}>{stats[ability] || 10}</div>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-dim)' }}>Mod: {modStr(stats[ability])}</div>
+                      </div>
 
                       {/* Dice icon */}
                       <Dice5 size={14} style={{ color: 'var(--text-dim)' }} />
@@ -325,9 +331,12 @@ export default function SkillsSheet() {
 
           {/* Passive Perception box */}
           <div className="glass-panel" style={{ marginTop: '1rem', textAlign: 'center', borderLeft: '3px solid var(--accent-blue)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Percepción Pasiva</div>
-            <div style={{ fontSize: '3rem', fontWeight: 'bold', color: 'var(--accent-blue)' }}>{passivePerception}</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>10 + mod SAB ({modStr(stats.WIS)}) {(stats.skillProficiencies || []).includes('perception') ? `+ prof (+${profBonus})` : ''}</div>
+            <div style={{ fontSize: '3.2rem', fontWeight: 'bold', color: 'var(--accent-blue)', lineHeight: 1 }}>{passivePerception}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.5rem' }}>
+              Base 10 + Mod. SAB ({modStr(stats.WIS)}) 
+              {(stats.skillProficiencies || []).includes('perception') ? ` + Prof. (+${profBonus})` : ''}
+              {(stats.expertise || []).includes('perception') ? ` + Pericia (+${profBonus})` : ''}
+            </div>
           </div>
 
           {/* Legend */}
