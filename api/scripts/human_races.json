@@ -1,0 +1,244 @@
+{
+  "meta": {
+    "source": "Tasha's Cauldron of Everything",
+    "version": "5.1",
+    "description": "Razas humanas completas de Tasha's Cauldron of Everything"
+  },
+  "races": [
+    {
+      "index": "human",
+      "name": "Humano",
+      "description": "El humano es la raza más versátil y adaptable del multiverso de D&D.",
+      "speed": 30,
+      "size": "Mediano",
+      "alignment": "Cualquier",
+      "age": {
+        "life_span": "75-85 años",
+        "maturity": "15-17 años",
+        "elderly": "85+ años"
+      },
+      "stats": {
+        "bonuses": {
+          "STR": 0,
+          "DEX": 0,
+          "CON": 0,
+          "INT": 0,
+          "WIS": 0,
+          "CHA": 0
+        },
+        "choices": [
+          {
+            "name": "Habilidades",
+            "description": "Elige dos de tus estadísticas para aumentarlas en 1. No puedes elegir una estadística que ya tenga 20 o más.",
+            "properties": ["Aumenta en +1 dos estadísticas a elección"]
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "Rasgo Humano",
+          "description": "Tienes una ventaja en la atribución de la capacidad de razonamiento a la vez que aprendes un idioma. Por cada nivel de clase que tengas, puedes aprender un idioma adicional o perder uno que ya conoces. Tu humano tiene el mismo número de idiomas que una raza con subrazas. Elige idiomas para aprender durante tu personaje."
+        },
+        {
+          "name": "Versatilidad Humana",
+          "description": "Los humanos son capaces de aprender nuevas habilidades y adaptar sus estilos de vida para sobrevivir donde les plazca. Tu personaje puede comenzar con un nivel de personaje más que el habitual y elegir uno de los siguientes tipos de humanos: Humano Astuto, Humano Marcial o Humano Sacerdotal. Cada uno de estos tipos otorga ventajas adicionales en los puntos de habilidad."
+        }
+      ],
+      "subraces": ["none"]
+    },
+    {
+      "index": "human_elite",
+      "name": "Humano Noble",
+      "description": "Los humanos nobles son elegantes, confiados y amantes del lujo.",
+      "speed": 30,
+      "size": "Mediano",
+      "alignment": "Neutro Bueno a Neutro Malo",
+      "age": {
+        "life_span": "75-85 años",
+        "maturity": "15-17 años",
+        "elderly": "85+ años"
+      },
+      "stats": {
+        "bonuses": {
+          "STR": 0,
+          "DEX": 0,
+          "CON": 0,
+          "INT": 2,
+          "WIS": 0,
+          "CHA": 2
+        },
+        "choices": [
+          {
+            "name": "Habilidades",
+            "description": "Tienes ventaja en las tiradas de destreza para esquivar ataques.",
+            "properties": ["Ventaja en DEX para esquivar"]
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "Rasgo Noble",
+          "description": "El orgullo y el honor son virtudes para los humanos nobles. Puedes confiar en tu presencia y en tu capacidad para inspirar a otros para confiar en ti y seguirte, o puedes ser un experto en el mundo de la corte y las negociaciones complejas.",
+          "flavor": "Nobleza, diplomacia y elegancia"
+        }
+      ],
+      "culture": {
+        "description": "La cultura humana noble se centra en la elegancia, el honor y las artes corteses.",
+        "activities": ["Bailes de la corte", "Torneos de armas", "Teatro y música"]
+      }
+    },
+    {
+      "index": "human_forsworn",
+      "name": "Humano Abjuro",
+      "description": "Los humanos abjuros son defensores que han renunciado a su hogar y a sus seres queridos para proteger a otros.",
+      "speed": 30,
+      "size": "Mediano",
+      "alignment": "Neutro a Malo",
+      "age": {
+        "life_span": "75-85 años",
+        "maturity": "15-17 años",
+        "elderly": "85+ años"
+      },
+      "stats": {
+        "bonuses": {
+          "STR": 0,
+          "DEX": 0,
+          "CON": 0,
+          "INT": 1,
+          "WIS": 1,
+          "CHA": 2
+        },
+        "choices": [
+          {
+            "name": "Habilidades",
+            "description": "Tienes resistencia contra la magia de encantar.",
+            "properties": ["Resistencia a encantamiento", "+1 INT, +1 WIS"]
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "Renuncia Humana",
+          "description": "Has sido forzado a abandonar tu hogar y a buscar un propósito más grande en la vida. Has aprendido a confiar en tu propia fuerza y en tu capacidad para proteger a otros.",
+          "flavor": "Defensa, sacrificio y determinación"
+        }
+      ]
+    },
+    {
+      "index": "human_ashni",
+      "name": "Humano Asháninka",
+      "description": "Los humanos Asháninka son guerreros de la selva con conocimientos ancestrales de las tierras de la selva.",
+      "speed": 35,
+      "size": "Mediano",
+      "alignment": "Bueno a Neutro",
+      "age": {
+        "life_span": "75-85 años",
+        "maturity": "15-17 años",
+        "elderly": "85+ años"
+      },
+      "stats": {
+        "bonuses": {
+          "STR": 2,
+          "DEX": 2,
+          "CON": 0,
+          "INT": 0,
+          "WIS": 0,
+          "CHA": 0
+        },
+        "choices": [
+          {
+            "name": "Habilidades",
+            "description": "Tienes ventaja en las tiradas de supervivencia cuando estás en la selva.",
+            "properties": ["Ventaja en supervivencia en selva", "+2 STR, +2 DEX"]
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "Conocimiento Selva",
+          "description": "Tienes conocimientos ancestrales de la selva y de sus habitantes. Puedes sobrevivir en las condiciones más duras de la selva.",
+          "flavor": "Guerrero de la selva"
+        }
+      ]
+    },
+    {
+      "index": "human_githyanki_blood",
+      "name": "Humano con Sangre Githyanki",
+      "description": "Híbridos que poseen parte del linaje de los githyanki, otorgando habilidades celestiales y de combate.",
+      "speed": 30,
+      "size": "Mediano",
+      "alignment": "Neutro Malo a Malo",
+      "age": {
+        "life_span": "75-85 años",
+        "maturity": "15-17 años",
+        "elderly": "85+ años"
+      },
+      "stats": {
+        "bonuses": {
+          "STR": 1,
+          "DEX": 1,
+          "CON": 1,
+          "INT": 0,
+          "WIS": 0,
+          "CHA": 0
+        },
+        "choices": [
+          {
+            "name": "Habilidades",
+            "description": "Tienes resistencia al daño mágico.",
+            "properties": ["Resistencia a daño mágico", "+1 STR, +1 DEX, +1 CON"]
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "Sangre Astral",
+          "description": "Tienes un componente de sangre githyanki que te otorga resistencia mágica y fuerza de combate.",
+          "flavor": "Híbrido celestial-mortal"
+        }
+      ]
+    },
+    {
+      "index": "human_githzerai_blood",
+      "name": "Humano con Sangre Githzerai",
+      "description": "Híbridos que poseen parte del linaje de los githzerai, otorgando habilidades de telepatía y control mental.",
+      "speed": 30,
+      "size": "Mediano",
+      "alignment": "Neutro a Malo",
+      "age": {
+        "life_span": "75-85 años",
+        "maturity": "15-17 años",
+        "elderly": "85+ años"
+      },
+      "stats": {
+        "bonuses": {
+          "STR": 1,
+          "DEX": 1,
+          "CON": 1,
+          "INT": 2,
+          "WIS": 2,
+          "CHA": 0
+        },
+        "choices": [
+          {
+            "name": "Habilidades",
+            "description": "Tienes ventaja en las tiradas de perceción cuando estás en la oscuridad.",
+            "properties": ["Ventaja en percepción oscuridad", "+1 STR, +1 DEX, +1 CON, +2 INT, +2 WIS"]
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "Ojos Violeta",
+          "description": "Tienes ojos violeta y habilidades de telepatía que te permiten percibir a través de las mentes.",
+          "flavor": "Telepatía y control mental"
+        }
+      ]
+    }
+  ],
+  "customization_notes": {
+    "point_buy": "Todos los humanos pueden usar el método de compra de puntos para sus estadísticas.",
+    "background_integration": "Los humanos pueden combinar con cualquier trasfondo.",
+    "class_integration": "Los humanos pueden tomar cualquier clase y subclase."
+  }
+}

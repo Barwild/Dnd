@@ -28,6 +28,7 @@ function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -47,23 +48,34 @@ function Navbar() {
       <Link to="/" className="navbar-brand" style={{ textDecoration: 'none' }}>
         ⚔️ D&D 5E NEXUS
       </Link>
-      <div className="navbar-links">
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
-          <Sword size={16} /> Inicio
+      
+      {/* Mobile Menu Toggle */}
+      <button 
+        className="btn btn-ghost btn-sm" 
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        style={{ display: 'none' }}
+        id="mobile-menu-toggle"
+      >
+        ☰
+      </button>
+      
+      <div className={`navbar-links ${mobileMenuOpen ? 'mobile-open' : ''}`} id="navbar-links">
+        <button className="btn btn-ghost btn-sm" onClick={() => { navigate('/'); setMobileMenuOpen(false); }}>
+          <Sword size={16} /> <span className="nav-text">Inicio</span>
         </button>
         {user.role === 'dm' && (
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/bestiary')}>
-              <BookOpen size={16} /> Bestiario
+            <button className="btn btn-ghost btn-sm" onClick={() => { navigate('/bestiary'); setMobileMenuOpen(false); }}>
+              <BookOpen size={16} /> <span className="nav-text">Bestiario</span>
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/items')}>
-              <Package size={16} /> Objetos
+            <button className="btn btn-ghost btn-sm" onClick={() => { navigate('/items'); setMobileMenuOpen(false); }}>
+              <Package size={16} /> <span className="nav-text">Objetos</span>
             </button>
 
             {/* Tools Dropdown */}
             <div ref={dropdownRef} style={{ position: 'relative' }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setToolsOpen(!toolsOpen)}>
-                <Shield size={16} /> Referencia <ChevronDown size={12} />
+                <Shield size={16} /> <span className="nav-text">Referencia</span> <ChevronDown size={12} />
               </button>
               {toolsOpen && (
                 <div className="fade-in" style={{
@@ -73,13 +85,13 @@ function Navbar() {
                   minWidth: '200px', zIndex: 200, boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
                   overflow: 'hidden'
                 }}>
-                  <button className="dropdown-item" onClick={() => { navigate('/conditions'); setToolsOpen(false); }}>
+                  <button className="dropdown-item" onClick={() => { navigate('/conditions'); setToolsOpen(false); setMobileMenuOpen(false); }}>
                     <AlertTriangle size={14} /> Condiciones
                   </button>
-                  <button className="dropdown-item" onClick={() => { navigate('/items'); setToolsOpen(false); }}>
+                  <button className="dropdown-item" onClick={() => { navigate('/items'); setToolsOpen(false); setMobileMenuOpen(false); }}>
                     <Package size={14} /> Catálogo de Objetos
                   </button>
-                  <button className="dropdown-item" onClick={() => { navigate('/bestiary'); setToolsOpen(false); }}>
+                  <button className="dropdown-item" onClick={() => { navigate('/bestiary'); setToolsOpen(false); setMobileMenuOpen(false); }}>
                     <BookOpen size={14} /> Bestiario
                   </button>
                 </div>
@@ -88,14 +100,14 @@ function Navbar() {
           </>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem', padding: '0.3rem 0.8rem', background: 'rgba(200,155,60,0.1)', borderRadius: '6px' }}>
+        <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem', padding: '0.3rem 0.8rem', background: 'rgba(200,155,60,0.1)', borderRadius: '6px' }}>
           <User size={14} style={{ color: 'var(--accent-gold)' }} />
-          <span style={{ fontSize: '0.85rem', color: 'var(--accent-gold)' }}>{user.display_name}</span>
+          <span className="user-name" style={{ fontSize: '0.85rem', color: 'var(--accent-gold)' }}>{user.display_name}</span>
           <span className="badge badge-gold" style={{ marginLeft: '0.3rem' }}>
             {user.role === 'dm' ? 'DM' : 'Jugador'}
           </span>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => { logout(); navigate('/login'); }} title="Cerrar sesión">
+        <button className="btn btn-ghost btn-sm" onClick={() => { logout(); navigate('/login'); setMobileMenuOpen(false); }} title="Cerrar sesión">
           <LogOut size={16} />
         </button>
       </div>

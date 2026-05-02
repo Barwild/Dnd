@@ -1,0 +1,907 @@
+{
+  "class": {
+    "index": "artificer",
+    "name": "Artífice",
+    "name_en": "Artificer",
+    "hit_die": 10,
+    "proficiencies": [
+      "Armadura no plateada, blindaje +1",
+      "Herramientas de artífice",
+      "Instrumento musical",
+      "Armas simples",
+      "Armas de manopla",
+      "Dispositivos de exploración y de viaje"
+    ],
+    "proficiency_choices": [
+      {
+        "index": "pvp_2019_10",
+        "options": [
+          {
+            "option_index": 0,
+            "name": "Alquimista",
+            "subclass_index": 0
+          },
+          {
+            "option_index": 1,
+            "name": "Constructista",
+            "subclass_index": 1
+          },
+          {
+            "option_index": 2,
+            "name": "Adepto",
+            "subclass_index": 2
+          }
+        ]
+      }
+    ],
+    "saving_throws": ["INT", "WIS"],
+    "starting_equipment": [
+      {
+        "name": "Pergaminos de creación de pociones",
+        "equipment": {
+          "name": "Pergaminos de creación de pociones",
+          "type": "Pergaminos",
+          "cost": {
+            "quantity": 10,
+            "unit": "gp"
+          },
+          "properties": ["portable"]
+        },
+        "equipment_options": [
+          {
+            "description": "",
+            "equipment": {
+              "name": "Pergaminos de creación de pociones",
+              "type": "Pergaminos",
+              "cost": {
+                "quantity": 10,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Kit de artífice",
+        "equipment": {
+          "name": "Kit de artífice",
+          "type": "Herramientas",
+          "cost": {
+            "quantity": 0,
+            "unit": "gp"
+          },
+          "properties": ["portable"]
+        },
+        "equipment_options": [
+          {
+            "description": "",
+            "equipment": {
+              "name": "Kit de artífice",
+              "type": "Herramientas",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Kit de alquimia",
+        "equipment": {
+          "name": "Kit de alquimia",
+          "type": "Herramientas",
+          "cost": {
+            "quantity": 5,
+            "unit": "gp"
+          },
+          "properties": ["portable"]
+        },
+        "equipment_options": [
+          {
+            "description": "",
+            "equipment": {
+              "name": "Kit de alquimia",
+              "type": "Herramientas",
+              "cost": {
+                "quantity": 5,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Arma de manopla",
+        "equipment": {
+          "name": "Arma de manopla",
+          "type": "Arma",
+          "cost": {
+            "quantity": 0,
+            "unit": "gp"
+          },
+          "properties": ["versatil", "arma simple", "daño por punzada"]
+        },
+        "equipment_options": [
+          {
+            "description": "",
+            "equipment": {
+              "name": "Arma de manopla",
+              "type": "Arma",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["versatil", "arma simple", "daño por punzada"]
+            }
+          },
+          {
+            "description": "",
+            "equipment": {
+              "name": "Arma de manopla de elección propia",
+              "type": "Arma de manopla",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["versatil", "arma simple", "daño por punzada"]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Instrumento musical",
+        "equipment": {
+          "name": "Instrumento musical",
+          "type": "Instrumento musical",
+          "cost": {
+            "quantity": 0,
+            "unit": "gp"
+          },
+          "properties": ["portable"]
+        },
+        "equipment_options": [
+          {
+            "description": "",
+            "equipment": {
+              "name": "Instrumento musical",
+              "type": "Instrumento musical",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          }
+        ]
+      }
+    ],
+    "starting_equipment_options": [
+      {
+        "choose": 1,
+        "options": [
+          {
+            "equipment": {
+              "name": "Set de armadura de cuero",
+              "type": "Armadura",
+              "ac": 11,
+              "strength_req": 0,
+              "armor_proficiencies": ["armadura no plateada"],
+              "spellcasting_focus": false,
+              "properties": []
+            },
+            "rarity": "común"
+          },
+          {
+            "equipment": {
+              "name": "Set de armadura de escamas",
+              "type": "Armadura",
+              "ac": 12,
+              "strength_req": 13,
+              "armor_proficiencies": ["armadura no plateada"],
+              "spellcasting_focus": false,
+              "properties": []
+            },
+            "rarity": "común"
+          },
+          {
+            "equipment": {
+              "name": "Set de armadura de malla",
+              "type": "Armadura",
+              "ac": 16,
+              "strength_req": 13,
+              "armor_proficiencies": ["armadura no plateada"],
+              "spellcasting_focus": false,
+              "properties": []
+            },
+            "rarity": "común"
+          },
+          {
+            "equipment": {
+              "name": "Set de armadura de láminas",
+              "type": "Armadura",
+              "ac": 14,
+              "strength_req": 13,
+              "armor_proficiencies": ["armadura no plateada", "blindaje"],
+              "spellcasting_focus": false,
+              "properties": []
+            },
+            "rarity": "común"
+          },
+          {
+            "equipment": {
+              "name": "Pergaminos de creación de pociones",
+              "type": "Pergaminos",
+              "cost": {
+                "quantity": 10,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          },
+          {
+            "equipment": {
+              "name": "Kit de artífice",
+              "type": "Herramientas",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          },
+          {
+            "equipment": {
+              "name": "Arma de manopla",
+              "type": "Arma",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["versatil", "arma simple", "daño por punzada"]
+            }
+          },
+          {
+            "equipment": {
+              "name": "Instrumento musical",
+              "type": "Instrumento musical",
+              "cost": {
+                "quantity": 0,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          }
+        ]
+      },
+      {
+        "choose": 0,
+        "options": [
+          {
+            "equipment": {
+              "name": "Kit de alquimia",
+              "type": "Herramientas",
+              "cost": {
+                "quantity": 5,
+                "unit": "gp"
+              },
+              "properties": ["portable"]
+            }
+          }
+        ]
+      }
+    ],
+    "spellcasting": {
+      "spellcasting_ability": "INT",
+      "level": 1,
+      "spells": [
+        {
+          "level": 1,
+          "spells": [
+            "cargar",
+            "carga",
+            "detener el tiempo",
+            "fuego fatuo",
+            "luz sagrada",
+            "manos de hierro",
+            "paso rápido",
+            "penetración",
+            "volar"
+          ]
+        }
+      ]
+    },
+    "class_levels_url": "/api/v1/compendium/classes/artificer"
+  },
+  "subclasses": [
+    {
+      "index": "artificer-apprentice",
+      "name": "Adepto",
+      "class_index": "artificer",
+      "description": "Los adeptos son artífices que extraen poder de los objetos mágicos y las leyendas de las criaturas. A lo largo de su carrera, los adeptos aprenden a encenderse en un brillo que atrae a los adversarios y a canalizar las habilidades de otros.",
+      "flavor_text": "Los adeptos son la encarnación del poder y la magia del mundo. Son capaces de canalizar la energía de los objetos mágicos y las leyendas de las criaturas para crear magia. Son capaces de atraer a los adversarios con su brillo y canalizar las habilidades de otros.",
+      "features": [
+        {
+          "index": "0",
+          "name": "Habilidad con la Magia",
+          "flavor_text": "",
+          "short_description": "El artífice aprende magia al canalizar las habilidades de otras fuentes.",
+          "features": []
+        },
+        {
+          "index": "1",
+          "name": "Atraer al Enemigo",
+          "flavor_text": "",
+          "short_description": "A partir del 2do nivel de artífice, puedes hacer que un enemigo se enfoque en ti.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 2",
+              "description": "El artífice puede hacer que un enemigo se enfoque en él, permitiéndole usar más habilidades que dependen de ataques contra ese enemigo."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 4",
+              "description": "La distancia para hacer que el enemigo se enfoque en ti aumenta a 12 metros."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 6",
+              "description": "Puedes hacer que un segundo enemigo se enfoque en ti."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 10",
+              "description": "Puedes hacer que un tercer enemigo se enfoque en ti."
+            },
+            {
+              "index": "4",
+              "name": "A partir del nivel 14",
+              "description": "Puedes hacer que un cuarto enemigo se enfoque en ti."
+            }
+          ]
+        },
+        {
+          "index": "2",
+          "name": "Poder de Leyenda",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 6, puedes usar la magia de objetos legendarios y las habilidades de criaturas legendarias.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 6",
+              "description": "El artífice puede usar la magia de objetos legendarios y las habilidades de criaturas legendarias."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 8",
+              "description": "Puedes usar la magia de dos objetos legendarios o las habilidades de dos criaturas legendarias."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 12",
+              "description": "Puedes usar la magia de tres objetos legendarios o las habilidades de tres criaturas legendarias."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 16",
+              "description": "Puedes usar la magia de cuatro objetos legendarios o las habilidades de cuatro criaturas legendarias."
+            }
+          ]
+        },
+        {
+          "index": "3",
+          "name": "Magia de Criatura",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 14, puedes usar la magia de criaturas legendarias.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 14",
+              "description": "El artífice puede usar la magia de criaturas legendarias."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 18",
+              "description": "Puedes usar la magia de dos criaturas legendarias."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 20",
+              "description": "Puedes usar la magia de tres criaturas legendarias."
+            }
+          ]
+        }
+      ],
+      "spell_list": [
+        {
+          "index": "0",
+          "name": "Fuego",
+          "level": 1,
+          "flavor_text": "",
+          "description": "A partir del nivel 2, puedes lanzar el hechizo fuego como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "1",
+          "name": "Conejo de Piel",
+          "level": 2,
+          "flavor_text": "",
+          "description": "A partir del nivel 4, puedes lanzar el hechizo conejo de piel como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "2",
+          "name": "Lanza de Hielo",
+          "level": 2,
+          "flavor_text": "",
+          "description": "A partir del nivel 4, puedes lanzar el hechizo lanza de hielo como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "3",
+          "name": "Fuego Arcoíris",
+          "level": 3,
+          "flavor_text": "",
+          "description": "A partir del nivel 6, puedes lanzar el hechizo fuego arcoíris como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "4",
+          "name": "Santuario",
+          "level": 3,
+          "flavor_text": "",
+          "description": "A partir del nivel 6, puedes lanzar el hechizo santuario como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "5",
+          "name": "Furia Bestial",
+          "level": 4,
+          "flavor_text": "",
+          "description": "A partir del nivel 8, puedes lanzar el hechizo furia bestial como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "6",
+          "name": "Furia Bestial",
+          "level": 4,
+          "flavor_text": "",
+          "description": "A partir del nivel 8, puedes lanzar el hechizo furia bestial como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "7",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "8",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Atraer al Enemigo."
+        },
+        {
+          "index": "9",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Atraer al Enemigo."
+        }
+      ]
+    },
+    {
+      "index": "artificer-alchemist",
+      "name": "Alquimista",
+      "class_index": "artificer",
+      "description": "Los alquimistas son artífices que usan la magia para crear y modificar objetos. A lo largo de su carrera, los alquimistas aprenden a crear objetos mágicos y a modificar objetos existentes para crear magia.",
+      "flavor_text": "Los alquimistas son la encarnación de la ciencia y la magia del mundo. Son capaces de crear objetos mágicos y modificar objetos existentes para crear magia. Son capaces de crear pociones mágicas y modificar objetos para crear magia.",
+      "features": [
+        {
+          "index": "0",
+          "name": "Crecimiento de Alquimia",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 1, puedes crear objetos mágicos y modificar objetos existentes para crear magia.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 1",
+              "description": "El artífice puede crear objetos mágicos y modificar objetos existentes para crear magia."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 2",
+              "description": "Puedes crear objetos mágicos de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 4",
+              "description": "Puedes crear objetos mágicos de menor costo y modificar objetos existentes."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 8",
+              "description": "Puedes crear objetos mágicos de menor costo y modificar objetos existentes."
+            },
+            {
+              "index": "4",
+              "name": "A partir del nivel 14",
+              "description": "Puedes crear objetos mágicos de menor costo y modificar objetos existentes."
+            }
+          ]
+        },
+        {
+          "index": "1",
+          "name": "Poción de Alquimia",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 1, puedes crear pociones mágicas.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 1",
+              "description": "El artífice puede crear pociones mágicas."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 2",
+              "description": "Puedes crear pociones mágicas de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 4",
+              "description": "Puedes crear pociones mágicas de menor costo y pociones mágicas."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 8",
+              "description": "Puedes crear pociones mágicas de menor costo y pociones mágicas."
+            },
+            {
+              "index": "4",
+              "name": "A partir del nivel 14",
+              "description": "Puedes crear pociones mágicas de menor costo y pociones mágicas."
+            }
+          ]
+        },
+        {
+          "index": "2",
+          "name": "Conjunto de Alquimia",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 14, puedes crear un conjunto de alquimia.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 14",
+              "description": "El artífice puede crear un conjunto de alquimia."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 18",
+              "description": "Puedes crear un conjunto de alquimia de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 20",
+              "description": "Puedes crear un conjunto de alquimia de menor costo y pociones mágicas."
+            }
+          ]
+        },
+        {
+          "index": "3",
+          "name": "Poción de Alquimia",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 1, puedes crear pociones mágicas.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 1",
+              "description": "El artífice puede crear pociones mágicas."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 2",
+              "description": "Puedes crear pociones mágicas de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 4",
+              "description": "Puedes crear pociones mágicas de menor costo y pociones mágicas."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 8",
+              "description": "Puedes crear pociones mágicas de menor costo y pociones mágicas."
+            },
+            {
+              "index": "4",
+              "name": "A partir del nivel 14",
+              "description": "Puedes crear pociones mágicas de menor costo y pociones mágicas."
+            }
+          ]
+        }
+      ],
+      "spell_list": [
+        {
+          "index": "0",
+          "name": "Poción de Alquimia",
+          "level": 1,
+          "flavor_text": "",
+          "description": "A partir del nivel 1, puedes lanzar el hechizo poción de alquimia como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "1",
+          "name": "Fuego",
+          "level": 1,
+          "flavor_text": "",
+          "description": "A partir del nivel 2, puedes lanzar el hechizo fuego como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "2",
+          "name": "Conejo de Piel",
+          "level": 2,
+          "flavor_text": "",
+          "description": "A partir del nivel 4, puedes lanzar el hechizo conejo de piel como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "3",
+          "name": "Lanza de Hielo",
+          "level": 2,
+          "flavor_text": "",
+          "description": "A partir del nivel 4, puedes lanzar el hechizo lanza de hielo como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "4",
+          "name": "Fuego Arcoíris",
+          "level": 3,
+          "flavor_text": "",
+          "description": "A partir del nivel 6, puedes lanzar el hechizo fuego arcoíris como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "5",
+          "name": "Santuario",
+          "level": 3,
+          "flavor_text": "",
+          "description": "A partir del nivel 6, puedes lanzar el hechizo santuario como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "6",
+          "name": "Furia Bestial",
+          "level": 4,
+          "flavor_text": "",
+          "description": "A partir del nivel 8, puedes lanzar el hechizo furia bestial como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "7",
+          "name": "Furia Bestial",
+          "level": 4,
+          "flavor_text": "",
+          "description": "A partir del nivel 8, puedes lanzar el hechizo furia bestial como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "8",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "9",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Crecimiento de Alquimia."
+        },
+        {
+          "index": "10",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Crecimiento de Alquimia."
+        }
+      ]
+    },
+    {
+      "index": "artificer-conjurer",
+      "name": "Constructista",
+      "class_index": "artificer",
+      "description": "Los constructistas son artífices que usan la magia para crear y controlar constructos. A lo largo de su carrera, los constructistas aprenden a crear constructos y a controlarlos para usar magia.",
+      "flavor_text": "Los constructistas son la encarnación de la tecnología y la magia del mundo. Son capaces de crear constructos y controlarlos para usar magia. Son capaces de crear máquinas mágicas y controlarlos para usar magia.",
+      "features": [
+        {
+          "index": "0",
+          "name": "Habilidad con la Magia",
+          "flavor_text": "",
+          "short_description": "El artífice aprende magia al canalizar las habilidades de otras fuentes.",
+          "features": []
+        },
+        {
+          "index": "1",
+          "name": "Máquina de Volar",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 1, puedes crear una máquina de vuelo.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 1",
+              "description": "El artífice puede crear una máquina de vuelo."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 2",
+              "description": "Puedes crear máquinas de vuelo de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 4",
+              "description": "Puedes crear máquinas de vuelo de menor costo y controlarlos."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 6",
+              "description": "Puedes crear máquinas de vuelo de menor costo y controlarlos."
+            },
+            {
+              "index": "4",
+              "name": "A partir del nivel 8",
+              "description": "Puedes crear máquinas de vuelo de menor costo y controlarlos."
+            },
+            {
+              "index": "5",
+              "name": "A partir del nivel 10",
+              "description": "Puedes crear máquinas de vuelo de menor costo y controlarlos."
+            },
+            {
+              "index": "6",
+              "name": "A partir del nivel 14",
+              "description": "Puedes crear máquinas de vuelo de menor costo y controlarlos."
+            }
+          ]
+        },
+        {
+          "index": "2",
+          "name": "Máquina de Atacar",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 14, puedes crear una máquina de ataque.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 14",
+              "description": "El artífice puede crear una máquina de ataque."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 18",
+              "description": "Puedes crear máquinas de ataque de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 20",
+              "description": "Puedes crear máquinas de ataque de menor costo y máquinas de vuelo."
+            }
+          ]
+        },
+        {
+          "index": "3",
+          "name": "Máquina de Defensa",
+          "flavor_text": "",
+          "short_description": "A partir del nivel 1, puedes crear una máquina de defensa.",
+          "features": [
+            {
+              "index": "0",
+              "name": "A partir del nivel 1",
+              "description": "El artífice puede crear una máquina de defensa."
+            },
+            {
+              "index": "1",
+              "name": "A partir del nivel 2",
+              "description": "Puedes crear máquinas de defensa de menor costo."
+            },
+            {
+              "index": "2",
+              "name": "A partir del nivel 4",
+              "description": "Puedes crear máquinas de defensa de menor costo y máquinas de vuelo."
+            },
+            {
+              "index": "3",
+              "name": "A partir del nivel 6",
+              "description": "Puedes crear máquinas de defensa de menor costo y máquinas de vuelo."
+            },
+            {
+              "index": "4",
+              "name": "A partir del nivel 8",
+              "description": "Puedes crear máquinas de defensa de menor costo y máquinas de vuelo."
+            },
+            {
+              "index": "5",
+              "name": "A partir del nivel 10",
+              "description": "Puedes crear máquinas de defensa de menor costo y máquinas de vuelo."
+            },
+            {
+              "index": "6",
+              "name": "A partir del nivel 14",
+              "description": "Puedes crear máquinas de defensa de menor costo y máquinas de vuelo."
+            }
+          ]
+        }
+      ],
+      "spell_list": [
+        {
+          "index": "0",
+          "name": "Poción de Alquimia",
+          "level": 1,
+          "flavor_text": "",
+          "description": "A partir del nivel 1, puedes lanzar el hechizo poción de alquimia como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "1",
+          "name": "Fuego",
+          "level": 1,
+          "flavor_text": "",
+          "description": "A partir del nivel 2, puedes lanzar el hechizo fuego como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "2",
+          "name": "Conejo de Piel",
+          "level": 2,
+          "flavor_text": "",
+          "description": "A partir del nivel 4, puedes lanzar el hechizo conejo de piel como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "3",
+          "name": "Lanza de Hielo",
+          "level": 2,
+          "flavor_text": "",
+          "description": "A partir del nivel 4, puedes lanzar el hechizo lanza de hielo como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "4",
+          "name": "Fuego Arcoíris",
+          "level": 3,
+          "flavor_text": "",
+          "description": "A partir del nivel 6, puedes lanzar el hechizo fuego arcoíris como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "5",
+          "name": "Santuario",
+          "level": 3,
+          "flavor_text": "",
+          "description": "A partir del nivel 6, puedes lanzar el hechizo santuario como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "6",
+          "name": "Furia Bestial",
+          "level": 4,
+          "flavor_text": "",
+          "description": "A partir del nivel 8, puedes lanzar el hechizo furia bestial como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "7",
+          "name": "Furia Bestial",
+          "level": 4,
+          "flavor_text": "",
+          "description": "A partir del nivel 8, puedes lanzar el hechizo furia bestial como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "8",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "9",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Máquina de Volar."
+        },
+        {
+          "index": "10",
+          "name": "Amarillo Brillante",
+          "level": 5,
+          "flavor_text": "",
+          "description": "A partir del nivel 10, puedes lanzar el hechizo amarillo brillante como parte de usar tu característica Máquina de Volar."
+        }
+      ]
+    }
+  ]
+}
