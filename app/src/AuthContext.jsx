@@ -10,6 +10,23 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      // Check if token is expired before making request
+      try {
+        const tokenData = JSON.parse(atob(token.split('.')[1]));
+        const now = Date.now() / 1000;
+        if (tokenData.exp && tokenData.exp < now) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setLoading(false);
+        return;
+      }
+      
       getMe()
         .then((res) => setUser(res.data))
         .catch(() => {

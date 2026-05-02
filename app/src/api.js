@@ -11,6 +11,27 @@ const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
+    // Check if token is expired (simple check)
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const now = Date.now() / 1000;
+      if (tokenData.exp && tokenData.exp < now) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return config;
+      }
+    } catch (e) {
+      // Token is malformed, remove it
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+      return config;
+    }
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
