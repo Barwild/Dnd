@@ -133,14 +133,21 @@ export default function CharacterSheet() {
       statsObj.coins = normalizeCoins(parseCoins(statsObj.coins));
 
       let eq = [];
-      try { eq = JSON.parse(char.equipment || '[]'); } catch {}
-      if ((!eq || eq.length === 0) && char.starting_equipment) {
-        try { eq = JSON.parse(char.starting_equipment || '[]'); } catch {}
+      try { 
+        const parsed = JSON.parse(char.equipment || '[]'); 
+        if (Array.isArray(parsed)) eq = parsed;
+      } catch {}
+      
+      if (eq.length === 0 && char.starting_equipment) {
+        try { 
+          const parsedStart = JSON.parse(char.starting_equipment || '[]'); 
+          if (Array.isArray(parsedStart)) eq = parsedStart;
+        } catch {}
       }
 
       setCharacter(char);
       setStats(statsObj);
-      setEquipment(eq);
+      setEquipment(Array.isArray(eq) ? eq : []);
 
       // Cargar equipo específico
       loadEquipmentData(id);
@@ -165,11 +172,11 @@ export default function CharacterSheet() {
       
       // Cargar armas
       const weaponsRes = await getCharacterWeapons(characterId);
-      setWeapons(weaponsRes.data || []);
+      setWeapons(Array.isArray(weaponsRes.data) ? weaponsRes.data : []);
       
       // Cargar armaduras
       const armorRes = await getCharacterArmor(characterId);
-      setArmor(armorRes.data || []);
+      setArmor(Array.isArray(armorRes.data) ? armorRes.data : []);
     } catch (e) {
       console.error('Error cargando datos de equipo:', e);
     }
@@ -183,7 +190,7 @@ export default function CharacterSheet() {
       const params = { skip: shopPage * 20, limit: 20 };
       if (shopSearch) params.search = shopSearch;
       const res = await getItems(params);
-      setShopItems(res.data || []);
+      setShopItems(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       console.error(e);
     } finally {
