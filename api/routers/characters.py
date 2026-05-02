@@ -218,7 +218,7 @@ def get_character_weapons(character_id: int, db: Session = Depends(get_db)):
     if weapon_ids:
         weapons = db.query(models.Item).filter(
             models.Item.id.in_(weapon_ids),
-            models.Item.category == 'Weapon'
+            models.Item.category.in_(['Weapon', 'Arma'])
         ).all()
         return [ {
             "id": weapon.id,
@@ -251,7 +251,7 @@ def get_character_armor(character_id: int, db: Session = Depends(get_db)):
     if armor_ids:
         armors = db.query(models.Item).filter(
             models.Item.id.in_(armor_ids),
-            models.Item.category == 'Armor'
+            models.Item.category.in_(['Armor', 'Armadura', 'Shield', 'Escudo'])
         ).all()
         return [ {
             "id": armor.id,

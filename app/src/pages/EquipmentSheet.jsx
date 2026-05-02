@@ -37,10 +37,8 @@ export default function EquipmentSheet() {
     .reduce((sum, [k, v]) => sum + (Number(v) || 0) * (COIN_VALUES[k] || 0), 0);
   const copperToCoins = (copper) => {
     let remaining = Math.max(0, Math.floor(copper));
-    const result = {};
-    result.pp = Math.floor(remaining / COIN_VALUES.pp); remaining %= COIN_VALUES.pp;
+    const result = { pp: 0, ep: 0 }; // Disable auto-conversion to Platinum and Electrum
     result.gp = Math.floor(remaining / COIN_VALUES.gp); remaining %= COIN_VALUES.gp;
-    result.ep = Math.floor(remaining / COIN_VALUES.ep); remaining %= COIN_VALUES.ep;
     result.sp = Math.floor(remaining / COIN_VALUES.sp); remaining %= COIN_VALUES.sp;
     result.cp = remaining;
     return result;
@@ -156,6 +154,7 @@ export default function EquipmentSheet() {
     setEquipment(newEq);
     
     await updateCharacter(id, { stats: JSON.stringify(newStats), equipment: JSON.stringify(newEq) });
+    await loadEquipmentData(id); // Reload weapons and armor immediately
     alert(`Comprado ${item.name}.`);
     
     if (item.category === 'Weapon' || item.category === 'Armor') {
@@ -392,10 +391,12 @@ export default function EquipmentSheet() {
           <p style={{ color: 'var(--text-muted)' }}>Inventario vacío.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {equipment.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '0.6rem 1rem', borderRadius: '6px' }}>
+            {equipment.map((item, originalIndex) => ({ item, originalIndex }))
+              .filter(({ item }) => item.category !== 'Weapon' && item.category !== 'Armor' && item.category !== 'Arma' && item.category !== 'Armadura' && item.category !== 'Shield' && item.category !== 'Escudo')
+              .map(({ item, originalIndex }) => (
+              <div key={originalIndex} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '0.6rem 1rem', borderRadius: '6px' }}>
                 <span style={{ color: '#eee' }}>{item.name || item}</span>
-                <button className="btn btn-danger btn-sm" onClick={() => removeEquipment(i)} style={{ padding: '0.2rem 0.5rem' }}>Tirar</button>
+                <button className="btn btn-danger btn-sm" onClick={() => removeEquipment(originalIndex)} style={{ padding: '0.2rem 0.5rem' }}>Tirar</button>
               </div>
             ))}
           </div>

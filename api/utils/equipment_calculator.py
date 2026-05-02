@@ -111,7 +111,7 @@ def get_equipment_by_slot(equipped_items: Dict, items_db: Dict) -> Dict[str, Any
             }
             
             # Añadir propiedades específicas de armas y armaduras
-            if item.category in ['Weapon', 'Armor']:
+            if item.category in ['Weapon', 'Arma', 'Armor', 'Armadura', 'Shield', 'Escudo']:
                 slots[slot].update({
                     'damage_dice': item.damage_dice,
                     'damage_type': item.damage_type,
@@ -237,18 +237,18 @@ def can_equip_in_slot(item, slot: str) -> bool:
         bool: True si puede equiparse
     """
     slot_rules = {
-        'armor': ['Armor'],
-        'shield': ['Armor'],  # Escudos se consideran armadura
-        'weapon': ['Weapon'],
-        'offhand': ['Weapon', 'Tool'],
-        'head': ['Armor', 'Wondrous Item'],
-        'chest': ['Armor', 'Wondrous Item'],
-        'hands': ['Armor', 'Tool', 'Wondrous Item'],
-        'feet': ['Armor', 'Wondrous Item'],
-        'ring1': ['Ring', 'Wondrous Item'],
-        'ring2': ['Ring', 'Wondrous Item'],
-        'neck': ['Wondrous Item', 'Amulet'],
-        'waist': ['Wondrous Item', 'Belt']
+        'armor': ['Armor', 'Armadura'],
+        'shield': ['Armor', 'Armadura', 'Shield', 'Escudo'],
+        'weapon': ['Weapon', 'Arma'],
+        'offhand': ['Weapon', 'Arma', 'Tool', 'Herramienta', 'Shield', 'Escudo'],
+        'head': ['Armor', 'Armadura', 'Wondrous Item', 'Objeto Maravilloso'],
+        'chest': ['Armor', 'Armadura', 'Wondrous Item', 'Objeto Maravilloso'],
+        'hands': ['Armor', 'Armadura', 'Tool', 'Herramienta', 'Wondrous Item', 'Objeto Maravilloso'],
+        'feet': ['Armor', 'Armadura', 'Wondrous Item', 'Objeto Maravilloso'],
+        'ring1': ['Ring', 'Anillo', 'Wondrous Item', 'Objeto Maravilloso'],
+        'ring2': ['Ring', 'Anillo', 'Wondrous Item', 'Objeto Maravilloso'],
+        'neck': ['Wondrous Item', 'Objeto Maravilloso', 'Amulet', 'Amuleto'],
+        'waist': ['Wondrous Item', 'Objeto Maravilloso', 'Belt', 'Cinturón']
     }
     
     valid_categories = slot_rules.get(slot, [])
