@@ -302,8 +302,128 @@ class Skill(Base):
 
 
 # ═══════════════════════════════════════════════════════
-# DM TOOLS: ENCOUNTERS, SESSION NOTES, DICE LOGS
+# EQUIPMENT: MOUNTS, VEHICLES, TRADE GOODS, TOOLS, PACKS
+# ═════════════════════════════════════════════════════
+
+class Mount(Base):
+    __tablename__ = "mounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    index = Column(String(50), unique=True, index=True)
+    name = Column(String(100), nullable=False)
+    name_en = Column(String(100), default="")
+    speed = Column(String(20), default="")
+    capacity = Column(String(50), default="")
+    cost_quantity = Column(Integer, default=0)
+    cost_unit = Column(String(10), default="gp")
+    description = Column(Text, default="")
+    special_abilities = Column(Text, default="[]")  # JSON
+
+
+class Vehicle(Base):
+    __tablename__ = "vehicles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    index = Column(String(50), unique=True, index=True)
+    name = Column(String(100), nullable=False)
+    name_en = Column(String(100), default="")
+    vehicle_type = Column(String(50), default="")  # Water, Land, Air
+    speed = Column(String(20), default="")
+    capacity = Column(String(50), default="")
+    cost_quantity = Column(Integer, default=0)
+    cost_unit = Column(String(10), default="gp")
+    description = Column(Text, default="")
+    crew_required = Column(Integer, default=0)
+    special_abilities = Column(Text, default="[]")  # JSON
+
+
+class TradeGood(Base):
+    __tablename__ = "trade_goods"
+
+    id = Column(Integer, primary_key=True, index=True)
+    index = Column(String(50), unique=True, index=True)
+    name = Column(String(100), nullable=False)
+    name_en = Column(String(100), default="")
+    category = Column(String(50), default="")  # Gemstone, Metal, etc.
+    cost_quantity = Column(Integer, default=0)
+    cost_unit = Column(String(10), default="gp")
+    description = Column(Text, default="")
+    availability = Column(String(20), default="Common")  # Common, Uncommon, Rare
+
+
+class Tool(Base):
+    __tablename__ = "tools"
+
+    id = Column(Integer, primary_key=True, index=True)
+    index = Column(String(50), unique=True, index=True)
+    name = Column(String(100), nullable=False)
+    name_en = Column(String(100), default="")
+    tool_type = Column(String(50), default="")  # Artisan, Gaming, Musical, etc.
+    cost_quantity = Column(Integer, default=0)
+    cost_unit = Column(String(10), default="gp")
+    weight = Column(String(20), default="0")
+    description = Column(Text, default="")
+    ability_score = Column(String(3), default="")  # STR, DEX, INT, etc.
+
+
+class EquipmentPack(Base):
+    __tablename__ = "equipment_packs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    index = Column(String(50), unique=True, index=True)
+    name = Column(String(100), nullable=False)
+    name_en = Column(String(100), default="")
+    pack_type = Column(String(50), default="")  # Class, Role, etc.
+    cost_quantity = Column(Integer, default=0)
+    cost_unit = Column(String(10), default="gp")
+    description = Column(Text, default="")
+    contents = Column(Text, default="[]")  # JSON array of items
+
+
 # ═══════════════════════════════════════════════════════
+# RULES MECHANICS: ADVANTAGE, INSPIRATION, MULTICLASS, LEVELING
+# ═════════════════════════════════════════════════════
+
+class AdvantageRule(Base):
+    __tablename__ = "advantage_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, default="")
+    examples = Column(Text, default="[]")  # JSON array of examples
+
+
+class InspirationRule(Base):
+    __tablename__ = "inspiration_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, default="")
+    how_to_earn = Column(Text, default="")
+    how_to_use = Column(Text, default="")
+
+
+class MulticlassRule(Base):
+    __tablename__ = "multiclass_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, default="")
+    requirements = Column(Text, default="[]")  # JSON array of requirements
+    benefits = Column(Text, default="[]")  # JSON array of benefits
+
+
+class LevelingTable(Base):
+    __tablename__ = "leveling_tables"
+
+    id = Column(Integer, primary_key=True, index=True)
+    class_name = Column(String(50), nullable=False)
+    level = Column(Integer, nullable=False)
+    proficiency_bonus = Column(Integer, default=0)
+    features = Column(Text, default="[]")  # JSON array of features
+    spell_slots = Column(Text, default="{}")  # JSON object of spell slots per level
+    cantrips_known = Column(Integer, default=0)
+    spells_known = Column(Text, default="{}")  # JSON object of spells known per level
 
 class Encounter(Base):
     __tablename__ = "encounters"

@@ -53,6 +53,25 @@ export const createCharacter = (data) => api.post('/characters', data);
 export const updateCharacter = (id, data) => api.put(`/characters/${id}`, data);
 export const deleteCharacter = (id) => api.delete(`/characters/${id}`);
 
+// ── Equipment: Mounts, Vehicles, Trade Goods, Tools, Packs ─────────────────────────────────────────
+export const getMounts = () => api.get('/compendium/mounts');
+export const getMount = (id) => api.get(`/compendium/mounts/${id}`);
+export const getVehicles = () => api.get('/compendium/vehicles');
+export const getVehicle = (id) => api.get(`/compendium/vehicles/${id}`);
+export const getTradeGoods = () => api.get('/compendium/trade-goods');
+export const getTradeGood = (id) => api.get(`/compendium/trade-goods/${id}`);
+export const getTools = () => api.get('/compendium/tools');
+export const getTool = (id) => api.get(`/compendium/tools/${id}`);
+export const getEquipmentPacks = () => api.get('/compendium/equipment-packs');
+export const getEquipmentPack = (id) => api.get(`/compendium/equipment-packs/${id}`);
+
+// ── Rules Mechanics: Advantage, Inspiration, Multiclass, Leveling ─────────────────────────────────────────
+export const getAdvantageRules = () => api.get('/compendium/rules/advantage');
+export const getInspirationRules = () => api.get('/compendium/rules/inspiration');
+export const getMulticlassRules = () => api.get('/compendium/rules/multiclass');
+export const getLevelingTable = (className) => api.get(`/compendium/rules/leveling/${className}`);
+export const getProficiencyBonusTable = () => api.get('/compendium/rules/proficiency-bonus');
+
 // ── Compendium ─────────────────────────────────────────
 export const getRaces = () => api.get('/compendium/races');
 export const getRace = (id) => api.get(`/compendium/races/${id}`);

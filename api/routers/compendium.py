@@ -223,6 +223,125 @@ def list_languages(db: Session = Depends(get_db)):
     return db.query(models.Language).all()
 
 
-@router.get("/feats")
-def list_feats(db: Session = Depends(get_db)):
-    return db.query(models.Feat).all()
+# ═══════════════════════════════════════════════════════
+# EQUIPMENT: MOUNTS, VEHICLES, TRADE GOODS, TOOLS, PACKS
+# ═══════════════════════════════════════════════════════
+
+@router.get("/mounts", response_model=List[schemas.MountResponse])
+def list_mounts(db: Session = Depends(get_db)):
+    return db.query(models.Mount).all()
+
+
+@router.get("/mounts/{mount_id}", response_model=schemas.MountResponse)
+def get_mount(mount_id: int, db: Session = Depends(get_db)):
+    mount = db.query(models.Mount).filter(models.Mount.id == mount_id).first()
+    if not mount:
+        raise HTTPException(status_code=404, detail="Montura no encontrada")
+    return mount
+
+
+@router.get("/vehicles", response_model=List[schemas.VehicleResponse])
+def list_vehicles(db: Session = Depends(get_db)):
+    return db.query(models.Vehicle).all()
+
+
+@router.get("/vehicles/{vehicle_id}", response_model=schemas.VehicleResponse)
+def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+    vehicle = db.query(models.Vehicle).filter(models.Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehículo no encontrado")
+    return vehicle
+
+
+@router.get("/trade-goods", response_model=List[schemas.TradeGoodResponse])
+def list_trade_goods(db: Session = Depends(get_db)):
+    return db.query(models.TradeGood).all()
+
+
+@router.get("/trade-goods/{trade_good_id}", response_model=schemas.TradeGoodResponse)
+def get_trade_good(trade_good_id: int, db: Session = Depends(get_db)):
+    trade_good = db.query(models.TradeGood).filter(models.TradeGood.id == trade_good_id).first()
+    if not trade_good:
+        raise HTTPException(status_code=404, detail="Bien comercial no encontrado")
+    return trade_good
+
+
+@router.get("/tools", response_model=List[schemas.ToolResponse])
+def list_tools(db: Session = Depends(get_db)):
+    return db.query(models.Tool).all()
+
+
+@router.get("/tools/{tool_id}", response_model=schemas.ToolResponse)
+def get_tool(tool_id: int, db: Session = Depends(get_db)):
+    tool = db.query(models.Tool).filter(models.Tool.id == tool_id).first()
+    if not tool:
+        raise HTTPException(status_code=404, detail="Herramienta no encontrada")
+    return tool
+
+
+@router.get("/equipment-packs", response_model=List[schemas.EquipmentPackResponse])
+def list_equipment_packs(db: Session = Depends(get_db)):
+    return db.query(models.EquipmentPack).all()
+
+
+@router.get("/equipment-packs/{pack_id}", response_model=schemas.EquipmentPackResponse)
+def get_equipment_pack(pack_id: int, db: Session = Depends(get_db)):
+    pack = db.query(models.EquipmentPack).filter(models.EquipmentPack.id == pack_id).first()
+    if not pack:
+        raise HTTPException(status_code=404, detail="Paquete de equipo no encontrado")
+    return pack
+
+
+# ═══════════════════════════════════════════════════════
+# RULES MECHANICS: ADVANTAGE, INSPIRATION, MULTICLASS, LEVELING
+# ═══════════════════════════════════════════════════════
+
+@router.get("/rules/advantage")
+def list_advantage_rules(db: Session = Depends(get_db)):
+    return db.query(models.AdvantageRule).all()
+
+
+@router.get("/rules/inspiration")
+def list_inspiration_rules(db: Session = Depends(get_db)):
+    return db.query(models.InspirationRule).all()
+
+
+@router.get("/rules/multiclass")
+def list_multiclass_rules(db: Session = Depends(get_db)):
+    return db.query(models.MulticlassRule).all()
+
+
+@router.get("/rules/leveling/{class_name}", response_model=List[schemas.LevelingTableResponse])
+def get_leveling_table(class_name: str, db: Session = Depends(get_db)):
+    tables = db.query(models.LevelingTable).filter(models.LevelingTable.class_name == class_name).all()
+    if not tables:
+        raise HTTPException(status_code=404, detail="Tabla de progreso no encontrada")
+    return tables
+
+
+@router.get("/rules/proficiency-bonus")
+def get_proficiency_bonus_table(db: Session = Depends(get_db)):
+    # Fixed proficiency bonus table by level
+    table = [
+        {"level": 1, "bonus": 2},
+        {"level": 2, "bonus": 2},
+        {"level": 3, "bonus": 2},
+        {"level": 4, "bonus": 2},
+        {"level": 5, "bonus": 3},
+        {"level": 6, "bonus": 3},
+        {"level": 7, "bonus": 3},
+        {"level": 8, "bonus": 3},
+        {"level": 9, "bonus": 4},
+        {"level": 10, "bonus": 4},
+        {"level": 11, "bonus": 4},
+        {"level": 12, "bonus": 4},
+        {"level": 13, "bonus": 5},
+        {"level": 14, "bonus": 5},
+        {"level": 15, "bonus": 5},
+        {"level": 16, "bonus": 5},
+        {"level": 17, "bonus": 6},
+        {"level": 18, "bonus": 6},
+        {"level": 19, "bonus": 6},
+        {"level": 20, "bonus": 6}
+    ]
+    return table

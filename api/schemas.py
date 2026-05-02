@@ -36,8 +36,137 @@ class TokenResponse(BaseModel):
 
 
 # ═══════════════════════════════════════════════════════
-# CAMPAIGNS
+# EQUIPMENT: MOUNTS, VEHICLES, TRADE GOODS, TOOLS, PACKS
 # ═══════════════════════════════════════════════════════
+
+class MountResponse(BaseModel):
+    id: int
+    index: str
+    name: str
+    name_en: str
+    speed: str
+    capacity: str
+    cost_quantity: int
+    cost_unit: str
+    description: str
+    special_abilities: list
+
+    class Config:
+        from_attributes = True
+
+
+class VehicleResponse(BaseModel):
+    id: int
+    index: str
+    name: str
+    name_en: str
+    vehicle_type: str
+    speed: str
+    capacity: str
+    cost_quantity: int
+    cost_unit: str
+    description: str
+    crew_required: int
+    special_abilities: list
+
+    class Config:
+        from_attributes = True
+
+
+class TradeGoodResponse(BaseModel):
+    id: int
+    index: str
+    name: str
+    name_en: str
+    category: str
+    cost_quantity: int
+    cost_unit: str
+    description: str
+    availability: str
+
+    class Config:
+        from_attributes = True
+
+
+class ToolResponse(BaseModel):
+    id: int
+    index: str
+    name: str
+    name_en: str
+    tool_type: str
+    cost_quantity: int
+    cost_unit: str
+    weight: str
+    description: str
+    ability_score: str
+
+    class Config:
+        from_attributes = True
+
+
+class EquipmentPackResponse(BaseModel):
+    id: int
+    index: str
+    name: str
+    name_en: str
+    pack_type: str
+    cost_quantity: int
+    cost_unit: str
+    description: str
+    contents: list
+
+    class Config:
+        from_attributes = True
+
+
+# ═══════════════════════════════════════════════════════
+# RULES MECHANICS: ADVANTAGE, INSPIRATION, MULTICLASS, LEVELING
+# ═════════════════════════════════════════════════════
+
+class AdvantageRuleResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    examples: list
+
+    class Config:
+        from_attributes = True
+
+
+class InspirationRuleResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    how_to_earn: str
+    how_to_use: str
+
+    class Config:
+        from_attributes = True
+
+
+class MulticlassRuleResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    requirements: list
+    benefits: list
+
+    class Config:
+        from_attributes = True
+
+
+class LevelingTableResponse(BaseModel):
+    id: int
+    class_name: str
+    level: int
+    proficiency_bonus: int
+    features: list
+    spell_slots: dict
+    cantrips_known: int
+    spells_known: dict
+
+    class Config:
+        from_attributes = True
 
 class CampaignCreate(BaseModel):
     name: str
