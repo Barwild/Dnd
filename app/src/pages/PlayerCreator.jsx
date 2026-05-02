@@ -200,7 +200,18 @@ export default function PlayerCreator() {
     }
   };
 
-  const isStatsComplete = Object.values(charData.stats).every(s => s !== null);
+  const isStatsComplete = Object.values(charData.stats).every(s => s !== null && s !== undefined);
+  
+  // Debug function to check stats
+  const debugStats = () => {
+    console.log('Estado de stats:', {
+      stats: charData.stats,
+      values: Object.values(charData.stats),
+      isComplete: Object.values(charData.stats).every(s => s !== null && s !== undefined),
+      hasNulls: Object.values(charData.stats).some(s => s === null),
+      hasUndef: Object.values(charData.stats).some(s => s === undefined)
+    });
+  };
 
   const getFinalStats = () => {
     const f = {};
@@ -850,7 +861,7 @@ export default function PlayerCreator() {
 
             <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
               <button className="btn btn-ghost" onClick={() => setStep(getStepNumber('Atributos'))}><ChevronLeft size={16} /> Atributos</button>
-              <button className="btn btn-gold btn-lg" onClick={handleSave} style={{ fontSize: '1.1rem' }}>
+              <button className="btn btn-gold btn-lg" onClick={() => { debugStats(); handleSave(); }} style={{ fontSize: '1.1rem' }}>
                 ✨ ¡Crear Personaje!
               </button>
             </div>
