@@ -266,18 +266,11 @@ export default function PlayerCreator() {
       navigate('/player-lobby');
     } catch (e) {
       console.error('Error detallado al guardar personaje:', e);
-      console.error('Datos enviados:', {
-        name: charData.name,
-        race_id: charData.race_id,
-        class_id: charData.class_id,
-        stats: statsPayload,
-        equipment: equipmentPayload
-      });
       
       if (e.response) {
         console.error('Status:', e.response.status);
         console.error('Response data:', e.response.data);
-        alert(`Error ${e.response.status}: ${e.response.data?.detail || 'Error desconocido'}`);
+        alert(`Error ${e.response.status}: ${e.response.data?.detail || JSON.stringify(e.response.data) || 'Error desconocido'}`);
       } else if (e.request) {
         console.error('Request error:', e.request);
         alert('Error de red: No se pudo conectar con el servidor');
