@@ -100,10 +100,10 @@ function Navbar() {
           </>
         )}
 
-        <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem', padding: '0.3rem 0.8rem', background: 'rgba(200,155,60,0.1)', borderRadius: '6px' }}>
-          <User size={14} style={{ color: 'var(--accent-gold)' }} />
-          <span className="user-name" style={{ fontSize: '0.85rem', color: 'var(--accent-gold)' }}>{user.display_name}</span>
-          <span className="badge badge-gold" style={{ marginLeft: '0.3rem' }}>
+        <div className="user-info">
+          <User size={14} />
+          <span className="user-name">{user.display_name}</span>
+          <span className="badge badge-gold">
             {user.role === 'dm' ? 'DM' : 'Jugador'}
           </span>
         </div>
