@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters } from '../api';
-import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame } from 'lucide-react';
+import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 const STAT_NAMES = { STR: 'FUE', DEX: 'DES', CON: 'CON', INT: 'INT', WIS: 'SAB', CHA: 'CAR' };
 const STAT_KEYS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+const STAT_ICONS = { 
+  STR: Swords, 
+  DEX: Activity, 
+  CON: Heart, 
+  INT: Brain, 
+  WIS: Eye, 
+  CHA: UserCircle 
+};
 const FULL_NAMES = { STR: 'Fuerza', DEX: 'Destreza', CON: 'Constitución', INT: 'Inteligencia', WIS: 'Sabiduría', CHA: 'Carisma' };
 
 // HP per level (beyond lvl 1): avg or roll
@@ -461,14 +469,18 @@ export default function CharacterSheet() {
       <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
         <h3>Características</h3>
         <div className="stats-grid" style={{ marginBottom: '0.5rem' }}>
-          {STAT_KEYS.map(stat => (
-            <div key={stat} className="stat-block" style={{ cursor: 'pointer' }}
-              onClick={() => handleRoll(`1d20${mod(stats[stat]) >= 0 ? '+' : ''}${mod(stats[stat])}`, `Chequeo de ${FULL_NAMES[stat]}`)}>
-              <span className="stat-label">{STAT_NAMES[stat]}</span>
-              <span className="stat-mod">{modStr(stats[stat])}</span>
-              <span className="stat-score">{stats[stat] || 10}</span>
-            </div>
-          ))}
+          {STAT_KEYS.map(stat => {
+            const Icon = STAT_ICONS[stat];
+            return (
+              <div key={stat} className="stat-block" style={{ cursor: 'pointer' }}
+                onClick={() => handleRoll(`1d20${mod(stats[stat]) >= 0 ? '+' : ''}${mod(stats[stat])}`, `Chequeo de ${FULL_NAMES[stat]}`)}>
+                <Icon size={24} className="stat-icon" />
+                <span className="stat-label">{STAT_NAMES[stat]}</span>
+                <span className="stat-mod">{modStr(stats[stat])}</span>
+                <span className="stat-score">{stats[stat] || 10}</span>
+              </div>
+            );
+          })}
         </div>
         <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textAlign: 'center', marginTop: '1rem' }}>
           Haz clic en un atributo para tirar un chequeo (1d20 + mod)
