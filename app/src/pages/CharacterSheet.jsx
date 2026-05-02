@@ -416,8 +416,8 @@ export default function CharacterSheet() {
   const hpPercent = stats.maxHP ? (stats.currHP / stats.maxHP) * 100 : 100;
   const hpColor = hpPercent > 60 ? '#4a4' : hpPercent > 30 ? '#e84' : '#d44';
   
-  // Use stats.ac if it's a monster or has natural armor, otherwise 10 + DEX
-  const ac = stats.ac || (10 + mod(stats.DEX));
+  // Use equipped armor CA if available, then monster/natural ac, otherwise 10 + DEX
+  const ac = equipmentStats?.armor_class || stats.ac || (10 + mod(stats.DEX));
   const initiative = mod(stats.DEX);
   const speed = stats.speed || 30;
 
@@ -445,6 +445,7 @@ export default function CharacterSheet() {
         <div className="flex-row" style={{ gap: '0.5rem' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/skills`)}><Target size={16} /> Habilidades</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/spells`)}><BookOpen size={16} /> Grimorio</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/inventory`)}><Shield size={16} /> Inventario</button>
           <button className="btn btn-gold btn-sm" onClick={save} disabled={saving}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
         </div>
       </div>
@@ -472,7 +473,7 @@ export default function CharacterSheet() {
         <div className="combat-badge" style={{ borderColor: 'var(--accent-blue)' }}>
           <span className="label">Clase de Armadura</span>
           <span className="value" style={{ color: 'var(--accent-blue)' }}>{ac}</span>
-          <span style={{ fontSize: '0.7rem', color: '#888' }}>{stats.ac ? 'Armadura Natural / Fija' : `10 + DES (${modStr(stats.DEX)})`}</span>
+          <span style={{ fontSize: '0.7rem', color: '#888' }}>{equipmentStats?.armor_class ? 'Armadura Equipada' : (stats.ac ? 'Armadura Natural / Fija' : `10 + DES (${modStr(stats.DEX)})`)}</span>
         </div>
         <div className="combat-badge" style={{ borderColor: 'var(--accent-green)' }}>
           <span className="label">Iniciativa</span>
@@ -553,129 +554,7 @@ export default function CharacterSheet() {
         )}
       </div>
 
-      {/* Equipment Stats */}
-      {equipmentStats && (
-        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
-          <h3><ShieldPlus size={18} /> Estadísticas de Equipo</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-              <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Clase de Armadura</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{equipmentStats.armor_class || 10}</div>
-            </div>
-            {equipmentStats.weapon_damage && (
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-                <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Daño del Arma</div>
-                <div style={{ fontSize: '1.2rem' }}>
-                  {equipmentStats.weapon_damage.damage_dice} {equipmentStats.weapon_damage.damage_type && `(${equipmentStats.weapon_damage.damage_type})`}
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  {equipmentStats.weapon_damage.name}
-                </div>
-              </div>
-            )}
-          </div>
-          {equipmentStats.stealth_disadvantage && (
-            <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', marginTop: '1rem' }}>
-              <span style={{ color: '#ff6b6b' }}>⚠️ Penalización de Sigilo: Esta armadura te otorga desventaja en tiradas de sigilo</span>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Weapons Section */}
-      {weapons.length > 0 && (
-        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
-          <h3><Swords size={18} /> Armas</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-            {weapons.map((weapon, index) => (
-              <div key={index} style={{ 
-                background: 'rgba(0,0,0,0.3)', 
-                padding: '1rem', 
-                borderRadius: '8px',
-                border: equipmentStats?.equipment_slots?.weapon?.id === weapon.id ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)'
-              }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--accent-gold)' }}>{weapon.name}</div>
-                {weapon.damage_dice && (
-                  <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                    {weapon.damage_dice} {weapon.damage_type && `(${weapon.damage_type})`}
-                  </div>
-                )}
-                {weapon.weapon_range && (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Alcance: {weapon.weapon_range}</div>
-                )}
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{weapon.cost}</div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button 
-                    onClick={() => equipItemToCharacter(weapon.id, 'weapon')}
-                    className="btn btn-sm" 
-                    style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
-                    disabled={equipmentStats?.equipment_slots?.weapon?.id === weapon.id}
-                  >
-                    {equipmentStats?.equipment_slots?.weapon?.id === weapon.id ? 'Equipado' : 'Equipar'}
-                  </button>
-                  {equipmentStats?.equipment_slots?.weapon?.id === weapon.id && (
-                    <button 
-                      onClick={() => unequipItemFromCharacter('weapon')}
-                      className="btn btn-danger btn-sm" 
-                      style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
-                    >
-                      Desequipar
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Armor Section */}
-      {armor.length > 0 && (
-        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
-          <h3><Shield size={18} /> Armaduras</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-            {armor.map((armorItem, index) => (
-              <div key={index} style={{ 
-                background: 'rgba(0,0,0,0.3)', 
-                padding: '1rem', 
-                borderRadius: '8px',
-                border: equipmentStats?.equipment_slots?.armor?.id === armorItem.id ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)'
-              }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--accent-gold)' }}>{armorItem.name}</div>
-                {armorItem.armor_class_base && (
-                  <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                    CA: {armorItem.armor_class_base}
-                    {armorItem.armor_class_dex_bonus && ' + DES'}
-                  </div>
-                )}
-                {armorItem.stealth_disadvantage && (
-                  <div style={{ fontSize: '0.8rem', color: '#ff6b6b', marginBottom: '0.5rem' }}>⚠️ Penalización de Sigilo</div>
-                )}
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{armorItem.cost}</div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button 
-                    onClick={() => equipItemToCharacter(armorItem.id, 'armor')}
-                    className="btn btn-sm" 
-                    style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
-                    disabled={equipmentStats?.equipment_slots?.armor?.id === armorItem.id}
-                  >
-                    {equipmentStats?.equipment_slots?.armor?.id === armorItem.id ? 'Equipada' : 'Equipar'}
-                  </button>
-                  {equipmentStats?.equipment_slots?.armor?.id === armorItem.id && (
-                    <button 
-                      onClick={() => unequipItemFromCharacter('armor')}
-                      className="btn btn-danger btn-sm" 
-                      style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
-                    >
-                      Desequipar
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
@@ -707,98 +586,7 @@ export default function CharacterSheet() {
           rows={4} style={{ width: '100%', resize: 'vertical' }} />
       </div>
 
-      {/* Equipment */}
-      <div className="glass-panel">
-        <h3>Equipo e Inventario</h3>
-        {equipment.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)' }}>Inventario vacío. Añade objetos desde el Bestiario.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {equipment.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '0.5rem 0.8rem', borderRadius: '6px' }}>
-                <span>{item.name || item}</span>
-                <button className="btn btn-danger btn-sm" onClick={() => setEquipment(prev => prev.filter((_, j) => j !== i))} style={{ padding: '0.2rem 0.5rem' }}>×</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* Shop and Currency */}
-      <div className="glass-panel" style={{ marginTop: '1.5rem' }}>
-        <div className="flex-row flex-between" style={{ marginBottom: '1rem' }}>
-          <h3>Monedas y Tienda</h3>
-          <span className="badge badge-gold" style={{ fontSize: '0.95rem' }}>{formatCoins(stats.coins)}</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-          {Object.entries(normalizeCoins(stats.coins)).map(([coin, value]) => (
-            <div key={coin} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.7rem', borderRadius: '8px', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.7rem', color: '#888' }}>{coin.toUpperCase()}</div>
-              <input type="number" min="0" value={value}
-                onChange={e => setCoinValue(coin, e.target.value)}
-                style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.25rem', fontWeight: 'bold', textAlign: 'center' }} />
-            </div>
-          ))}
-        </div>
-        <div style={{ marginBottom: '1rem', fontSize: '0.85rem', color: '#ccc' }}>
-          <strong>Total equivalente:</strong> {formatCoins(totalValueSummary)} ({totalCopper(stats.coins)} cp)
-        </div>
-
-        <div className="flex-row" style={{ gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <input type="text" placeholder="Buscar objeto..." value={shopSearch}
-            onChange={e => { setShopSearch(e.target.value); setShopPage(0); }}
-            style={{ flex: 1 }} />
-          <button className="btn btn-ghost btn-sm" onClick={loadShopItems}>Buscar</button>
-        </div>
-
-        {shopLoading ? (
-          <p style={{ color: 'var(--text-muted)' }}>Cargando tienda...</p>
-        ) : shopItems.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)' }}>No hay objetos en la tienda o usa el buscador.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '0.65rem' }}>
-            {shopItems.map(item => {
-              const costCopper = (Number(item.cost_quantity) || 0) * (COIN_VALUES[(item.cost_unit || 'gp').toLowerCase()] || COIN_VALUES.gp);
-              const currentCopper = totalCopper(stats.coins);
-              const canBuy = costCopper > 0 && costCopper <= currentCopper;
-              const remaining = canBuy ? copperToCoins(currentCopper - costCopper) : null;
-              return (
-                <div key={item.id} className="glass-panel" style={{ padding: '0.8rem', background: 'rgba(0,0,0,0.15)', borderRadius: '10px' }}>
-                  <div className="flex-row flex-between" style={{ gap: '0.5rem', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <strong style={{ color: '#fff' }}>{item.name}</strong>
-                      <div style={{ fontSize: '0.75rem', color: '#aaa' }}>{renderCost(item)}</div>
-                    </div>
-                    <button className={`btn btn-sm ${canBuy ? 'btn-gold' : 'btn-ghost'}`} disabled={!canBuy} onClick={() => buyItem(item)}>
-                      {canBuy ? 'Comprar' : 'No puedes'}
-                    </button>
-                  </div>
-                  {shopExpanded === item.id && item.description && (
-                    <p style={{ marginTop: '0.6rem', color: '#ccc', fontSize: '0.85rem' }}>{item.description}</p>
-                  )}
-                  <div className="flex-row" style={{ gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setShopExpanded(shopExpanded === item.id ? null : item.id)}>
-                      {shopExpanded === item.id ? 'Ocultar' : 'Ver'} detalles
-                    </button>
-                    {remaining && (
-                      <span style={{ color: canBuy ? 'var(--accent-gold)' : '#888', fontSize: '0.8rem' }}>
-                        Quedarías con: {formatCoins(remaining)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex-row flex-between" style={{ marginTop: '1rem', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShopPage(p => Math.max(0, p - 1))} disabled={shopPage === 0}>← Anterior</button>
-          <span style={{ color: '#888' }}>Página {shopPage + 1}</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShopPage(p => p + 1)} disabled={shopItems.length < 20}>Siguiente →</button>
-        </div>
-      </div>
     </div>
   );
 }

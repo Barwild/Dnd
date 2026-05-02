@@ -13,6 +13,7 @@ import CampaignManager from './pages/CampaignManager';
 import MasterDashboard from './pages/MasterDashboard';
 import EncounterBuilder from './pages/EncounterBuilder';
 import Bestiary from './pages/Bestiary';
+import EquipmentSheet from './pages/EquipmentSheet';
 import ItemsCatalog from './pages/ItemsCatalog';
 import ConditionsRef from './pages/ConditionsRef';
 import { LogOut, User, Sword, BookOpen, Shield, Package, AlertTriangle, ChevronDown } from 'lucide-react';
@@ -131,6 +132,7 @@ function App() {
         <Route path="/character/:id" element={<ProtectedRoute><CharacterSheet /></ProtectedRoute>} />
         <Route path="/character/:id/skills" element={<ProtectedRoute><SkillsSheet /></ProtectedRoute>} />
         <Route path="/character/:id/spells" element={<ProtectedRoute><Spellbook /></ProtectedRoute>} />
+        <Route path="/character/:id/inventory" element={<ProtectedRoute><EquipmentSheet /></ProtectedRoute>} />
         <Route path="/campaigns" element={<ProtectedRoute><CampaignManager /></ProtectedRoute>} />
         <Route path="/master/:campaignId" element={<ProtectedRoute><MasterDashboard /></ProtectedRoute>} />
         <Route path="/master/:campaignId/encounter-builder" element={<ProtectedRoute><EncounterBuilder /></ProtectedRoute>} />
