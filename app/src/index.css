@@ -619,8 +619,8 @@ select option {
     padding: 1rem;
   }
   .stats-grid { 
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 0.6rem;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
     padding: 0 0.5rem;
   }
   .combat-row { 
@@ -694,20 +694,22 @@ select option {
     font-size: 1rem;
   }
   .stat-block {
-    padding: 1.3rem 0.9rem;
+    padding: 1rem 0.6rem;
     min-height: 110px;
   }
   .stat-label {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
   }
   .stat-mod {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
   .stat-score {
-    width: 36px;
-    height: 36px;
-    font-size: 0.9rem;
-    bottom: -18px;
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+    bottom: -16px;
+    border-width: 2px;
   }
   .combat-badge {
     padding: 0.6rem;
@@ -738,8 +740,8 @@ select option {
     padding: 0.5rem;
   }
   .stats-grid { 
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.6rem;
     padding: 0 0.3rem;
   }
   h1 { font-size: 1.3rem; }
