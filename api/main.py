@@ -21,6 +21,20 @@ if 'characters' in inspector.get_table_names():
                 connection.commit()
         except Exception:
             pass
+    if 'equipped_items' not in columns:
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("ALTER TABLE characters ADD COLUMN equipped_items TEXT DEFAULT '{}'"))
+                connection.commit()
+        except Exception:
+            pass
+    if 'calculated_stats' not in columns:
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("ALTER TABLE characters ADD COLUMN calculated_stats TEXT DEFAULT '{}'"))
+                connection.commit()
+        except Exception:
+            pass
 
 app = FastAPI(
     title="D&D 5E Nexus API",
