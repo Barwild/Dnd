@@ -33,6 +33,13 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
     db.add(character)
     db.commit()
     db.refresh(character)
+    
+    try:
+        from utils.equipment_fixer import fix_character_equipment
+        fix_character_equipment(character, db)
+    except Exception as e:
+        print("Error fixing equipment on creation:", e)
+        
     return _char_response(character, db)
 
 
@@ -62,6 +69,13 @@ def get_character(char_id: int, db: Session = Depends(get_db),
     character = db.query(models.Character).filter(models.Character.id == char_id).first()
     if not character:
         raise HTTPException(status_code=404, detail="Personaje no encontrado")
+        
+    try:
+        from utils.equipment_fixer import fix_character_equipment
+        fix_character_equipment(character, db)
+    except Exception as e:
+        print("Error fixing equipment:", e)
+        
     return _char_response(character, db)
 
 
