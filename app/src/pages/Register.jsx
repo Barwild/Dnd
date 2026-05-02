@@ -16,12 +16,71 @@ export default function Register() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    
+    // Client-side validation
+    if (!form.display_name.trim()) {
+      setError('El nombre para mostrar es obligatorio');
+      setLoading(false);
+      return;
+    }
+    
+    if (form.display_name.trim().length < 2) {
+      setError('El nombre para mostrar debe tener al menos 2 caracteres');
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.username.trim()) {
+      setError('El nombre de usuario es obligatorio');
+      setLoading(false);
+      return;
+    }
+    
+    if (form.username.trim().length < 3) {
+      setError('El nombre de usuario debe tener al menos 3 caracteres');
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.password.trim()) {
+      setError('La contraseña es obligatoria');
+      setLoading(false);
+      return;
+    }
+    
+    if (form.password.trim().length < 4) {
+      setError('La contraseña debe tener al menos 4 caracteres');
+      setLoading(false);
+      return;
+    }
+    
+    if (!form.role) {
+      setError('Debes seleccionar un rol');
+      setLoading(false);
+      return;
+    }
+    
     try {
       const res = await register(form);
       loginUser(res.data.access_token, res.data.user);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al registrarse');
+      console.error('Registration error:', err);
+      
+      // More specific error handling
+      if (err.response?.status === 400) {
+        if (err.response?.data?.detail?.includes('nombre de usuario ya está en uso')) {
+          setError('Ese nombre de usuario ya está registrado. Prueba con otro.');
+        } else if (err.response?.data?.detail?.includes('caracteres')) {
+          setError('Error en el formato: ' + err.response.data.detail);
+        } else {
+          setError(err.response?.data?.detail || 'Error al registrarse. Intenta de nuevo.');
+        }
+      } else if (err.response?.status >= 500) {
+        setError('Error del servidor. Intenta más tarde.');
+      } else {
+        setError('Error de conexión. Verifica tu internet e intenta de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -35,21 +94,27 @@ export default function Register() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Nombre para mostrar</label>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+              Nombre para mostrar {!form.display_name.trim() && <span style={{ color: 'var(--accent-red-bright)' }}>*</span>}
+            </label>
             <input type="text" value={form.display_name}
               onChange={(e) => setForm({ ...form, display_name: e.target.value })}
               placeholder="Ej: Gandalf, Ana..." required autoFocus />
           </div>
 
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Usuario (para iniciar sesión)</label>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+              Usuario {!form.username.trim() && <span style={{ color: 'var(--accent-red-bright)' }}>*</span>}
+            </label>
             <input type="text" value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               placeholder="Mínimo 3 caracteres" required />
           </div>
 
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Contraseña</label>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+              Contraseña {!form.password.trim() && <span style={{ color: 'var(--accent-red-bright)' }}>*</span>}
+            </label>
             <div style={{ position: 'relative' }}>
               <input type={showPw ? 'text' : 'password'} value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -62,7 +127,9 @@ export default function Register() {
           </div>
 
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>¿Qué rol tendrás?</label>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
+              ¿Qué rol tendrás? {!form.role && <span style={{ color: 'var(--accent-red-bright)' }}>*</span>}
+            </label>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button type="button" className={`glass-panel ${form.role === 'player' ? 'clickable' : ''}`}
                 onClick={() => setForm({ ...form, role: 'player' })}
