@@ -201,7 +201,7 @@ export default function PlayerCreator() {
   };
 
   const isStatsComplete = charData.name && charData.name.trim() && 
-    Object.values(charData.stats).every(s => s !== null && s !== undefined && s >= 1 && s <= 20);
+    Object.values(charData.stats).every(s => s !== null && s !== undefined && s.val >= 1 && s.val <= 20);
   
   // Debug function to check stats
   const debugStats = () => {
@@ -779,7 +779,7 @@ export default function PlayerCreator() {
             </div>
 
             <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
-              <button className="btn btn-ghost" onClick={() => setStep(getStepNumber(needsMagicStep ? 'Magia' : 'Vocación'))}><ChevronLeft size={16} /> Volver</button>
+              <button className="btn btn-ghost" onClick={() => setStep(getStepNumber(needsMagicStep ? 'Magia' : 'Habilidades'))}><ChevronLeft size={16} /> Volver</button>
               <button className="btn btn-gold" onClick={() => setStep(getStepNumber('Resumen'))} disabled={!isStatsComplete}>
                 Ver Resumen <ChevronRight size={16} />
               </button>
