@@ -200,7 +200,8 @@ export default function PlayerCreator() {
     }
   };
 
-  const isStatsComplete = Object.values(charData.stats).every(s => s !== null && s !== undefined);
+  const isStatsComplete = charData.name && charData.name.trim() && 
+    Object.values(charData.stats).every(s => s !== null && s !== undefined && s >= 1 && s <= 20);
   
   // Debug function to check stats
   const debugStats = () => {
@@ -861,7 +862,11 @@ export default function PlayerCreator() {
 
             <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
               <button className="btn btn-ghost" onClick={() => setStep(getStepNumber('Atributos'))}><ChevronLeft size={16} /> Atributos</button>
-              <button className="btn btn-gold btn-lg" onClick={() => { debugStats(); handleSave(); }} style={{ fontSize: '1.1rem' }}>
+              <button className="btn btn-gold btn-lg" onClick={() => { 
+                console.log('Botón clickeado');
+                debugStats(); 
+                handleSave(); 
+              }} style={{ fontSize: '1.1rem' }} disabled={!charData.name || !charData.name.trim()}>
                 ✨ ¡Crear Personaje!
               </button>
             </div>
