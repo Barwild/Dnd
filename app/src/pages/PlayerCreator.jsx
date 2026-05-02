@@ -240,18 +240,39 @@ export default function PlayerCreator() {
 
       await createCharacter({
         name: charData.name, level: 1,
-        race_id: parseInt(charData.race_id), class_id: parseInt(charData.class_id),
-        subclass_id: charData.subclass_id, background_id: charData.background_id,
-        campaign_id: charData.campaign_id,
+        race_id: charData.race_id ? parseInt(charData.race_id) : null,
+        class_id: charData.class_id ? parseInt(charData.class_id) : null,
+        subclass_id: charData.subclass_id || null,
+        background_id: charData.background_id || null,
+        campaign_id: charData.campaign_id || null,
         stats: JSON.stringify(statsPayload),
         equipment: JSON.stringify(equipmentPayload),
         starting_equipment: JSON.stringify(startingEquipment),
-        spell_list: JSON.stringify(charData.spell_list)
+        spell_list: JSON.stringify(charData.spell_list || []),
+        notes: ''
       });
       navigate('/player-lobby');
     } catch (e) {
-      console.error(e);
-      alert('Error al guardar el personaje.');
+      console.error('Error detallado al guardar personaje:', e);
+      console.error('Datos enviados:', {
+        name: charData.name,
+        race_id: charData.race_id,
+        class_id: charData.class_id,
+        stats: statsPayload,
+        equipment: equipmentPayload
+      });
+      
+      if (e.response) {
+        console.error('Status:', e.response.status);
+        console.error('Response data:', e.response.data);
+        alert(`Error ${e.response.status}: ${e.response.data?.detail || 'Error desconocido'}`);
+      } else if (e.request) {
+        console.error('Request error:', e.request);
+        alert('Error de red: No se pudo conectar con el servidor');
+      } else {
+        console.error('Error general:', e.message);
+        alert(`Error: ${e.message || 'Error al guardar el personaje'}`);
+      }
     }
   };
 
