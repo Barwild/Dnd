@@ -45,6 +45,12 @@ export const leaveCampaign = (id) => api.post(`/campaigns/${id}/leave`);
 export const deleteCampaign = (id) => api.delete(`/campaigns/${id}`);
 export const getCampaignMembers = (id) => api.get(`/campaigns/${id}/members`);
 
+// ── Equipment Management ─────────────────────────────────────────
+export const getCharacterEquipment = (characterId) => api.get(`/characters/${characterId}/equipment`);
+export const equipItem = (characterId, itemId, slot) => api.post(`/characters/${characterId}/equipment/equip`, { item_id: itemId, slot });
+export const unequipItem = (characterId, slot) => api.post(`/characters/${characterId}/equipment/unequip`, { slot });
+export const getCharacterWeapons = (characterId) => api.get(`/characters/${characterId}/weapons`);
+export const getCharacterArmor = (characterId) => api.get(`/characters/${characterId}/armor`);
 // ── Characters ─────────────────────────────────────────
 export const getCharacters = (campaignId) =>
   api.get(`/characters${campaignId ? `?campaign_id=${campaignId}` : ''}`);

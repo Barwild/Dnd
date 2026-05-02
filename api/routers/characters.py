@@ -129,3 +129,126 @@ def _char_response(char, db):
         race_name=race.name if race else "",
         class_name=cls.name if cls else ""
     )
+
+
+@router.get("/characters/{character_id}/equipment")
+def get_character_equipment(character_id: int, db: Session = Depends(get_db)):
+    """Obtener equipo y estadísticas calculadas del personaje"""
+    from utils.equipment_calculator import calculate_character_stats
+    
+    character = db.query(models.Character).filter(models.Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+    
+    stats = calculate_character_stats(character, db)
+    return {
+        "character": {
+            "id": character.id,
+            "name": character.name,
+            "level": character.level
+        },
+        "equipment_stats": stats
+    }
+
+
+@router.post("/characters/{character_id}/equipment/equip")
+def equip_item(character_id: int, request: dict, db: Session = Depends(get_db)):
+    """Equipar un item al personaje"""
+    from utils.equipment_calculator import apply_equipment_to_character
+    
+    item_id = request.get("item_id")
+    slot = request.get("slot")
+    
+    if not item_id or not slot:
+        raise HTTPException(status_code=400, detail="Se requieren item_id y slot")
+    
+    result = apply_equipment_to_character(character_id, item_id, slot, db)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
+
+
+@router.post("/characters/{character_id}/equipment/unequip")
+def unequip_item(character_id: int, request: dict, db: Session = Depends(get_db)):
+    """Desequipar un item del personaje"""
+    from utils.equipment_calculator import remove_equipment_from_character
+    
+    slot = request.get("slot")
+    
+    if not slot:
+        raise HTTPException(status_code=400, detail="Se requiere slot")
+    
+    result = remove_equipment_from_character(character_id, slot, db)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
+
+
+@router.get("/characters/{character_id}/weapons")
+def get_character_weapons(character_id: int, db: Session = Depends(get_db)):
+    """Obtener armas disponibles del personaje"""
+    import json
+    
+    character = db.query(models.Character).filter(models.Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+    
+    # Obtener items del personaje que son armas
+    equipment = json.loads(character.equipment) if character.equipment else []
+    weapon_ids = [item.get('id') for item in equipment if item.get('id')]
+    
+    if weapon_ids:
+        weapons = db.query(models.Item).filter(
+            models.Item.id.in_(weapon_ids),
+            models.Item.category == 'Weapon'
+        ).all()
+        return [ {
+            "id": weapon.id,
+            "name": weapon.name,
+            "damage_dice": weapon.damage_dice,
+            "damage_type": weapon.damage_type,
+            "weapon_range": weapon.weapon_range,
+            "properties": json.loads(weapon.properties) if weapon.properties else [],
+            "cost": f"{weapon.cost_quantity} {weapon.cost_unit}",
+            "weight": weapon.weight,
+            "description": weapon.description
+        } for weapon in weapons ]
+    
+    return []
+
+
+@router.get("/characters/{character_id}/armor")
+def get_character_armor(character_id: int, db: Session = Depends(get_db)):
+    """Obtener armaduras disponibles del personaje"""
+    import json
+    
+    character = db.query(models.Character).filter(models.Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+    
+    # Obtener items del personaje que son armaduras
+    equipment = json.loads(character.equipment) if character.equipment else []
+    armor_ids = [item.get('id') for item in equipment if item.get('id')]
+    
+    if armor_ids:
+        armors = db.query(models.Item).filter(
+            models.Item.id.in_(armor_ids),
+            models.Item.category == 'Armor'
+        ).all()
+        return [ {
+            "id": armor.id,
+            "name": armor.name,
+            "armor_class_base": armor.armor_class_base,
+            "armor_class_dex_bonus": armor.armor_class_dex_bonus,
+            "stealth_disadvantage": armor.stealth_disadvantage,
+            "properties": json.loads(armor.properties) if armor.properties else [],
+            "cost": f"{armor.cost_quantity} {armor.cost_unit}",
+            "weight": armor.weight,
+            "description": armor.description
+        } for armor in armors ]
+    
+    return []

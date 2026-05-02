@@ -74,6 +74,8 @@ class Character(Base):
     stats = Column(Text, default="{}")  # JSON: STR, DEX, CON, INT, WIS, CHA, currHP, maxHP, etc.
     equipment = Column(Text, default="[]")  # JSON array
     starting_equipment = Column(Text, default="[]")  # JSON array
+    equipped_items = Column(Text, default="{}")  # JSON: {armor: item_id, weapon: item_id, shield: item_id, etc.}
+    calculated_stats = Column(Text, default="{}")  # JSON: AC, damage, etc.
     spell_list = Column(Text, default="[]")  # JSON array of spell indexes
     notes = Column(Text, default="")
     portrait_url = Column(String(500), nullable=True)

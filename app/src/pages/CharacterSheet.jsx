@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters } from '../api';
-import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye } from 'lucide-react';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem } from '../api';
+import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 const STAT_NAMES = { STR: 'FUE', DEX: 'DES', CON: 'CON', INT: 'INT', WIS: 'SAB', CHA: 'CAR' };
@@ -67,10 +67,13 @@ export default function CharacterSheet() {
   const [hitDie, setHitDie] = useState(8);
   const [equipment, setEquipment] = useState([]);
   const [shopItems, setShopItems] = useState([]);
-  const [shopSearch, setShopSearch] = useState('');
   const [shopPage, setShopPage] = useState(0);
+  const [shopSearch, setShopSearch] = useState('');
   const [shopLoading, setShopLoading] = useState(false);
   const [shopExpanded, setShopExpanded] = useState(null);
+  const [equipmentStats, setEquipmentStats] = useState(null);
+  const [weapons, setWeapons] = useState([]);
+  const [armor, setArmor] = useState([]);
   const [saving, setSaving] = useState(false);
   const [diceResult, setDiceResult] = useState(null);
 
@@ -139,6 +142,9 @@ export default function CharacterSheet() {
       setStats(statsObj);
       setEquipment(eq);
 
+      // Cargar equipo específico
+      loadEquipmentData(id);
+
       if (char.race_id) getRace(char.race_id).then(r => setRaceName(r.data.name)).catch(() => {});
       if (char.class_id) getClassApi(char.class_id).then(c => { setClassName(c.data.name); setHitDie(c.data.hit_die); }).catch(() => {});
       
@@ -149,6 +155,24 @@ export default function CharacterSheet() {
         }).catch(() => {});
       }
     } catch (e) { console.error(e); }
+  };
+
+  const loadEquipmentData = async (characterId) => {
+    try {
+      // Cargar estadísticas de equipo
+      const equipRes = await getCharacterEquipment(characterId);
+      setEquipmentStats(equipRes.data.equipment_stats);
+      
+      // Cargar armas
+      const weaponsRes = await getCharacterWeapons(characterId);
+      setWeapons(weaponsRes.data || []);
+      
+      // Cargar armaduras
+      const armorRes = await getCharacterArmor(characterId);
+      setArmor(armorRes.data || []);
+    } catch (e) {
+      console.error('Error cargando datos de equipo:', e);
+    }
   };
 
   useEffect(() => { load(); }, [id]);
@@ -183,8 +207,65 @@ export default function CharacterSheet() {
 
     const remaining = copperToCoins(currentCopper - costCopper);
     setStats(prev => ({ ...prev, coins: remaining }));
-    setEquipment(prev => ([...prev, { name: item.name, cost: renderCost(item) }]));
+    
+    // Añadir item al inventario con ID
+    const newItem = { 
+      id: item.id, 
+      name: item.name, 
+      cost: renderCost(item),
+      category: item.category,
+      damage_dice: item.damage_dice,
+      damage_type: item.damage_type,
+      weapon_range: item.weapon_range,
+      armor_class_base: item.armor_class_base,
+      armor_class_dex_bonus: item.armor_class_dex_bonus,
+      stealth_disadvantage: item.stealth_disadvantage,
+      properties: item.properties || []
+    };
+    
+    setEquipment(prev => ([...prev, newItem]));
     alert(`Comprado ${item.name}. Te quedan ${formatCoins(remaining)}.`);
+    
+    // Si es arma o armadura, ofrecer equipar automáticamente
+    if (item.category === 'Weapon' || item.category === 'Armor') {
+      const shouldEquip = window.confirm(`¿Quieres equipar ${item.name} ahora?`);
+      if (shouldEquip) {
+        const slot = item.category === 'Weapon' ? 'weapon' : 'armor';
+        equipItemToCharacter(item.id, slot);
+      }
+    }
+  };
+
+  const equipItemToCharacter = async (itemId, slot) => {
+    try {
+      const result = await equipItem(id, itemId, slot);
+      if (result.data.success) {
+        alert(`${result.data.equipped_item.name} equipado en ranura ${slot}`);
+        // Recargar datos de equipo
+        await loadEquipmentData(id);
+      } else {
+        alert('Error al equipar item: ' + (result.data.error || 'Error desconocido'));
+      }
+    } catch (e) {
+      console.error('Error equipando item:', e);
+      alert('Error al equipar item');
+    }
+  };
+
+  const unequipItemFromCharacter = async (slot) => {
+    try {
+      const result = await unequipItem(id, slot);
+      if (result.data.success) {
+        alert(`Item desequipado de ranura ${slot}`);
+        // Recargar datos de equipo
+        await loadEquipmentData(id);
+      } else {
+        alert('Error al desequipar item: ' + (result.data.error || 'Error desconocido'));
+      }
+    } catch (e) {
+      console.error('Error desequipando item:', e);
+      alert('Error al desequipar item');
+    }
   };
 
   const save = async () => {
@@ -464,6 +545,130 @@ export default function CharacterSheet() {
           </div>
         )}
       </div>
+
+      {/* Equipment Stats */}
+      {equipmentStats && (
+        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+          <h3><ShieldPlus size={18} /> Estadísticas de Equipo</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
+              <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Clase de Armadura</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{equipmentStats.armor_class || 10}</div>
+            </div>
+            {equipmentStats.weapon_damage && (
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
+                <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Daño del Arma</div>
+                <div style={{ fontSize: '1.2rem' }}>
+                  {equipmentStats.weapon_damage.damage_dice} {equipmentStats.weapon_damage.damage_type && `(${equipmentStats.weapon_damage.damage_type})`}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  {equipmentStats.weapon_damage.name}
+                </div>
+              </div>
+            )}
+          </div>
+          {equipmentStats.stealth_disadvantage && (
+            <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', marginTop: '1rem' }}>
+              <span style={{ color: '#ff6b6b' }}>⚠️ Penalización de Sigilo: Esta armadura te otorga desventaja en tiradas de sigilo</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Weapons Section */}
+      {weapons.length > 0 && (
+        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+          <h3><Swords size={18} /> Armas</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+            {weapons.map((weapon, index) => (
+              <div key={index} style={{ 
+                background: 'rgba(0,0,0,0.3)', 
+                padding: '1rem', 
+                borderRadius: '8px',
+                border: equipmentStats?.equipment_slots?.weapon?.id === weapon.id ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--accent-gold)' }}>{weapon.name}</div>
+                {weapon.damage_dice && (
+                  <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                    {weapon.damage_dice} {weapon.damage_type && `(${weapon.damage_type})`}
+                  </div>
+                )}
+                {weapon.weapon_range && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Alcance: {weapon.weapon_range}</div>
+                )}
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{weapon.cost}</div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button 
+                    onClick={() => equipItemToCharacter(weapon.id, 'weapon')}
+                    className="btn btn-sm" 
+                    style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
+                    disabled={equipmentStats?.equipment_slots?.weapon?.id === weapon.id}
+                  >
+                    {equipmentStats?.equipment_slots?.weapon?.id === weapon.id ? 'Equipado' : 'Equipar'}
+                  </button>
+                  {equipmentStats?.equipment_slots?.weapon?.id === weapon.id && (
+                    <button 
+                      onClick={() => unequipItemFromCharacter('weapon')}
+                      className="btn btn-danger btn-sm" 
+                      style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
+                    >
+                      Desequipar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Armor Section */}
+      {armor.length > 0 && (
+        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+          <h3><Shield size={18} /> Armaduras</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+            {armor.map((armorItem, index) => (
+              <div key={index} style={{ 
+                background: 'rgba(0,0,0,0.3)', 
+                padding: '1rem', 
+                borderRadius: '8px',
+                border: equipmentStats?.equipment_slots?.armor?.id === armorItem.id ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--accent-gold)' }}>{armorItem.name}</div>
+                {armorItem.armor_class_base && (
+                  <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                    CA: {armorItem.armor_class_base}
+                    {armorItem.armor_class_dex_bonus && ' + DES'}
+                  </div>
+                )}
+                {armorItem.stealth_disadvantage && (
+                  <div style={{ fontSize: '0.8rem', color: '#ff6b6b', marginBottom: '0.5rem' }}>⚠️ Penalización de Sigilo</div>
+                )}
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{armorItem.cost}</div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button 
+                    onClick={() => equipItemToCharacter(armorItem.id, 'armor')}
+                    className="btn btn-sm" 
+                    style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
+                    disabled={equipmentStats?.equipment_slots?.armor?.id === armorItem.id}
+                  >
+                    {equipmentStats?.equipment_slots?.armor?.id === armorItem.id ? 'Equipada' : 'Equipar'}
+                  </button>
+                  {equipmentStats?.equipment_slots?.armor?.id === armorItem.id && (
+                    <button 
+                      onClick={() => unequipItemFromCharacter('armor')}
+                      className="btn btn-danger btn-sm" 
+                      style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}
+                    >
+                      Desequipar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
