@@ -465,6 +465,11 @@ export default function CharacterSheet() {
         <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#fff' }}>{character.name}</h1>
         <p style={{ color: 'var(--accent-gold)', fontSize: '1rem', margin: '0.3rem 0' }}>
           Nivel {character.level} {raceName ? `• ${raceName}` : ''} {className ? `• ${className}` : ''} {!raceName && !className && '• Monstruo'}
+          {character.level < 20 && (
+            <button className="btn btn-ghost btn-sm" onClick={levelUp} style={{ marginLeft: '10px', padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>
+              <ArrowUp size={12} style={{marginRight: '3px'}}/> Subir de Nivel
+            </button>
+          )}
         </p>
         <span className="badge badge-gold">Competencia: +{profBonus}</span>
       </div>
@@ -577,6 +582,75 @@ export default function CharacterSheet() {
         <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textAlign: 'center', marginTop: '1rem' }}>
           Haz clic en un atributo para tirar un chequeo (1d20 + mod)
         </p>
+      </div>
+
+      {/* Weapons & Armor */}
+      <div className="glass-panel" style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent-gold)' }}>
+        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+          {/* Armas */}
+          <div style={{ flex: '1 1 300px' }}>
+            <h3 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-gold)' }}>
+              <Swords size={18} /> Ataques y Armas
+            </h3>
+            {weapons.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No tienes armas equipadas.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {weapons.map((w, idx) => {
+                  const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                  const isRanged = w.weapon_range === 'Ranged';
+                  const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
+                  const attackMod = mod(stats[baseStat]) + profBonus;
+                  const dmgMod = mod(stats[baseStat]);
+                  
+                  return (
+                    <div key={idx} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{w.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#888' }}>{w.damage_dice || '1'} {w.damage_type?.name || w.damage_type || ''} • {w.weapon_range}</div>
+                      </div>
+                      <div className="flex-row" style={{ gap: '0.5rem' }}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`1d20+${attackMod}`, `Ataque con ${w.name}`)} title="Tirar Ataque" style={{ color: 'var(--accent-blue)', padding: '0.2rem 0.5rem' }}>
+                          Atq {attackMod >= 0 ? '+' : ''}{attackMod}
+                        </button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`${w.damage_dice || '1'}${dmgMod >= 0 ? '+' : ''}${dmgMod}`, `Daño con ${w.name}`)} title="Tirar Daño" style={{ color: 'var(--accent-red)', padding: '0.2rem 0.5rem' }}>
+                          Daño {dmgMod >= 0 ? '+' : ''}{dmgMod}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Armaduras */}
+          <div style={{ flex: '1 1 200px' }}>
+            <h3 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-blue)' }}>
+              <Shield size={18} /> Armadura Equipada
+            </h3>
+            {armor.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sin armadura (Base 10 + DES).</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {armor.map((a, idx) => (
+                  <div key={idx} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{a.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                        CA Base: {a.armor_class_base || 10}
+                        {a.armor_class_dex_bonus ? (a.armor_class_max_bonus ? ` (Max +${a.armor_class_max_bonus} DES)` : ' (+DES)') : ''}
+                      </div>
+                    </div>
+                    {a.stealth_disadvantage && (
+                      <span className="badge badge-red" style={{ fontSize: '0.6rem' }}>Sigilo Desv.</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Notes */}
