@@ -387,7 +387,7 @@ export default function PlayerCreator() {
         {step === getStepNumber('Linaje') && (
           <div className="fade-in">
             <h2>🧬 Selecciona tu Linaje</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.8rem', maxHeight: '250px', overflowY: 'auto', padding: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.8rem', maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
               {races.map(r => {
                 const isSelected = charData.race_id === r.id;
                 let bonusText = '';
@@ -450,7 +450,7 @@ export default function PlayerCreator() {
         {step === getStepNumber('Vocación') && (
           <div className="fade-in">
             <h2>⚔️ Selecciona tu Vocación</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.8rem', maxHeight: '300px', overflowY: 'auto', padding: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.8rem', maxHeight: '450px', overflowY: 'auto', padding: '0.5rem' }}>
               {classes.map(c => {
                 const isSelected = charData.class_id === c.id;
                 let saves = '';
@@ -600,7 +600,7 @@ export default function PlayerCreator() {
                     <p style={{ color: 'var(--text-muted)' }}>
                         Como {selectedClass?.name}{charData.subrace_index === 'high-elf' ? ' (y Alto Elfo)' : ''}, sabes <strong>{allowedCantripsCount} trucos</strong>.
                     </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem', maxHeight: '300px', overflowY: 'auto', padding: '0.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem', maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
                         {availableCantrips.map(c => {
                             const isSelected = charData.spell_list.includes(c.index);
                             return (
@@ -641,7 +641,7 @@ export default function PlayerCreator() {
                     <p style={{ color: 'var(--text-muted)' }}>
                         Como {selectedClass?.name}, comienzas con <strong>{allowedLevel1Count} conjuros</strong> de nivel 1. {prepareAllClasses.includes(classNameLow) ? '(Conoces todos, solo selecciona aquellos que usualmente prepararías en tu lista).' : ''}
                     </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem', maxHeight: '300px', overflowY: 'auto', padding: '0.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem', maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
                         {availableLevel1Spells.map(c => {
                             const isSelected = charData.spell_list.includes(c.index);
                             return (

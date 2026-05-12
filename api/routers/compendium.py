@@ -150,7 +150,7 @@ def list_magic_items(skip: int = 0, limit: int = 50, search: str = "",
 
 @router.get("/races", response_model=List[schemas.RaceResponse])
 def list_races(db: Session = Depends(get_db)):
-    return db.query(models.Race).all()
+    return db.query(models.Race).order_by(models.Race.name).all()
 
 
 @router.get("/races/{race_id}", response_model=schemas.RaceResponse)
@@ -167,7 +167,7 @@ def get_race(race_id: int, db: Session = Depends(get_db)):
 
 @router.get("/classes", response_model=List[schemas.ClassResponse])
 def list_classes(db: Session = Depends(get_db)):
-    return db.query(models.Class).all()
+    return db.query(models.Class).order_by(models.Class.name).all()
 
 
 @router.get("/classes/{class_id}", response_model=schemas.ClassResponse)
