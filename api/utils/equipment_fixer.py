@@ -3,29 +3,7 @@ import re
 from sqlalchemy.orm import Session
 import models
 
-EN_TO_ES = {
-    "dagger": "daga",
-    "leather armor": "armadura de cuero",
-    "chain mail": "cota de mallas",
-    "explorer's pack": "paquete de explorador",
-    "thieves' tools": "herramientas de ladrón",
-    "longbow": "arco largo",
-    "arrow": "flechas (20)",
-    "javelin": "jabalina",
-    "shield": "escudo",
-    "dart": "dardo",
-    "spellbook": "libro de conjuros",
-    "rapier": "estoque",
-    "shortsword": "espada corta",
-    "shortbow": "arco corto",
-    "scale mail": "cota de escamas",
-    "handaxe": "hacha de mano",
-    "light crossbow": "ballesta ligera",
-    "mace": "maza",
-    "warhammer": "martillo de guerra",
-    "chain shirt": "camisote de mallas",
-    "holy symbol": "símbolo sagrado"
-}
+# EN_TO_ES obsolete since we use name_en
 
 def extract_coins(item_name):
     match = re.match(r'^(\d+)\s*(po|gp|sp|pp|cp|ep|pc|pp|pe)\s*$', str(item_name).strip().lower())
@@ -66,8 +44,7 @@ def process_equipment_list(eq_list, stats_coins, item_by_name):
             
         # 3. Tratar de buscar el ID
         search_name = name.lower().strip()
-        if search_name in EN_TO_ES:
-            search_name = EN_TO_ES[search_name]
+        # No translation needed, we check name_en directly now
             
         db_item = item_by_name.get(search_name)
         
@@ -141,7 +118,8 @@ def fix_character_equipment(character, db: Session):
         seq = []
         
     new_eq, gold1 = process_equipment_list(eq, stats["coins"], item_by_name)
-    new_seq, gold2 = process_equipment_list(seq, stats["coins"], item_by_name)
+    dummy_coins = {}
+    new_seq, gold2 = process_equipment_list(seq, dummy_coins, item_by_name)
     
     # Eliminar duplicados
     seen = set()
