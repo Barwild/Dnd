@@ -234,10 +234,11 @@ export default function CharacterSheet() {
     alert(`Comprado ${item.name}. Te quedan ${formatCoins(remaining)}.`);
     
     // Si es arma o armadura, ofrecer equipar automáticamente
-    if (item.category === 'Weapon' || item.category === 'Armor') {
+    if (item.category === 'Weapon' || item.category === 'Armor' || item.category === 'Arma' || item.category === 'Armadura' || item.category === 'Shield' || item.category === 'Escudo') {
       const shouldEquip = window.confirm(`¿Quieres equipar ${item.name} ahora?`);
       if (shouldEquip) {
-        const slot = item.category === 'Weapon' ? 'weapon' : 'armor';
+        const isWeapon = item.category === 'Weapon' || item.category === 'Arma';
+        const slot = isWeapon ? 'weapon' : 'armor';
         equipItemToCharacter(item.id, slot);
       }
     }

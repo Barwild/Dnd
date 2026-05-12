@@ -124,7 +124,15 @@ def fix_character_equipment(character, db: Session):
         
     # Cargar diccionario de items para la búsqueda
     all_items = db.query(models.Item).all()
-    item_by_name = {item.name.lower(): item for item in all_items}
+    item_by_name = {}
+    for item in all_items:
+        if item.name:
+            item_by_name[item.name.lower()] = item
+        if item.name_en:
+            item_by_name[item.name_en.lower()] = item
+        if item.index:
+            item_by_name[item.index.replace('-', ' ').lower()] = item
+            item_by_name[item.index.lower()] = item
     
     try:
         seq = json.loads(character.starting_equipment) if character.starting_equipment else []

@@ -157,9 +157,10 @@ export default function EquipmentSheet() {
     await loadEquipmentData(id); // Reload weapons and armor immediately
     alert(`Comprado ${item.name}.`);
     
-    if (item.category === 'Weapon' || item.category === 'Armor') {
+    if (item.category === 'Weapon' || item.category === 'Armor' || item.category === 'Arma' || item.category === 'Armadura' || item.category === 'Shield' || item.category === 'Escudo') {
       if (window.confirm(`¿Quieres equipar ${item.name} ahora?`)) {
-        equipItemToCharacter(item.id, item.category === 'Weapon' ? 'weapon' : 'armor');
+        const isWeapon = item.category === 'Weapon' || item.category === 'Arma';
+        equipItemToCharacter(item.id, isWeapon ? 'weapon' : 'armor');
       }
     }
   };
