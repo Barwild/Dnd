@@ -206,6 +206,7 @@ class CharacterCreate(BaseModel):
     stats: str = "{}"
     equipment: str = "[]"
     starting_equipment: Optional[str] = None
+    equipped_items: str = "{}"
     spell_list: str = "[]"
     notes: str = ""
     portrait_url: Optional[str] = None
@@ -238,6 +239,7 @@ class CharacterResponse(BaseModel):
     stats: str
     equipment: str
     starting_equipment: Optional[str] = None
+    equipped_items: Optional[str] = "{}"
     spell_list: str
     notes: str
     portrait_url: Optional[str] = None
@@ -343,7 +345,10 @@ class ItemResponse(BaseModel):
     properties: str
     damage_dice: str
     damage_type: str
-
+    weapon_range: str = ""
+    armor_class_base: Optional[int] = None
+    armor_class_dex_bonus: bool = False
+    stealth_disadvantage: bool = False
     class Config:
         from_attributes = True
 

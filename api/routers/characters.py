@@ -26,6 +26,7 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
         stats=data.stats,
         equipment=data.equipment,
         starting_equipment=data.starting_equipment or data.equipment,
+        equipped_items=data.equipped_items,
         spell_list=data.spell_list,
         notes=data.notes,
         portrait_url=data.portrait_url
@@ -137,6 +138,7 @@ def _char_response(char, db):
         campaign_id=char.campaign_id, user_id=char.user_id,
         stats=char.stats, equipment=char.equipment,
         starting_equipment=char.starting_equipment,
+        equipped_items=char.equipped_items or "{}",
         spell_list=char.spell_list, notes=char.notes,
         portrait_url=char.portrait_url, created_at=char.created_at,
         owner_name=owner.display_name if owner else "",
@@ -145,7 +147,7 @@ def _char_response(char, db):
     )
 
 
-@router.get("/characters/{character_id}/equipment")
+@router.get("/{character_id}/equipment")
 def get_character_equipment(character_id: int, db: Session = Depends(get_db)):
     """Obtener equipo y estadísticas calculadas del personaje"""
     from utils.equipment_calculator import calculate_character_stats
@@ -165,7 +167,7 @@ def get_character_equipment(character_id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/characters/{character_id}/equipment/equip")
+@router.post("/{character_id}/equipment/equip")
 def equip_item(character_id: int, request: dict, db: Session = Depends(get_db)):
     """Equipar un item al personaje"""
     from utils.equipment_calculator import apply_equipment_to_character
@@ -184,7 +186,7 @@ def equip_item(character_id: int, request: dict, db: Session = Depends(get_db)):
     return result
 
 
-@router.post("/characters/{character_id}/equipment/unequip")
+@router.post("/{character_id}/equipment/unequip")
 def unequip_item(character_id: int, request: dict, db: Session = Depends(get_db)):
     """Desequipar un item del personaje"""
     from utils.equipment_calculator import remove_equipment_from_character
@@ -202,7 +204,7 @@ def unequip_item(character_id: int, request: dict, db: Session = Depends(get_db)
     return result
 
 
-@router.get("/characters/{character_id}/weapons")
+@router.get("/{character_id}/weapons")
 def get_character_weapons(character_id: int, db: Session = Depends(get_db)):
     """Obtener armas disponibles del personaje"""
     import json
@@ -235,7 +237,7 @@ def get_character_weapons(character_id: int, db: Session = Depends(get_db)):
     return []
 
 
-@router.get("/characters/{character_id}/armor")
+@router.get("/{character_id}/armor")
 def get_character_armor(character_id: int, db: Session = Depends(get_db)):
     """Obtener armaduras disponibles del personaje"""
     import json

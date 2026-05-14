@@ -10,6 +10,7 @@ const CANTRIPS_KNOWN = {
   'clérigo': [3,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5],
   'druida': [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
   'brujo': [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
+  'artífice': [2,2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4],
 };
 
 const SPELLS_KNOWN = {
@@ -19,14 +20,15 @@ const SPELLS_KNOWN = {
   'brujo': [2,3,4,5,6,7,8,9,10,10,11,11,12,12,13,13,14,14,15,15],
 };
 
-const PREPARED_CASTERS = ['mago', 'clérigo', 'druida', 'paladín'];
+const PREPARED_CASTERS = ['mago', 'clérigo', 'druida', 'paladín', 'artífice'];
 const NON_CASTERS = ['bárbaro', 'guerrero', 'monje', 'pícaro'];
 const FULL_CASTERS = ['bardo', 'clérigo', 'druida', 'hechicero', 'mago'];
-const HALF_CASTERS = ['paladín', 'explorador'];
+const HALF_CASTERS = ['paladín', 'explorador', 'artífice'];
 
 const SPELLCASTING_ABILITY = {
   'mago': 'INT', 'hechicero': 'CHA', 'bardo': 'CHA', 'paladín': 'CHA',
   'clérigo': 'WIS', 'druida': 'WIS', 'explorador': 'WIS', 'brujo': 'CHA',
+  'artífice': 'INT',
 };
 
 const SPELL_SLOTS_TABLE = [
@@ -80,7 +82,10 @@ export default function Spellbook() {
       const c = res.data;
       let s = {};
       try { s = JSON.parse(c.stats || '{}'); } catch {}
-      if (!s.spells) s.spells = [];
+      if (!s.spells || s.spells.length === 0) {
+        // Fallback: load from spell_list (for chars created before fix)
+        try { s.spells = JSON.parse(c.spell_list || '[]'); } catch { s.spells = []; }
+      }
       if (!s.spellSlots) {
         s.spellSlots = {};
         for (let i = 1; i <= 9; i++) s.spellSlots[i] = { max: 0, used: 0 };
@@ -103,7 +108,10 @@ export default function Spellbook() {
 
   const saveSpells = async () => {
     setSaving(true);
-    await updateCharacter(id, { stats: JSON.stringify(statsObj) });
+    await updateCharacter(id, {
+      stats: JSON.stringify(statsObj),
+      spell_list: JSON.stringify(statsObj.spells || [])
+    });
     setSaving(false);
   };
 
@@ -133,7 +141,8 @@ export default function Spellbook() {
   } else if (PREPARED_CASTERS.includes(cn)) {
     const abilityKey = SPELLCASTING_ABILITY[cn] || 'INT';
     const abilityMod = Math.floor(((statsObj[abilityKey] || 10) - 10) / 2);
-    const casterLevel = cn === 'paladín' ? Math.floor((character?.level || 1) / 2) : (character?.level || 1);
+    const isHalfCaster = HALF_CASTERS.includes(cn);
+    const casterLevel = isHalfCaster ? Math.floor((character?.level || 1) / 2) : (character?.level || 1);
     maxSpells = Math.max(1, abilityMod + casterLevel);
     spellLimitLabel = 'Conjuros preparados';
   }

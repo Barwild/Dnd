@@ -17,8 +17,8 @@ const ABILITY_MAP = {
 };
 
 // Cantrips per class level 1
-const CASTER_CANTRIPS = { 'bardo': 2, 'clérigo': 3, 'druida': 2, 'hechicero': 4, 'mago': 3, 'brujo': 2 };
-const CASTER_SLOTS = { 'bardo': { 1: 2 }, 'clérigo': { 1: 2 }, 'druida': { 1: 2 }, 'hechicero': { 1: 2 }, 'mago': { 1: 2 }, 'brujo': { 1: 1 } };
+const CASTER_CANTRIPS = { 'bardo': 2, 'clérigo': 3, 'druida': 2, 'hechicero': 4, 'mago': 3, 'brujo': 2, 'artífice': 2 };
+const CASTER_SLOTS = { 'bardo': { 1: 2 }, 'clérigo': { 1: 2 }, 'druida': { 1: 2 }, 'hechicero': { 1: 2 }, 'mago': { 1: 2 }, 'brujo': { 1: 1 }, 'artífice': { 1: 2 } };
 
 const SKILLS_MASTER = [
   { index: 'acrobatics', name: 'Acrobacias' }, { index: 'animal-handling', name: 'Trato con Animales' },
@@ -34,7 +34,8 @@ const SKILLS_MASTER = [
 
 const CLASS_SKILL_COUNT = {
   'bárbaro': 2, 'bardo': 3, 'clérigo': 2, 'druida': 2, 'guerrero': 2, 'monje': 2,
-  'paladín': 2, 'explorador': 3, 'pícaro': 4, 'hechicero': 2, 'brujo': 2, 'mago': 2
+  'paladín': 2, 'explorador': 3, 'pícaro': 4, 'hechicero': 2, 'brujo': 2, 'mago': 2,
+  'artífice': 2
 };
 
 const CLASS_SKILL_LIST = {
@@ -49,7 +50,8 @@ const CLASS_SKILL_LIST = {
   'pícaro': ['acrobatics', 'athletics', 'deception', 'insight', 'intimidation', 'investigation', 'perception', 'performance', 'persuasion', 'sleight-of-hand', 'stealth'],
   'hechicero': ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'],
   'brujo': ['arcana', 'deception', 'history', 'intimidation', 'investigation', 'nature', 'religion'],
-  'mago': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion']
+  'mago': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion'],
+  'artífice': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'perception', 'sleight-of-hand']
 };
 
 export default function PlayerCreator() {
@@ -95,25 +97,28 @@ export default function PlayerCreator() {
   const allowedCantripsCount = (CASTER_CANTRIPS[selectedClass?.name?.toLowerCase()] || 0) + (charData.subrace_index === 'high-elf' ? 1 : 0);
   // Caster classes that learn spells (not prepare)
   const KNOWN_LVL1_SPELLS = { 'bardo': 4, 'hechicero': 2, 'brujo': 2, 'mago': 6 };
-  const prepareAllClasses = ['clérigo', 'druida'];
+  const prepareAllClasses = ['clérigo', 'druida', 'artífice'];
   
   const classNameLow = selectedClass?.name?.toLowerCase() || '';
   const allowedLevel1Count = KNOWN_LVL1_SPELLS[classNameLow] || 0;
-  // If cleric/druid, they essentially know all their level 1 spells, so we don't force 'spell selection' here.
-  const needsMagicStep = allowedCantripsCount > 0 || allowedLevel1Count > 0;
   
-  const availableCantrips = cantrips.filter(c => {
+  const availableCantrips = (cantrips || []).filter(c => {
     try {
       const clsList = JSON.parse(c.classes || '[]');
       return clsList.includes(selectedClass?.name) || (charData.subrace_index === 'high-elf' && clsList.includes('Mago'));
     } catch { return false; }
   });
 
-  const availableLevel1Spells = level1Spells.filter(c => {
+  const availableLevel1Spells = (level1Spells || []).filter(c => {
     try {
       return JSON.parse(c.classes || '[]').includes(selectedClass?.name);
     } catch { return false; }
   });
+
+  // If no spells are available at all for this class, skip the magic step
+  const hasNoSpellsAvailable = availableCantrips.length === 0 && availableLevel1Spells.length === 0;
+  // If cleric/druid, they essentially know all their level 1 spells, so we don't force 'spell selection' here.
+  const needsMagicStep = !hasNoSpellsAvailable && (allowedCantripsCount > 0 || allowedLevel1Count > 0);
 
   const selectedCantripsCount = charData.spell_list.filter(sIndex => availableCantrips.some(c => c.index === sIndex)).length;
   const selectedLevel1Count = charData.spell_list.filter(sIndex => availableLevel1Spells.some(c => c.index === sIndex)).length;
@@ -238,12 +243,17 @@ export default function PlayerCreator() {
         try { bgSkills = JSON.parse(selectedBg.skill_proficiencies || '[]'); } catch {}
       }
 
+      let saveProfs = [];
+      if (cls) {
+        try { saveProfs = JSON.parse(cls.saving_throws || '[]'); } catch {}
+      }
+
       const statsPayload = {
         ...final, currHP: Math.max(maxHP, 1), maxHP: Math.max(maxHP, 1),
-        spells: [], spell_slots: spellSlots,
+        spells: charData.spell_list || [], spell_slots: spellSlots,
         skillProficiencies: Array.from(new Set([...bgSkills, ...charData.skill_proficiencies])), 
         background_skills: bgSkills,
-        saveProficiencies: [], expertise: [],
+        saveProficiencies: saveProfs, expertise: [],
         background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0
       };
 

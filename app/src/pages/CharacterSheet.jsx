@@ -17,10 +17,10 @@ const STAT_ICONS = {
 const FULL_NAMES = { STR: 'Fuerza', DEX: 'Destreza', CON: 'Constitución', INT: 'Inteligencia', WIS: 'Sabiduría', CHA: 'Carisma' };
 
 // HP per level (beyond lvl 1): avg or roll
-const CLASS_HIT_DICE = { 'bárbaro': 12, 'guerrero': 10, 'paladín': 10, 'explorador': 10, 'bardo': 8, 'clérigo': 8, 'druida': 8, 'monje': 8, 'brujo': 8, 'pícaro': 8, 'hechicero': 6, 'mago': 6 };
+const CLASS_HIT_DICE = { 'bárbaro': 12, 'guerrero': 10, 'paladín': 10, 'explorador': 10, 'bardo': 8, 'clérigo': 8, 'druida': 8, 'monje': 8, 'brujo': 8, 'pícaro': 8, 'hechicero': 6, 'mago': 6, 'artífice': 8 };
 
 const FULL_CASTERS = ['bardo', 'clérigo', 'druida', 'hechicero', 'mago'];
-const HALF_CASTERS = ['paladín', 'explorador'];
+const HALF_CASTERS = ['paladín', 'explorador', 'artífice'];
 
 const SPELL_SLOTS_TABLE = [
   [0,0,0,0,0,0,0,0,0], // Lvl 0
@@ -76,6 +76,7 @@ export default function CharacterSheet() {
   const [armor, setArmor] = useState([]);
   const [saving, setSaving] = useState(false);
   const [diceResult, setDiceResult] = useState(null);
+  const [levelUpModal, setLevelUpModal] = useState(null); // {newLevel, hpGain}
 
   const COIN_VALUES = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
   const normalizeCoins = (coins) => ({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...coins });
@@ -365,7 +366,14 @@ export default function CharacterSheet() {
     const hd = CLASS_HIT_DICE[cn] || hitDie;
     const avg = Math.floor(hd / 2) + 1;
     const hpGain = avg + mod(stats.CON || 10);
-    
+    const isCaster = FULL_CASTERS.includes(cn) || HALF_CASTERS.includes(cn) || cn === 'brujo';
+
+    setLevelUpModal({ newLevel, hpGain, hd, avg, cn, isCaster });
+  };
+
+  const confirmLevelUp = () => {
+    const { newLevel, hpGain, cn } = levelUpModal;
+
     setStats(prev => {
       const newState = { 
         ...prev, 
@@ -373,7 +381,6 @@ export default function CharacterSheet() {
         currHP: (prev.currHP || 0) + Math.max(1, hpGain) 
       };
 
-      // Auto-update spell slots
       if (FULL_CASTERS.includes(cn)) {
         const row = SPELL_SLOTS_TABLE[newLevel] || [0,0,0,0,0,0,0,0,0];
         const newSlots = { ...(prev.spellSlots || {}) };
@@ -402,6 +409,7 @@ export default function CharacterSheet() {
       return newState;
     });
     setCharacter(prev => ({ ...prev, level: newLevel }));
+    setLevelUpModal(null);
   };
 
   const handleRoll = async (formula, desc) => {
@@ -661,6 +669,33 @@ export default function CharacterSheet() {
           rows={4} style={{ width: '100%', resize: 'vertical' }} />
       </div>
 
+      {/* Level Up Modal */}
+      {levelUpModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ maxWidth: '450px', width: '90%', padding: '2rem', borderTop: '4px solid var(--accent-gold)' }}>
+            <h2 style={{ textAlign: 'center', color: 'var(--accent-gold)' }}>
+              <ArrowUp size={24} /> ¡Nivel {levelUpModal.newLevel}!
+            </h2>
+            <div style={{ background: 'rgba(0,100,0,0.15)', border: '1px solid rgba(0,100,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
+              <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Puntos de Golpe</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4a4' }}>+{Math.max(1, levelUpModal.hpGain)}</div>
+              <div style={{ fontSize: '0.75rem', color: '#888' }}>d{levelUpModal.hd} (prom. {levelUpModal.avg}) + CON ({mod(stats.CON || 10)})</div>
+            </div>
+            {levelUpModal.isCaster && (
+              <div style={{ background: 'rgba(139,0,0,0.15)', border: '1px solid rgba(139,0,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
+                <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Conjuros</div>
+                <div style={{ fontSize: '1rem', color: 'var(--accent-gold)' }}>Espacios de conjuro actualizados</div>
+                <button className="btn btn-gold btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { confirmLevelUp(); navigate(`/character/${id}/spells`); }}>
+                  Ir al Grimorio para aprender nuevos conjuros
+                </button>
+              </div>
+            )}
+            <div className="flex-row" style={{ justifyContent: 'center', marginTop: '1rem' }}>
+              <button className="btn btn-gold" onClick={confirmLevelUp}>Aceptar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
