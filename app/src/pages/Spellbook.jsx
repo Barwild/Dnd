@@ -326,7 +326,7 @@ export default function Spellbook() {
 
           {(search.length > 1 || levelFilter !== 'all') && (
             <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-              {filteredSpells.slice(0, 30).map(sp => {
+              {filteredSpells.map(sp => {
                 const isKnown = knownSpells.includes(sp.index);
                 return (
                   <div key={sp.id} style={{ marginBottom: '0.6rem', borderBottom: '1px solid #222', paddingBottom: '0.6rem' }}>
@@ -350,13 +350,13 @@ export default function Spellbook() {
                         <div style={{ color: '#999', marginBottom: '0.3rem' }}>
                           Tiempo: {sp.casting_time} • Rango: {sp.range} • Duración: {sp.duration}
                         </div>
-                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{sp.description?.substring(0, 500)}{sp.description?.length > 500 ? '...' : ''}</p>
+                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{sp.description || 'Sin descripción'}</p>
                       </div>
                     )}
                   </div>
                 );
               })}
-              {filteredSpells.length > 30 && <p style={{ color: '#666', textAlign: 'center' }}>+{filteredSpells.length - 30} más...</p>}
+              {filteredSpells.length === 0 && <p style={{ color: '#666', textAlign: 'center' }}>Sin resultados</p>}
             </div>
           )}
           {search.length <= 1 && levelFilter === 'all' && <p style={{ color: 'var(--text-dim)' }}>Busca un conjuro o filtra por nivel.</p>}
