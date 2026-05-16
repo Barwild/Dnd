@@ -366,7 +366,7 @@ export default function Spellbook() {
         <div className="glass-panel" style={{ flex: '1.2', minWidth: '300px' }}>
           <h3 style={{ textAlign: 'center', borderBottom: '2px solid var(--accent-red)', paddingBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Conjuros Preparados</h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '1rem', maxHeight: '65vh', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '1rem', maxHeight: '600px', overflowY: 'auto', paddingRight: '0.5rem' }}>
             {[0,1,2,3,4,5,6,7,8,9].map(lvl => {
               const spellsAtLevel = knownByLevel[lvl] || [];
               const slot = statsObj.spellSlots?.[lvl] || { max: 0, used: 0 };

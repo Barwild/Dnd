@@ -133,7 +133,31 @@ def fix_character_equipment(character, db: Session):
     character.stats = json.dumps(stats)
     character.equipment = json.dumps(deduped_eq)
     character.starting_equipment = json.dumps(new_seq)
-    
+
+    # Auto-equip weapons, armor, and shields into proper slots
+    try:
+        cur_equipped = json.loads(character.equipped_items) if character.equipped_items else {}
+    except:
+        cur_equipped = {}
+    if not cur_equipped:
+        cur_equipped = {}
+    for item in new_seq:
+        cat = (item.get('category') or '').lower()
+        name = (item.get('name') or '').lower()
+        item_id = item.get('id')
+        if not item_id:
+            continue
+        if any(w in name for w in ['escudo', 'shield']):
+            if 'shield' not in cur_equipped:
+                cur_equipped['shield'] = item_id
+        elif cat in ('arma', 'weapon'):
+            if 'weapon' not in cur_equipped:
+                cur_equipped['weapon'] = item_id
+        elif cat in ('armadura', 'armor'):
+            if 'armor' not in cur_equipped:
+                cur_equipped['armor'] = item_id
+    character.equipped_items = json.dumps(cur_equipped)
+
     from utils.equipment_calculator import calculate_character_stats
     new_calc_stats = calculate_character_stats(character, db)
     character.calculated_stats = json.dumps(new_calc_stats)
