@@ -214,7 +214,8 @@ export default function CharacterSheet() {
     }
 
     const remaining = copperToCoins(currentCopper - costCopper);
-    setStats(prev => ({ ...prev, coins: remaining }));
+    const newStats = { ...stats, coins: remaining };
+    setStats(newStats);
     
     // Añadir item al inventario con ID
     const newItem = { 
@@ -231,7 +232,12 @@ export default function CharacterSheet() {
       properties: item.properties || []
     };
     
-    setEquipment(prev => ([...prev, newItem]));
+    const newEq = [...equipment, newItem];
+    setEquipment(newEq);
+    
+    // Persistir compra al backend
+    await updateCharacter(id, { stats: JSON.stringify(newStats), equipment: JSON.stringify(newEq) });
+    await loadEquipmentData(id);
     alert(`Comprado ${item.name}. Te quedan ${formatCoins(remaining)}.`);
     
     // Si es arma o armadura, ofrecer equipar automáticamente
@@ -647,7 +653,7 @@ export default function CharacterSheet() {
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{a.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#888' }}>
                         CA Base: {a.armor_class_base || 10}
-                        {a.armor_class_dex_bonus ? (a.armor_class_max_bonus ? ` (Max +${a.armor_class_max_bonus} DES)` : ' (+DES)') : ''}
+                        {a.armor_class_dex_bonus ? ' (+DES)' : ''}
                       </div>
                     </div>
                     {a.stealth_disadvantage && (

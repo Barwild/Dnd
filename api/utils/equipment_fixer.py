@@ -64,6 +64,46 @@ def process_equipment_list(eq_list, stats_coins, item_by_name):
         
     return new_list, gold_added
 
+def auto_equip_items(character, db: Session):
+    """Auto-equipa armas/armaduras/escudos del equipo a sus ranuras."""
+    try:
+        seq = json.loads(character.starting_equipment) if character.starting_equipment else []
+    except:
+        seq = []
+    try:
+        cur_equipped = json.loads(character.equipped_items) if character.equipped_items else {}
+    except:
+        cur_equipped = {}
+    if not cur_equipped:
+        cur_equipped = {}
+    changed = False
+    # Load items dict for category lookup if items lack category
+    for item in seq:
+        item_id = item.get('id')
+        if not item_id:
+            continue
+        cat = (item.get('category') or '').lower()
+        name = (item.get('name') or '').lower()
+        if not cat:
+            db_item = db.query(models.Item).filter(models.Item.id == item_id).first()
+            if db_item:
+                cat = (db_item.category or '').lower()
+        if any(w in name for w in ['escudo', 'shield']):
+            if 'shield' not in cur_equipped:
+                cur_equipped['shield'] = item_id
+                changed = True
+        elif cat in ('arma', 'weapon'):
+            if 'weapon' not in cur_equipped:
+                cur_equipped['weapon'] = item_id
+                changed = True
+        elif cat in ('armadura', 'armor') and 'armor' not in cur_equipped:
+            cur_equipped['armor'] = item_id
+            changed = True
+    if changed:
+        character.equipped_items = json.dumps(cur_equipped)
+    return changed
+
+
 def fix_character_equipment(character, db: Session):
     """
     Auto-repara el equipo del personaje si tiene items sin ID o monedas como texto.
@@ -97,7 +137,11 @@ def fix_character_equipment(character, db: Session):
             needs_fix = True
             
     if not needs_fix:
-        return False
+        # Still try to auto-equip even if no fix needed
+        eq_changed = auto_equip_items(character, db)
+        if eq_changed:
+            db.commit()
+        return eq_changed
         
     # Cargar diccionario de items para la búsqueda
     all_items = db.query(models.Item).all()
@@ -133,30 +177,8 @@ def fix_character_equipment(character, db: Session):
     character.stats = json.dumps(stats)
     character.equipment = json.dumps(deduped_eq)
     character.starting_equipment = json.dumps(new_seq)
-
-    # Auto-equip weapons, armor, and shields into proper slots
-    try:
-        cur_equipped = json.loads(character.equipped_items) if character.equipped_items else {}
-    except:
-        cur_equipped = {}
-    if not cur_equipped:
-        cur_equipped = {}
-    for item in new_seq:
-        cat = (item.get('category') or '').lower()
-        name = (item.get('name') or '').lower()
-        item_id = item.get('id')
-        if not item_id:
-            continue
-        if any(w in name for w in ['escudo', 'shield']):
-            if 'shield' not in cur_equipped:
-                cur_equipped['shield'] = item_id
-        elif cat in ('arma', 'weapon'):
-            if 'weapon' not in cur_equipped:
-                cur_equipped['weapon'] = item_id
-        elif cat in ('armadura', 'armor'):
-            if 'armor' not in cur_equipped:
-                cur_equipped['armor'] = item_id
-    character.equipped_items = json.dumps(cur_equipped)
+    # Auto-equip ahora que los items tienen IDs
+    auto_equip_items(character, db)
 
     from utils.equipment_calculator import calculate_character_stats
     new_calc_stats = calculate_character_stats(character, db)

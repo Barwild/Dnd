@@ -103,6 +103,13 @@ def update_character(char_id: int, data: schemas.CharacterUpdate, db: Session = 
     
     db.commit()
     db.refresh(character)
+    
+    try:
+        from utils.equipment_fixer import fix_character_equipment
+        fix_character_equipment(character, db)
+    except Exception as e:
+        print("Error fixing equipment on update:", e)
+    
     return _char_response(character, db)
 
 
