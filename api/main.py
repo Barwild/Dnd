@@ -10,6 +10,13 @@ from database import engine
 # Create all tables
 models.Base.metadata.create_all(bind=engine)
 
+# Sync reference/compendium data from SQLite to the active database
+try:
+    from sync_data import sync_reference_data
+    sync_reference_data(engine)
+except Exception as e:
+    print(f"[startup] Data sync skipped: {e}")
+
 # Ensure database schema contains the starting_equipment column for characters
 inspector = inspect(engine)
 if 'characters' in inspector.get_table_names():
