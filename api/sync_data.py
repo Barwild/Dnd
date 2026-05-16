@@ -78,20 +78,27 @@ def sync_reference_data(target_engine=None):
             sql = text(f'INSERT OR REPLACE INTO "{table}" ({col_list}) VALUES ({param_list})')
 
         upserted = 0
+        errors = 0
         for row in rows:
             data = dict(row._mapping)
             try:
                 target.execute(sql, data)
                 upserted += 1
             except Exception as e:
+                errors += 1
+                if errors <= 3:  # Only print first 3 errors per table
+                    print(f"[sync] ERROR {table} {conflict_name}={data.get(conflict_name)}: {e}")
+                if errors == 4:
+                    print(f"[sync] ERROR {table}: ... more errors suppressed")
                 target.rollback()
-                print(f"[sync] WARNING: {table} row {conflict_name}="
-                      f"{data.get(conflict_name)} failed: {e}")
                 break
 
         target.commit()
         total_upserted += upserted
-        print(f"[sync]   {table}: {upserted} rows upserted")
+        status = f"{upserted} upserted"
+        if errors:
+            status += f", {errors} errors"
+        print(f"[sync]   {table}: {status}")
 
     source.close()
     target.close()
