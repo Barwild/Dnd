@@ -55,6 +55,7 @@ const CLASS_SKILL_LIST = {
 };
 
 export default function PlayerCreator() {
+  const navigate = useNavigate();
   const [races, setRaces] = useState([]);
   const [classes, setClasses] = useState([]);
   const [backgrounds, setBackgrounds] = useState([]);
