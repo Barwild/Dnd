@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry } from '../api';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus, Printer } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -62,6 +62,30 @@ const SUBCLASS_LEVELS = {
   'paladín': 3, 'explorador': 3, 'pícaro': 3, 'artífice': 3,
 };
 
+const SKILLS_MASTER = [
+  { index: 'acrobatics', name: 'Acrobacias' }, { index: 'animal-handling', name: 'Trato con Animales' },
+  { index: 'arcana', name: 'Arcanos' }, { index: 'athletics', name: 'Atletismo' },
+  { index: 'deception', name: 'Engaño' }, { index: 'history', name: 'Historia' },
+  { index: 'insight', name: 'Perspicacia' }, { index: 'intimidation', name: 'Intimidación' },
+  { index: 'investigation', name: 'Investigación' }, { index: 'medicine', name: 'Medicina' },
+  { index: 'nature', name: 'Naturaleza' }, { index: 'perception', name: 'Percepción' },
+  { index: 'performance', name: 'Interpretación' }, { index: 'persuasion', name: 'Persuasión' },
+  { index: 'religion', name: 'Religión' }, { index: 'sleight-of-hand', name: 'Juego de Manos' },
+  { index: 'stealth', name: 'Sigilo' }, { index: 'survival', name: 'Supervivencia' }
+];
+const SKILL_STAT_MAP = {
+  acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
+  deception: 'CHA', history: 'INT', insight: 'WIS', intimidation: 'CHA',
+  investigation: 'INT', medicine: 'WIS', nature: 'INT', perception: 'WIS',
+  performance: 'CHA', persuasion: 'CHA', religion: 'INT', 'sleight-of-hand': 'DEX',
+  stealth: 'DEX', survival: 'WIS'
+};
+const SPELL_ABILITY = {
+  bardo: 'CHA', clérigo: 'WIS', druida: 'WIS', hechicero: 'CHA',
+  brujo: 'CHA', mago: 'INT', paladín: 'WIS', explorador: 'WIS', artífice: 'INT'
+};
+const COIN_VALUES = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
+
 export default function CharacterSheet() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -87,8 +111,9 @@ export default function CharacterSheet() {
   const [levelUpModal, setLevelUpModal] = useState(null); // {newLevel, hpGain}
   const [subclassList, setSubclassList] = useState([]);
   const [subclassName, setSubclassName] = useState('');
+  const [allSpells, setAllSpells] = useState([]);
 
-  const COIN_VALUES = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
+
   const normalizeCoins = (coins) => ({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...coins });
   const parseCoins = (coins) => {
     if (typeof coins === 'string') {
@@ -157,6 +182,9 @@ export default function CharacterSheet() {
       setCharacter(char);
       setStats(statsObj);
       setEquipment(Array.isArray(eq) ? eq : []);
+
+      // Load spells for print layout
+      getSpells({ limit: 500 }).then(r => setAllSpells(r.data || [])).catch(() => {});
 
       // Cargar equipo específico
       loadEquipmentData(id);
@@ -519,6 +547,23 @@ export default function CharacterSheet() {
       navigate(`/character/${id}/spells`);
     }
   };
+
+  // ── Print layout computed values ──
+  const spellAbility = SPELL_ABILITY[className.toLowerCase()] || 'INT';
+  const spellMod = mod(stats[spellAbility] || 10);
+  const saveDC = 8 + spellMod + profBonus;
+  const spellAtk = spellMod + profBonus;
+  const printSkills = SKILLS_MASTER.map(sk => {
+    const skStat = SKILL_STAT_MAP[sk.index];
+    const statVal = mod(stats[skStat] || 10);
+    const isProf = (stats.skillProficiencies || []).includes(sk.index);
+    const isExpert = (stats.expertise || []).includes(sk.index);
+    const total = statVal + (isExpert ? profBonus * 2 : isProf ? profBonus : 0);
+    return { ...sk, stat: skStat, total, prof: isExpert ? 'expertise' : isProf ? 'proficient' : '' };
+  });
+  const knownSpells = (stats.spells || []).map(sIdx => allSpells.find(s => s.index === sIdx)).filter(Boolean);
+  const knownByLevel = {};
+  for (let i = 0; i <= 9; i++) { knownByLevel[i] = knownSpells.filter(s => (s.level || 0) === i); }
 
   const handleRoll = async (formula, desc) => {
     try {
@@ -929,6 +974,233 @@ export default function CharacterSheet() {
           </div>
         </div>
       )}
+
+      {/* ═══════ PRINT LAYOUT — Official D&D 5E Spanish Sheet ═══════ */}
+      <div className="print-sheet">
+
+        {/* ───── PAGE 1: Stats, Skills, Combat, Attacks ───── */}
+        <div className="print-page">
+          <div className="ps-header">
+            <div className="ps-field"><label>Nombre del Personaje</label><span>{character?.name || ''}</span></div>
+            <div className="ps-field"><label>Clase y Nivel</label><span>{className} {character?.level}</span></div>
+            <div className="ps-field"><label>Trasfondo</label><span>{character?.background_name || ''}</span></div>
+            <div className="ps-field"><label>Jugador</label><span>{character?.user_name || ''}</span></div>
+            <div className="ps-field"><label>Raza</label><span>{raceName}</span></div>
+            <div className="ps-field"><label>Alineamiento</label><span></span></div>
+            <div className="ps-field"><label>P. Experiencia</label><span></span></div>
+          </div>
+
+          <div className="ps-body">
+            {/* LEFT COLUMN: Stats */}
+            <div className="ps-stats-col">
+              {STAT_KEYS.map(k => {
+                const val = stats[k] || 10;
+                const m = mod(val);
+                const saveProf = (stats.savingThrows || []).includes(k);
+                const saveVal = m + (saveProf ? profBonus : 0);
+                return (
+                  <div key={k} className="ps-stat-row">
+                    <div className="ps-stat-box">
+                      <span className="ps-stat-label">{STAT_NAMES[k].substring(0,3)}</span>
+                      <span className="ps-stat-score">{val}</span>
+                      <span className="ps-stat-mod">{m >= 0 ? '+' : ''}{m}</span>
+                    </div>
+                    <div className="ps-save-row">
+                      <div className={`ps-save-dot ${saveProf ? 'filled' : ''}`}></div>
+                      <span>{saveVal >= 0 ? '+' : ''}{saveVal}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* RIGHT COLUMN: Skills */}
+            <div className="ps-skills-col">
+              <div className="ps-inspiration">
+                <span>Inspiración</span>
+                <div className="ps-dot-box"></div>
+              </div>
+              <div className="ps-prof-bonus">
+                <span>Bonificador de Competencia</span>
+                <span className="ps-value">+{profBonus}</span>
+              </div>
+              <div className="ps-skills-list">
+                {printSkills.map(sk => (
+                  <div key={sk.index} className="ps-skill-row">
+                    <div className={`ps-skill-dot ${sk.prof === 'expertise' ? 'double' : sk.prof ? 'filled' : ''}`}></div>
+                    <span className="ps-skill-total">{sk.total >= 0 ? '+' : ''}{sk.total}</span>
+                    <span className="ps-skill-name">{sk.name}</span>
+                    <span className="ps-skill-stat">({sk.stat})</span>
+                  </div>
+                ))}
+              </div>
+              <div className="ps-passive">
+                <span>Percepción Pasiva</span>
+                <span className="ps-value">{10 + mod(stats.WIS || 10) + (printSkills.find(s => s.index === 'perception')?.prof ? profBonus : 0)}</span>
+              </div>
+            </div>
+
+            {/* BOTTOM: Combat */}
+            <div className="ps-combat">
+              <div className="ps-combat-row">
+                <div className="ps-combat-item">
+                  <label>Clase de Armadura</label>
+                  <span className="ps-value-lg">{ac}</span>
+                </div>
+                <div className="ps-combat-item">
+                  <label>Iniciativa</label>
+                  <span className="ps-value-lg">{initiative >= 0 ? '+' : ''}{initiative}</span>
+                </div>
+                <div className="ps-combat-item">
+                  <label>Velocidad</label>
+                  <span className="ps-value-lg">{speed}</span>
+                </div>
+              </div>
+              <div className="ps-hp-section">
+                <div className="ps-hp-row">
+                  <span>Puntos de Golpe Máximos</span>
+                  <span className="ps-value">{stats.maxHP || 1}</span>
+                </div>
+                <div className="ps-hp-row">
+                  <span>PG Actuales</span>
+                  <span className="ps-value">{stats.currHP || 0}</span>
+                </div>
+                <div className="ps-hp-row">
+                  <span>PG Temporales</span>
+                  <span className="ps-value">{stats.tempHP || 0}</span>
+                </div>
+              </div>
+              <div className="ps-hd-section">
+                <div className="ps-hd-row">
+                  <span>Dados de Golpe</span>
+                  <span className="ps-value">{character?.level || 1}d{hitDie}</span>
+                </div>
+                <div className="ps-hd-row">
+                  <span>Éxitos de Muerte</span>
+                  <div className="ps-dots"><span>○ ○ ○</span></div>
+                </div>
+                <div className="ps-hd-row">
+                  <span>Fallos de Muerte</span>
+                  <div className="ps-dots"><span>○ ○ ○</span></div>
+                </div>
+              </div>
+            </div>
+
+            {/* BOTTOM: Attacks */}
+            <div className="ps-attacks">
+              <div className="ps-attacks-header">
+                <span>Ataques y Lanzamiento de Conjuros</span>
+              </div>
+              <div className="ps-attacks-table">
+                <div className="ps-attack-row header">
+                  <span>Nombre</span>
+                  <span>Bonif. Ataque</span>
+                  <span>Daño/Tipo</span>
+                </div>
+                {weapons.map((w, i) => {
+                  const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                  const isRanged = w.weapon_range === 'Ranged';
+                  const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
+                  const atkMod = mod(stats[baseStat]) + profBonus;
+                  const dmgMod = mod(stats[baseStat]);
+                  return (
+                    <div key={i} className="ps-attack-row">
+                      <span>{w.name}</span>
+                      <span>{atkMod >= 0 ? '+' : ''}{atkMod}</span>
+                      <span>{w.damage_dice || '1'}{dmgMod >= 0 ? '+' : ''}{dmgMod} {w.damage_type?.name || w.damage_type || ''}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ───── PAGE 2: Equipment, Features, Personality ───── */}
+        <div className="print-page">
+          <div className="ps-ppl">
+            <div className="ps-ppl-label">Rasgos de Personalidad</div>
+            <div className="ps-ppl-content">{character?.personality || ''}</div>
+          </div>
+          <div className="ps-ppl">
+            <div className="ps-ppl-label">Ideales</div>
+            <div className="ps-ppl-content">{character?.ideals || ''}</div>
+          </div>
+          <div className="ps-ppl">
+            <div className="ps-ppl-label">Vínculos</div>
+            <div className="ps-ppl-content">{character?.bonds || ''}</div>
+          </div>
+          <div className="ps-ppl">
+            <div className="ps-ppl-label">Defectos</div>
+            <div className="ps-ppl-content">{character?.flaws || ''}</div>
+          </div>
+
+          <div className="ps-features">
+            <div className="ps-section-title">Características y Rasgos</div>
+            <div className="ps-features-content">
+              {character?.features ? (
+                Array.isArray(character.features) ? character.features.join(', ') : character.features
+              ) : '-'}
+            </div>
+          </div>
+
+          <div className="ps-equipment">
+            <div className="ps-section-title">Equipo</div>
+            <div className="ps-equip-grid">
+              <div className="ps-equip-list">
+                {equipment.map((eq, i) => (
+                  <div key={i} className="ps-equip-item">{eq.name || eq}</div>
+                ))}
+              </div>
+              <div className="ps-coins">
+                <div className="ps-coin-row"><span>pp</span><span>{parseCoins(stats.coins).pp || 0}</span></div>
+                <div className="ps-coin-row"><span>gp</span><span>{parseCoins(stats.coins).gp || 0}</span></div>
+                <div className="ps-coin-row"><span>ep</span><span>{parseCoins(stats.coins).ep || 0}</span></div>
+                <div className="ps-coin-row"><span>sp</span><span>{parseCoins(stats.coins).sp || 0}</span></div>
+                <div className="ps-coin-row"><span>cp</span><span>{parseCoins(stats.coins).cp || 0}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ───── PAGE 3: Spellcasting ───── */}
+        <div className="print-page">
+          <div className="ps-spell-header">
+            <div className="ps-spell-field"><label>Clase Conjuro</label><span>{className}</span></div>
+            <div className="ps-spell-field"><label>Habilidad</label><span>{spellAbility || '—'}</span></div>
+            <div className="ps-spell-field"><label>CD Salvación</label><span>{saveDC || '—'}</span></div>
+            <div className="ps-spell-field"><label>Bonif. Ataque</label><span>{spellAtk || '—'}</span></div>
+          </div>
+
+          <div className="ps-cantrips">
+            <div className="ps-section-title">Trucos</div>
+            <div className="ps-spell-grid">
+              {(knownSpells || []).filter(s => s.level === 0).map((sp, i) => (
+                <span key={i} className="ps-spell-name">{sp.name}</span>
+              ))}
+            </div>
+          </div>
+
+          {[1,2,3,4,5,6,7,8,9].map(lvl => {
+            const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
+            if (slot.max === 0 && !knownByLevel?.[lvl]?.length) return null;
+            return (
+              <div key={lvl} className="ps-spell-level">
+                <div className="ps-spell-level-header">
+                  <span>Nivel {lvl}</span>
+                  <span>Espacios: {slot.used}/{slot.max}</span>
+                </div>
+                <div className="ps-spell-grid">
+                  {(knownByLevel?.[lvl] || []).map((sp, i) => (
+                    <span key={i} className="ps-spell-name">{sp.name}</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+      </div>
 
     </div>
   );
