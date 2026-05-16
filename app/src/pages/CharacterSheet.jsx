@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses } from '../api';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -398,34 +398,85 @@ export default function CharacterSheet() {
     const subclassLevel = SUBCLASS_LEVELS[cn];
     const needsSubclass = !character?.subclass_id && newLevel >= subclassLevel;
 
+    // Fetch leveling data from DB
+    let levelData = null;
+    let features = [];
+    let dbSlots = null;
+    let cantripCount = 0;
+    let newPB = 0;
+    try {
+      const res = await getLevelingEntry(cn, newLevel);
+      levelData = res.data;
+      if (levelData) {
+        try { features = JSON.parse(levelData.features || '[]'); } catch {}
+        if (levelData.spell_slots) try { dbSlots = JSON.parse(levelData.spell_slots); } catch {}
+        cantripCount = levelData.cantrips_known || 0;
+        newPB = levelData.proficiency_bonus || 0;
+      }
+    } catch (e) { console.error('Error fetching leveling data:', e); }
+
+    const oldPB = Math.ceil((character?.level || 1) / 4) + 1;
+    const pbIncreased = newPB > oldPB;
+    const asiLevels = [4, 8, 12, 16, 19];
+    const isASI = asiLevels.includes(newLevel);
+    const cantripIncreased = cantripCount > 0;
+
     let newSubclassList = [];
     if (needsSubclass) {
       const res = await getSubclasses();
       newSubclassList = (res.data || []).filter(s => s.class_index === classIndex);
     }
 
-    setLevelUpModal({ newLevel, hd, avg, conMod, cn, isCaster, rollMode: 'avg', needsSubclass, subclassList: newSubclassList, selectedSubclassId: null });
+    setLevelUpModal({
+      newLevel, hd, avg, conMod, cn, isCaster, rollMode: 'avg',
+      needsSubclass, subclassList: newSubclassList, selectedSubclassId: null,
+      features, pbIncreased, newPB, cantripCount, cantripIncreased, isASI,
+      dbSlots, asiChanges: {}
+    });
   };
 
   const confirmLevelUp = async () => {
-    const { newLevel, hd, conMod, cn, rollMode, selectedSubclassId, subclassList } = levelUpModal;
+    const { newLevel, hd, conMod, cn, rollMode, selectedSubclassId, subclassList, dbSlots, asiChanges, features, cantripIncreased } = levelUpModal;
     const hpRoll = rollMode === 'roll' ? Math.max(1, Math.floor(Math.random() * hd) + 1) : Math.floor(hd / 2) + 1;
     const hpGain = hpRoll + conMod;
 
-    // Calcular los nuevos valores inmediatamente para el auto-guardado
     const oldMaxHP = stats.maxHP || 1;
     const oldCurrHP = stats.currHP || 0;
     const newMaxHP = oldMaxHP + Math.max(1, hpGain);
     const newCurrHP = oldCurrHP + Math.max(1, hpGain);
 
+    // Apply ASI changes to stats
+    const asiApplied = {};
+    if (asiChanges && Object.keys(asiChanges).length > 0) {
+      STAT_KEYS.forEach(k => {
+        if (asiChanges[k]) asiApplied[k] = (stats[k] || 10) + asiChanges[k];
+      });
+    }
+
     setStats(prev => {
       const newState = { 
         ...prev, 
         maxHP: (prev.maxHP || 1) + Math.max(1, hpGain), 
-        currHP: (prev.currHP || 0) + Math.max(1, hpGain) 
+        currHP: (prev.currHP || 0) + Math.max(1, hpGain),
+        ...asiApplied
       };
 
-      if (FULL_CASTERS.includes(cn)) {
+      // Use DB spell slots if available, otherwise fallback to hardcoded tables
+      if (dbSlots) {
+        const newSlots = { ...(prev.spellSlots || {}) };
+        if (dbSlots.pact) {
+          const pact = dbSlots.pact;
+          if (pact.level > 0) newSlots[pact.level] = { max: pact.count, used: 0 };
+        } else {
+          Object.entries(dbSlots).forEach(([lvl, info]) => {
+            const maxVal = info.max || info || 0;
+            if (typeof maxVal === 'number') {
+              newSlots[lvl] = { max: maxVal, used: (newSlots[lvl]?.used || 0) };
+            }
+          });
+        }
+        newState.spellSlots = newSlots;
+      } else if (FULL_CASTERS.includes(cn)) {
         const row = SPELL_SLOTS_TABLE[newLevel] || [0,0,0,0,0,0,0,0,0];
         const newSlots = { ...(prev.spellSlots || {}) };
         row.forEach((max, i) => {
@@ -458,11 +509,15 @@ export default function CharacterSheet() {
       if (found) setSubclassName(found.name);
     }
     setLevelUpModal(null);
-    
-    // Auto-guardar subida de nivel
-    const updatePayload = { stats: JSON.stringify({ ...stats, maxHP: newMaxHP, currHP: newCurrHP }), level: newLevel };
+
+    const updatedStats = { ...stats, maxHP: newMaxHP, currHP: newCurrHP, ...asiApplied };
+    const updatePayload = { stats: JSON.stringify(updatedStats), level: newLevel };
     if (selectedSubclassId) updatePayload.subclass_id = selectedSubclassId;
     await updateCharacter(id, updatePayload);
+
+    if (features.some(f => f.toLowerCase().includes('conjuro')) || cantripIncreased) {
+      navigate(`/character/${id}/spells`);
+    }
   };
 
   const handleRoll = async (formula, desc) => {
@@ -747,14 +802,16 @@ export default function CharacterSheet() {
       {/* Level Up Modal */}
       {levelUpModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ maxWidth: '450px', width: '90%', padding: '2rem', borderTop: '4px solid var(--accent-gold)' }}>
+          <div className="glass-panel" style={{ maxWidth: '520px', width: '90%', padding: '1.5rem', borderTop: '4px solid var(--accent-gold)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ textAlign: 'center', color: 'var(--accent-gold)' }}>
               <ArrowUp size={24} /> ¡Nivel {levelUpModal.newLevel}!
             </h2>
-            <div style={{ background: 'rgba(0,100,0,0.15)', border: '1px solid rgba(0,100,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
+
+            {/* HP */}
+            <div style={{ background: 'rgba(0,100,0,0.15)', border: '1px solid rgba(0,100,0,0.3)', padding: '0.8rem', borderRadius: '8px', textAlign: 'center', margin: '0.8rem 0' }}>
               <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Puntos de Golpe</div>
-              <div style={{ fontSize: '1.2rem', color: '#aaa' }}>d{levelUpModal.hd} + CON ({mod(stats.CON || 10)})</div>
-              <div className="flex-row" style={{ justifyContent: 'center', gap: '1rem', marginTop: '0.8rem' }}>
+              <div style={{ fontSize: '1.1rem', color: '#aaa' }}>d{levelUpModal.hd} + CON ({mod(stats.CON || 10)})</div>
+              <div className="flex-row" style={{ justifyContent: 'center', gap: '1rem', marginTop: '0.6rem' }}>
                 <button className={`btn btn-sm ${levelUpModal.rollMode === 'avg' ? 'btn-gold' : 'btn-ghost'}`}
                   onClick={() => setLevelUpModal(prev => ({ ...prev, rollMode: 'avg' }))}>
                   Promedio (+{levelUpModal.avg + levelUpModal.conMod})
@@ -765,24 +822,88 @@ export default function CharacterSheet() {
                 </button>
               </div>
             </div>
+
+            {/* Proficiency Bonus */}
+            {levelUpModal.pbIncreased && (
+              <div style={{ background: 'rgba(0,100,200,0.12)', border: '1px solid rgba(0,100,200,0.3)', padding: '0.6rem', borderRadius: '8px', textAlign: 'center', margin: '0.5rem 0' }}>
+                <span style={{ color: '#6af', fontWeight: 'bold' }}>Bonificador de Competencia: +{levelUpModal.newPB}</span>
+              </div>
+            )}
+
+            {/* Features */}
+            {levelUpModal.features?.length > 0 && (
+              <div style={{ background: 'rgba(100,200,100,0.08)', border: '1px solid rgba(100,200,100,0.2)', padding: '0.8rem', borderRadius: '8px', margin: '0.5rem 0' }}>
+                <div style={{ fontSize: '0.8rem', color: '#8c8', marginBottom: '0.4rem' }}>Nuevas características</div>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.85rem', color: '#ccc' }}>
+                  {levelUpModal.features.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Cantrips */}
+            {levelUpModal.cantripIncreased && (
+              <div style={{ background: 'rgba(200,100,200,0.12)', border: '1px solid rgba(200,100,200,0.3)', padding: '0.6rem', borderRadius: '8px', textAlign: 'center', margin: '0.5rem 0' }}>
+                <span style={{ color: '#c8c', fontWeight: 'bold' }}>Nuevo truco conocido ({levelUpModal.cantripCount} total)</span>
+              </div>
+            )}
+
+            {/* ASI */}
+            {levelUpModal.isASI && (
+              <div style={{ background: 'rgba(255,200,0,0.1)', border: '1px solid rgba(255,200,0,0.3)', padding: '0.8rem', borderRadius: '8px', margin: '0.5rem 0' }}>
+                <div style={{ fontSize: '0.8rem', color: '#fd0', marginBottom: '0.4rem', textAlign: 'center' }}>Mejora de Características (+2 a uno o +1 a dos)</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
+                  {STAT_KEYS.map(k => {
+                    const change = levelUpModal.asiChanges?.[k] || 0;
+                    const totalUsed = Object.values(levelUpModal.asiChanges || {}).reduce((s, v) => s + v, 0);
+                    return (
+                      <div key={k} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '0.3rem', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '0.65rem', color: '#aaa' }}>{FULL_NAMES[k]}</div>
+                        <div style={{ fontSize: '1rem', color: '#fff' }}>{(stats[k] || 10) + change}</div>
+                        <div className="flex-row" style={{ justifyContent: 'center', gap: '0.3rem', marginTop: '0.2rem' }}>
+                          <button className="btn btn-ghost btn-sm"
+                            style={{ padding: '0 0.3rem', fontSize: '0.7rem', minWidth: '22px', lineHeight: '20px' }}
+                            disabled={change <= 0}
+                            onClick={() => setLevelUpModal(prev => ({
+                              ...prev,
+                              asiChanges: { ...prev.asiChanges, [k]: change - 1 }
+                            }))}>-</button>
+                          <span style={{ fontSize: '0.8rem', minWidth: '16px', textAlign: 'center', color: change > 0 ? '#fd0' : '#666' }}>{change || ''}</span>
+                          <button className="btn btn-ghost btn-sm"
+                            style={{ padding: '0 0.3rem', fontSize: '0.7rem', minWidth: '22px', lineHeight: '20px' }}
+                            disabled={totalUsed >= 2 || change >= 2 || (change >= 1 && totalUsed >= 2)}
+                            onClick={() => setLevelUpModal(prev => ({
+                              ...prev,
+                              asiChanges: { ...prev.asiChanges, [k]: change + 1 }
+                            }))}>+</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Subclass */}
             {levelUpModal.needsSubclass && (
-              <div style={{ background: 'rgba(200,155,60,0.12)', border: '1px solid rgba(200,155,60,0.3)', padding: '1rem', borderRadius: '8px', margin: '1rem 0' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', textAlign: 'center', marginBottom: '0.5rem' }}>
+              <div style={{ background: 'rgba(200,155,60,0.12)', border: '1px solid rgba(200,155,60,0.3)', padding: '0.8rem', borderRadius: '8px', margin: '0.5rem 0' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', textAlign: 'center', marginBottom: '0.4rem' }}>
                   Elige tu subclase (nivel {levelUpModal.newLevel})
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                   {levelUpModal.subclassList.map(sc => {
                     const sel = levelUpModal.selectedSubclassId === sc.id;
                     return (
                       <div key={sc.id} className="glass-panel clickable"
                         onClick={() => setLevelUpModal(prev => ({ ...prev, selectedSubclassId: sc.id }))}
                         style={{
-                          cursor: 'pointer', padding: '0.6rem',
+                          cursor: 'pointer', padding: '0.5rem',
                           borderColor: sel ? 'var(--accent-gold)' : 'rgba(255,255,255,0.08)',
                           background: sel ? 'rgba(200,155,60,0.1)' : ''
                         }}>
-                        <strong style={{ color: sel ? '#fff' : 'var(--text-main)' }}>{sc.name}</strong>
-                        <p style={{ fontSize: '0.7rem', color: '#aaa', margin: '0.2rem 0 0' }}>
+                        <strong style={{ color: sel ? '#fff' : 'var(--text-main)', fontSize: '0.85rem' }}>{sc.name}</strong>
+                        <p style={{ fontSize: '0.65rem', color: '#aaa', margin: '0.15rem 0 0' }}>
                           {(sc.description || '').substring(0, 100)}
                         </p>
                       </div>
@@ -791,15 +912,14 @@ export default function CharacterSheet() {
                 </div>
               </div>
             )}
-            {levelUpModal.isCaster && (
-              <div style={{ background: 'rgba(139,0,0,0.15)', border: '1px solid rgba(139,0,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
-                <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Conjuros</div>
-                <div style={{ fontSize: '1rem', color: 'var(--accent-gold)' }}>Espacios de conjuro actualizados</div>
-                <button className="btn btn-gold btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { confirmLevelUp().then(() => navigate(`/character/${id}/spells`)); }}>
-                  Ir al Grimorio para aprender nuevos conjuros
-                </button>
+
+            {/* Spell slots notification */}
+            {(levelUpModal.isCaster || levelUpModal.dbSlots) && (
+              <div style={{ background: 'rgba(139,0,0,0.12)', border: '1px solid rgba(139,0,0,0.25)', padding: '0.6rem', borderRadius: '8px', textAlign: 'center', margin: '0.5rem 0' }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--accent-gold)' }}>Espacios de conjuro actualizados</div>
               </div>
             )}
+
             <div className="flex-row" style={{ justifyContent: 'center', marginTop: '1rem', gap: '0.5rem' }}>
               <button className="btn btn-ghost" onClick={() => setLevelUpModal(null)}>Cancelar</button>
               <button className="btn btn-gold" onClick={confirmLevelUp}

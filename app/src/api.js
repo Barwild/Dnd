@@ -97,6 +97,7 @@ export const getAdvantageRules = () => api.get('/compendium/rules/advantage');
 export const getInspirationRules = () => api.get('/compendium/rules/inspiration');
 export const getMulticlassRules = () => api.get('/compendium/rules/multiclass');
 export const getLevelingTable = (className) => api.get(`/compendium/rules/leveling/${className}`);
+export const getLevelingEntry = (className, level) => api.get(`/compendium/rules/leveling/${className}/${level}`);
 export const getProficiencyBonusTable = () => api.get('/compendium/rules/proficiency-bonus');
 
 // ── Compendium ─────────────────────────────────────────
