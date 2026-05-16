@@ -101,6 +101,26 @@ export default function SkillsSheet() {
   const modStr = (val) => { const m = mod(val); return m >= 0 ? `+${m}` : `${m}`; };
   const profBonus = Math.ceil((character?.level || 1) / 4) + 1;
 
+  const skillIndexToName = (idx) => {
+    const s = SKILLS.find(sk => sk.index === idx);
+    return s ? s.name : idx;
+  };
+
+  const isBgSkill = (skillIndex, bgSkills) => {
+    if (bgSkills.includes(skillIndex)) return true;
+    const name = skillIndexToName(skillIndex);
+    if (name && bgSkills.includes(name)) return true;
+    return false;
+  };
+
+  const countClassSkills = (list, options, bgSkills) => {
+    return list.filter(s => {
+      if (!options.includes(s)) return false;
+      if (isBgSkill(s, bgSkills)) return false;
+      return true;
+    }).length;
+  };
+
   const toggleSkillProf = (skillIndex) => {
     const cn = className.toLowerCase();
     const limit = CLASS_SKILL_COUNT[cn] || 2;
@@ -108,7 +128,7 @@ export default function SkillsSheet() {
     
     // Background skills are locked
     const bgSkills = stats.background_skills || [];
-    if (bgSkills.includes(skillIndex)) {
+    if (isBgSkill(skillIndex, bgSkills)) {
       alert("Esta habilidad proviene de tu trasfondo y no se puede quitar.");
       return;
     }
@@ -139,7 +159,7 @@ export default function SkillsSheet() {
       }
 
       // Not proficient → check limit
-      const currentFromClass = list.filter(s => options.includes(s) && !bgSkills.includes(SKILLS.find(sk => sk.index === s)?.name)).length;
+      const currentFromClass = countClassSkills(list, options, bgSkills);
       if (currentFromClass >= limit) {
         alert(`Ya has alcanzado el límite de habilidades para un ${className} (${limit}).`);
         return prev;
@@ -225,6 +245,43 @@ export default function SkillsSheet() {
   };
 
   const save = async () => {
+    const cn = className.toLowerCase();
+    if (!cn || !CLASS_SKILL_COUNT[cn]) {
+      alert("Espera a que cargue la clase del personaje.");
+      return;
+    }
+    const limit = CLASS_SKILL_COUNT[cn] || 2;
+    const options = CLASS_SKILL_LIST[cn] || [];
+    const bgSkills = stats.background_skills || [];
+    const list = stats.skillProficiencies || [];
+    const expertList = stats.expertise || [];
+
+    const currentFromClass = countClassSkills(list, options, bgSkills);
+    if (currentFromClass > limit) {
+      alert(`Tienes ${currentFromClass} habilidades de clase, pero el máximo es ${limit}. Quita algunas antes de guardar.`);
+      return;
+    }
+
+    if (cn === 'pícaro' || cn === 'bardo') {
+      const expLimit = cn === 'pícaro' ? (character.level >= 6 ? 4 : 2) : (character.level >= 10 ? 4 : (character.level >= 3 ? 2 : 0));
+      if (expertList.length > expLimit) {
+        alert(`Como ${className} nivel ${character.level}, solo puedes tener ${expLimit} pericias.`);
+        return;
+      }
+    } else if (expertList.length > 0) {
+      alert(`Solo los pícaros y bardos pueden tener pericias.`);
+      return;
+    }
+
+    for (const s of list) {
+      if (isBgSkill(s, bgSkills)) continue;
+      if (!options.includes(s)) {
+        const name = skillIndexToName(s);
+        alert(`"${name}" no está en las opciones de tu clase (${className}).`);
+        return;
+      }
+    }
+
     setSaving(true);
     await updateCharacter(id, { stats: JSON.stringify(stats) });
     setSaving(false);
