@@ -300,10 +300,22 @@ export default function EquipmentSheet() {
                   
                   <div className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.8rem' }}>
                     <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                      {weapon.damage_dice || '-'} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: '#aaa' }}>{weapon.damage_type}</span>
+                      {weapon.damage_dice || '-'} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: '#aaa' }}>{weapon.damage_type?.name || weapon.damage_type || ''}</span>
                     </div>
                     {weapon.weapon_range && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{weapon.weapon_range}</div>}
                   </div>
+
+                  {/* Weapon Properties */}
+                  {weapon.properties && weapon.properties.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.6rem' }}>
+                      {(weapon.properties || []).map((prop, i) => {
+                        const propName = prop?.name || prop || '';
+                        return (
+                          <span key={i} className="badge badge-blue" style={{ fontSize: '0.6rem', padding: '2px 6px' }}>{propName}</span>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   <div className="flex-row" style={{ gap: '0.5rem', marginBottom: '0.8rem' }}>
                     <button className="btn btn-sm" style={{ flex: 1, background: '#842', color: '#fff', border: 'none' }} onClick={() => rollWeaponAttack(weapon)}>

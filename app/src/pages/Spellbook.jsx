@@ -167,36 +167,30 @@ export default function Spellbook() {
 
   const restoreSpellSlots = () => {
     const newSlots = {};
-    const lvlIdx = Math.min((character?.level || 1) - 1, 19);
-    
+    const lvl = character?.level || 1;
+
     if (cn === 'brujo') {
-      // Warlocks use pact magic (different slots)
-      const warlockInfo = WARLOCK_SLOTS[lvlIdx] || { count: 1, level: 1 };
+      const warlockInfo = WARLOCK_SLOTS[lvl] || { count: 1, level: 1 };
       for (let i = 1; i <= 9; i++) {
-        newSlots[i] = { max: i <= warlockInfo.level ? warlockInfo.count : 0, used: 0 };
+        newSlots[i] = { max: i === warlockInfo.level ? warlockInfo.count : 0, used: 0 };
       }
     } else if (HALF_CASTERS.includes(cn)) {
-      // Half-casters get half the spell slots
-      const fullSlots = SPELL_SLOTS_TABLE[Math.min(lvlIdx, 19)];
+      const halfLvl = Math.ceil(lvl / 2);
+      const slots = SPELL_SLOTS_TABLE[halfLvl] || [0,0,0,0,0,0,0,0,0];
       for (let i = 1; i <= 9; i++) {
-        const halfLevel = Math.max(0, lvlIdx - 6) + 1;
-        const slotLevel = Math.min(halfLevel, 19);
-        const slots = SPELL_SLOTS_TABLE[slotLevel] || [0,0,0,0,0,0,0,0,0];
         newSlots[i] = { max: slots[i-1] || 0, used: 0 };
       }
     } else if (FULL_CASTERS.includes(cn)) {
-      // Full casters (wizard, sorcerer, etc.)
-      const slots = SPELL_SLOTS_TABLE[lvlIdx] || [0,0,0,0,0,0,0,0,0];
+      const slots = SPELL_SLOTS_TABLE[lvl] || [0,0,0,0,0,0,0,0,0];
       for (let i = 1; i <= 9; i++) {
         newSlots[i] = { max: slots[i-1] || 0, used: 0 };
       }
     } else {
-      // Non-casters get no spell slots
       for (let i = 1; i <= 9; i++) {
         newSlots[i] = { max: 0, used: 0 };
       }
     }
-    
+
     setStatsObj(prev => ({ ...prev, spellSlots: newSlots }));
   };
 
@@ -385,10 +379,11 @@ export default function Spellbook() {
                             <div
                               key={i}
                               onClick={() => {
-                                const newUsed = i < slot.used ? slot.used - 1 : i + 1;
-                                setStatsObj(prev => ({
-                                  ...prev, spellSlots: { ...prev.spellSlots, [lvl]: { ...slot, used: newUsed } }
-                                }));
+                                setStatsObj(prev => {
+                                  const s = (prev.spellSlots || {})[lvl] || { max: 0, used: 0 };
+                                  const newUsed = i < s.used ? s.used - 1 : i + 1;
+                                  return { ...prev, spellSlots: { ...prev.spellSlots, [lvl]: { ...s, used: newUsed } } };
+                                });
                               }}
                               style={{
                                 width: '22px',
