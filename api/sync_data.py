@@ -21,6 +21,19 @@ REFERENCE_TABLES = [
 ]
 
 
+def _upsert_sql(table, cols, pk, is_pg):
+    col_list = ", ".join(f'"{c}"' for c in cols)
+    param_list = ", ".join(f":{c}" for c in cols)
+    if is_pg:
+        update_list = ", ".join(f'"{c}" = excluded."{c}"' for c in cols if c != pk)
+        return text(
+            f'INSERT INTO "{table}" ({col_list}) VALUES ({param_list}) '
+            f'ON CONFLICT ("{pk}") DO UPDATE SET {update_list}'
+        )
+    # SQLite: INSERT OR REPLACE = delete then insert (works for PK tables)
+    return text(f'INSERT OR REPLACE INTO "{table}" ({col_list}) VALUES ({param_list})')
+
+
 def sync_reference_data(target_engine=None):
     if target_engine is None:
         url = os.getenv("DATABASE_URL", "")
@@ -36,7 +49,7 @@ def sync_reference_data(target_engine=None):
     target = Target()
 
     is_pg = str(target_engine.url).startswith("postgresql")
-    total_inserted = 0
+    total_upserted = 0
 
     for table in REFERENCE_TABLES:
         rows = source.execute(text(f'SELECT * FROM "{table}"')).fetchall()
@@ -45,46 +58,32 @@ def sync_reference_data(target_engine=None):
 
         cols = [c for c in rows[0]._mapping.keys()]
         pk = cols[0]
-        col_list = ", ".join(f'"{c}"' for c in cols)
-        param_list = ", ".join(f":{c}" for c in cols)
+        sql = _upsert_sql(table, cols, pk, is_pg)
 
-        before = target.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar()
-        if before >= len(rows):
-            continue
-
-        if is_pg:
-            sql = text(
-                f'INSERT INTO "{table}" ({col_list}) VALUES ({param_list}) '
-                f'ON CONFLICT ("{pk}") DO NOTHING'
-            )
-        else:
-            sql = text(f'INSERT OR IGNORE INTO "{table}" ({col_list}) VALUES ({param_list})')
-
+        upserted = 0
         for row in rows:
             data = dict(row._mapping)
             try:
                 target.execute(sql, data)
+                upserted += 1
             except Exception as e:
                 target.rollback()
                 raise RuntimeError(
-                    f"Failed to insert into {table} (row id={data.get(pk)}): {e}"
+                    f"Failed to upsert into {table} (pk={data.get(pk)}): {e}"
                 ) from e
 
         target.commit()
-        after = target.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar()
-        n = after - before
-        if n:
-            total_inserted += n
+        total_upserted += upserted
 
     source.close()
     target.close()
-    return total_inserted
+    return total_upserted
 
 
 if __name__ == "__main__":
     url = os.getenv("DATABASE_URL", "")
     engine = create_engine(url) if url else create_engine(f"sqlite:///{SQLITE_PATH}")
     n = sync_reference_data(engine)
-    print(f"Synced {n} new rows")
+    print(f"Upserted {n} rows across all tables")
 
 
