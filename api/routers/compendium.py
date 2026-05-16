@@ -313,10 +313,21 @@ def list_multiclass_rules(db: Session = Depends(get_db)):
 
 @router.get("/rules/leveling/{class_name}", response_model=List[schemas.LevelingTableResponse])
 def get_leveling_table(class_name: str, db: Session = Depends(get_db)):
-    tables = db.query(models.LevelingTable).filter(models.LevelingTable.class_name == class_name).all()
+    tables = db.query(models.LevelingTable).filter(models.LevelingTable.class_name == class_name).order_by(models.LevelingTable.level).all()
     if not tables:
         raise HTTPException(status_code=404, detail="Tabla de progreso no encontrada")
     return tables
+
+
+@router.get("/rules/leveling/{class_name}/{level}", response_model=schemas.LevelingTableResponse)
+def get_leveling_entry(class_name: str, level: int, db: Session = Depends(get_db)):
+    entry = db.query(models.LevelingTable).filter(
+        models.LevelingTable.class_name == class_name,
+        models.LevelingTable.level == level
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail=f"Nivel {level} no encontrado para {class_name}")
+    return entry
 
 
 @router.get("/rules/proficiency-bonus")
