@@ -18,10 +18,11 @@ import ItemsCatalog from './pages/ItemsCatalog';
 import ConditionsRef from './pages/ConditionsRef';
 import { LogOut, User, Sword, BookOpen, Shield, Package, AlertTriangle, ChevronDown } from 'lucide-react';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, role }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="page-center"><h2>Cargando...</h2></div>;
   if (!user) return <Navigate to="/login" />;
+  if (role && user.role !== role) return <Navigate to="/" />;
   return children;
 }
 
@@ -136,7 +137,7 @@ function App() {
         <Route path="/campaigns" element={<ProtectedRoute><CampaignManager /></ProtectedRoute>} />
         <Route path="/master/:campaignId" element={<ProtectedRoute><MasterDashboard /></ProtectedRoute>} />
         <Route path="/master/:campaignId/encounter-builder" element={<ProtectedRoute><EncounterBuilder /></ProtectedRoute>} />
-        <Route path="/bestiary" element={<ProtectedRoute><Bestiary /></ProtectedRoute>} />
+        <Route path="/bestiary" element={<ProtectedRoute role="dm"><Bestiary /></ProtectedRoute>} />
         <Route path="/items" element={<ProtectedRoute><ItemsCatalog /></ProtectedRoute>} />
         <Route path="/conditions" element={<ProtectedRoute><ConditionsRef /></ProtectedRoute>} />
 
