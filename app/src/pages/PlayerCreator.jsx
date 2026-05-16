@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRaces, getClasses, getBackgrounds, getSubclasses, createCharacter, getCampaigns, getSpells } from '../api';
+import { getRaces, getClasses, getBackgrounds, createCharacter, getCampaigns, getSpells } from '../api';
 import { Sword, Shield, BookOpen, Sparkles, Users, ChevronRight, ChevronLeft, Dice5, Heart, Zap, X } from 'lucide-react';
 
 const STAT_NAMES = { STR: 'Fuerza', DEX: 'Destreza', CON: 'Constitución', INT: 'Inteligencia', WIS: 'Sabiduría', CHA: 'Carisma' };
@@ -58,14 +58,6 @@ export default function PlayerCreator() {
   const [races, setRaces] = useState([]);
   const [classes, setClasses] = useState([]);
   const [backgrounds, setBackgrounds] = useState([]);
-  const [subclasses, setSubclasses] = useState([]);
-  const [campaigns, setCampaigns] = useState([]);
-  const [cantrips, setCantrips] = useState([]);
-  const [level1Spells, setLevel1Spells] = useState([]);
-  const [step, setStep] = useState(1);
-  const [expandedSpell, setExpandedSpell] = useState(null);
-  const navigate = useNavigate();
-
   const [charData, setCharData] = useState({
     name: '', race_id: '', subrace_index: null, class_id: '', subclass_id: null, background_id: null, campaign_id: null,
     stats: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
@@ -76,12 +68,11 @@ export default function PlayerCreator() {
   const [statPool, setStatPool] = useState([]);
 
   useEffect(() => {
-    Promise.all([getRaces(), getClasses(), getBackgrounds(), getSubclasses(), getCampaigns(), getSpells({ limit: 500 })])
-      .then(([r, c, b, s, camp, spl]) => {
+    Promise.all([getRaces(), getClasses(), getBackgrounds(), getCampaigns(), getSpells({ limit: 500 })])
+      .then(([r, c, b, camp, spl]) => {
         setRaces(r.data || []);
         setClasses(c.data || []);
         setBackgrounds(b.data || []);
-        setSubclasses(s.data || []);
         setCampaigns(camp.data || []);
         setCantrips((spl.data || []).filter(s => s.level === 0));
         setLevel1Spells((spl.data || []).filter(s => s.level === 1));
@@ -93,8 +84,6 @@ export default function PlayerCreator() {
   const selectedBg = backgrounds.find(b => b.id === charData.background_id);
   const raceSubraces = selectedRace ? (() => { try { return JSON.parse(selectedRace.subraces || '[]'); } catch { return []; } })() : [];
   const selectedSubrace = raceSubraces.find(s => s.index === charData.subrace_index);
-  const clsSubclasses = subclasses.filter(s => s.class_index === selectedClass?.index);
-
   const allowedCantripsCount = (CASTER_CANTRIPS[selectedClass?.name?.toLowerCase()] || 0) + (charData.subrace_index === 'high-elf' ? 1 : 0);
   // Caster classes that learn spells (not prepare)
   const KNOWN_LVL1_SPELLS = { 'bardo': 4, 'hechicero': 2, 'brujo': 2, 'mago': 6 };
@@ -495,31 +484,6 @@ export default function PlayerCreator() {
               })}
             </div>
 
-            {charData.class_id && clsSubclasses.length > 0 && (
-              <div style={{ marginTop: '1.5rem' }} className="slide-up">
-                <h3 style={{ color: 'var(--accent-gold)' }}>🛡️ Subclase / Arquetipo <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 'normal' }}>(se elige al nivel 3, pero puedes marcarlo ya)</span></h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.8rem' }}>
-                  {clsSubclasses.map(sc => {
-                    const isSelected = charData.subclass_id === sc.id;
-                    return (
-                      <div key={sc.id} className="glass-panel clickable"
-                        onClick={() => setCharData({ ...charData, subclass_id: isSelected ? null : sc.id })}
-                        style={{
-                          cursor: 'pointer', padding: '0.8rem',
-                          borderColor: isSelected ? 'var(--accent-gold)' : '',
-                          background: isSelected ? 'rgba(200,155,60,0.08)' : ''
-                        }}>
-                        <strong style={{ color: isSelected ? '#fff' : 'var(--text-main)' }}>{sc.name}</strong>
-                        <p style={{ fontSize: '0.75rem', color: '#bbb', margin: '0.3rem 0 0' }}>
-                          {(sc.description || '').substring(0, 120)}{(sc.description || '').length > 120 ? '...' : ''}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
               <button className="btn btn-ghost" onClick={() => setStep(getStepNumber('Linaje'))}><ChevronLeft size={16} /> Raza</button>
               <button className="btn btn-gold" onClick={() => setStep(getStepNumber('Habilidades'))} disabled={!charData.class_id}>
@@ -844,11 +808,6 @@ export default function PlayerCreator() {
                 <span className="badge badge-gold">{selectedRace?.name || '—'} {selectedSubrace ? `(${selectedSubrace.name})` : ''}</span>
                 <span className="badge badge-red">{selectedClass?.name || '—'} (d{selectedClass?.hit_die})</span>
                 {selectedBg && <span className="badge" style={{ background: 'rgba(100,100,255,0.15)', border: '1px solid rgba(100,100,255,0.3)', color: '#aaf' }}>{selectedBg.name}</span>}
-                {charData.subclass_id && (
-                  <span className="badge" style={{ background: 'rgba(200,155,60,0.15)', border: '1px solid rgba(200,155,60,0.3)', color: 'var(--accent-gold)' }}>
-                    {subclasses.find(s => s.id === charData.subclass_id)?.name}
-                  </span>
-                )}
               </div>
             </div>
 

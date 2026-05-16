@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem } from '../api';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -55,6 +55,13 @@ const WARLOCK_SLOTS = [
   { count: 4, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 }, { count: 4, level: 5 },
 ];
 
+const SUBCLASS_LEVELS = {
+  'clérigo': 1, 'hechicero': 1, 'brujo': 1,
+  'druida': 2, 'mago': 2,
+  'bárbaro': 3, 'bardo': 3, 'guerrero': 3, 'monje': 3,
+  'paladín': 3, 'explorador': 3, 'pícaro': 3, 'artífice': 3,
+};
+
 export default function CharacterSheet() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -64,6 +71,7 @@ export default function CharacterSheet() {
   const [stats, setStats] = useState({});
   const [raceName, setRaceName] = useState('');
   const [className, setClassName] = useState('');
+  const [classIndex, setClassIndex] = useState('');
   const [hitDie, setHitDie] = useState(8);
   const [equipment, setEquipment] = useState([]);
   const [shopItems, setShopItems] = useState([]);
@@ -77,6 +85,8 @@ export default function CharacterSheet() {
   const [saving, setSaving] = useState(false);
   const [diceResult, setDiceResult] = useState(null);
   const [levelUpModal, setLevelUpModal] = useState(null); // {newLevel, hpGain}
+  const [subclassList, setSubclassList] = useState([]);
+  const [subclassName, setSubclassName] = useState('');
 
   const COIN_VALUES = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
   const normalizeCoins = (coins) => ({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...coins });
@@ -152,7 +162,11 @@ export default function CharacterSheet() {
       loadEquipmentData(id);
 
       if (char.race_id) getRace(char.race_id).then(r => setRaceName(r.data.name)).catch(() => {});
-      if (char.class_id) getClassApi(char.class_id).then(c => { setClassName(c.data.name); setHitDie(c.data.hit_die); }).catch(() => {});
+      if (char.class_id) getClassApi(char.class_id).then(c => { setClassName(c.data.name); setClassIndex(c.data.index); setHitDie(c.data.hit_die); }).catch(() => {});
+      if (char.subclass_id) getSubclasses().then(res => {
+        const found = (res.data || []).find(s => s.id === char.subclass_id);
+        if (found) setSubclassName(found.name);
+      }).catch(() => {});
       
       if (char.campaign_id) {
         getCharacters(char.campaign_id).then(res => {
@@ -374,19 +388,27 @@ export default function CharacterSheet() {
     });
   };
 
-  const levelUp = () => {
+  const levelUp = async () => {
     const newLevel = (character?.level || 1) + 1;
     const cn = className.toLowerCase();
     const hd = CLASS_HIT_DICE[cn] || hitDie;
     const avg = Math.floor(hd / 2) + 1;
     const conMod = mod(stats.CON || 10);
     const isCaster = FULL_CASTERS.includes(cn) || HALF_CASTERS.includes(cn) || cn === 'brujo';
+    const subclassLevel = SUBCLASS_LEVELS[cn];
+    const needsSubclass = !character?.subclass_id && newLevel >= subclassLevel;
 
-    setLevelUpModal({ newLevel, hd, avg, conMod, cn, isCaster, rollMode: 'avg' });
+    let newSubclassList = [];
+    if (needsSubclass) {
+      const res = await getSubclasses();
+      newSubclassList = (res.data || []).filter(s => s.class_index === classIndex);
+    }
+
+    setLevelUpModal({ newLevel, hd, avg, conMod, cn, isCaster, rollMode: 'avg', needsSubclass, subclassList: newSubclassList, selectedSubclassId: null });
   };
 
   const confirmLevelUp = async () => {
-    const { newLevel, hd, conMod, cn, rollMode } = levelUpModal;
+    const { newLevel, hd, conMod, cn, rollMode, selectedSubclassId, subclassList } = levelUpModal;
     const hpRoll = rollMode === 'roll' ? Math.max(1, Math.floor(Math.random() * hd) + 1) : Math.floor(hd / 2) + 1;
     const hpGain = hpRoll + conMod;
 
@@ -431,11 +453,16 @@ export default function CharacterSheet() {
       return newState;
     });
     setCharacter(prev => ({ ...prev, level: newLevel }));
+    if (selectedSubclassId) {
+      const found = (subclassList || []).find(s => s.id === selectedSubclassId);
+      if (found) setSubclassName(found.name);
+    }
     setLevelUpModal(null);
     
     // Auto-guardar subida de nivel
-    const newStats = { ...stats, maxHP: newMaxHP, currHP: newCurrHP };
-    await updateCharacter(id, { stats: JSON.stringify(newStats), level: newLevel });
+    const updatePayload = { stats: JSON.stringify({ ...stats, maxHP: newMaxHP, currHP: newCurrHP }), level: newLevel };
+    if (selectedSubclassId) updatePayload.subclass_id = selectedSubclassId;
+    await updateCharacter(id, updatePayload);
   };
 
   const handleRoll = async (formula, desc) => {
@@ -498,7 +525,7 @@ export default function CharacterSheet() {
       <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-gold)', marginBottom: '1.5rem', position: 'relative' }}>
         <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#fff' }}>{character.name}</h1>
         <p style={{ color: 'var(--accent-gold)', fontSize: '1rem', margin: '0.3rem 0' }}>
-          Nivel {character.level} {raceName ? `• ${raceName}` : ''} {className ? `• ${className}` : ''} {!raceName && !className && '• Monstruo'}
+          Nivel {character.level} {raceName ? `• ${raceName}` : ''} {className ? `• ${className}` : ''}{subclassName ? ` → ${subclassName}` : ''} {!raceName && !className && '• Monstruo'}
           {character.level < 20 && (
             <button className="btn btn-ghost btn-sm" onClick={levelUp} style={{ marginLeft: '10px', padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>
               <ArrowUp size={12} style={{marginRight: '3px'}}/> Subir de Nivel
@@ -738,6 +765,32 @@ export default function CharacterSheet() {
                 </button>
               </div>
             </div>
+            {levelUpModal.needsSubclass && (
+              <div style={{ background: 'rgba(200,155,60,0.12)', border: '1px solid rgba(200,155,60,0.3)', padding: '1rem', borderRadius: '8px', margin: '1rem 0' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', textAlign: 'center', marginBottom: '0.5rem' }}>
+                  Elige tu subclase (nivel {levelUpModal.newLevel})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {levelUpModal.subclassList.map(sc => {
+                    const sel = levelUpModal.selectedSubclassId === sc.id;
+                    return (
+                      <div key={sc.id} className="glass-panel clickable"
+                        onClick={() => setLevelUpModal(prev => ({ ...prev, selectedSubclassId: sc.id }))}
+                        style={{
+                          cursor: 'pointer', padding: '0.6rem',
+                          borderColor: sel ? 'var(--accent-gold)' : 'rgba(255,255,255,0.08)',
+                          background: sel ? 'rgba(200,155,60,0.1)' : ''
+                        }}>
+                        <strong style={{ color: sel ? '#fff' : 'var(--text-main)' }}>{sc.name}</strong>
+                        <p style={{ fontSize: '0.7rem', color: '#aaa', margin: '0.2rem 0 0' }}>
+                          {(sc.description || '').substring(0, 100)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {levelUpModal.isCaster && (
               <div style={{ background: 'rgba(139,0,0,0.15)', border: '1px solid rgba(139,0,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
                 <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Conjuros</div>
@@ -749,7 +802,8 @@ export default function CharacterSheet() {
             )}
             <div className="flex-row" style={{ justifyContent: 'center', marginTop: '1rem', gap: '0.5rem' }}>
               <button className="btn btn-ghost" onClick={() => setLevelUpModal(null)}>Cancelar</button>
-              <button className="btn btn-gold" onClick={confirmLevelUp}>Subir de Nivel</button>
+              <button className="btn btn-gold" onClick={confirmLevelUp}
+                disabled={levelUpModal.needsSubclass && !levelUpModal.selectedSubclassId}>Subir de Nivel</button>
             </div>
           </div>
         </div>
