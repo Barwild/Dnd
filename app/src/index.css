@@ -720,6 +720,41 @@ select option {
   .combat-badge .value {
     font-size: 1.2rem;
   }
+  .char-header-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .char-header-buttons .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.5rem;
+  }
+  .char-header-buttons .btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .dice-notification {
+    top: 60px !important;
+    right: 10px !important;
+    left: 10px !important;
+    max-width: none !important;
+  }
+  .weapon-armor-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+  .weapon-armor-item .btn-group {
+    align-self: flex-end;
+  }
+  .weapon-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .weapon-row .btn {
+    align-self: flex-end;
+  }
   .modal-content {
     max-width: 95%;
     margin: 0.5rem;
@@ -764,19 +799,62 @@ select option {
   }
 }
 
-/* Prevent horizontal overflow on mobile only */
+/* ─── Responsive utilities ─── */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
   }
-  .flex-row {
+  /* Columns layout for flex-row on mobile (opt-in) */
+  .flex-row.flex-responsive {
     flex-direction: column;
     gap: 0.5rem;
+  }
+  .flex-row.flex-responsive-x {
+    gap: 0.4rem;
+    flex-wrap: wrap;
   }
   .flex-wrap {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+  /* Mobile-hide helper */
+  .hide-mobile { display: none !important; }
+  /* Mobile-show helper */
+  .show-mobile { display: flex !important; }
+}
+
+/* ─── Spellbook responsive ─── */
+@media (max-width: 768px) {
+  .spellbook-panel {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+  .spellbook-known {
+    max-height: 400px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .spellbook-known {
+    max-height: 300px !important;
+  }
+  .spell-slot-card {
+    min-width: 80px !important;
+  }
+  .choice-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Table adjustments for small screens */
+@media (max-width: 600px) {
+  .responsive-table {
+    font-size: 0.75rem;
+  }
+  .responsive-table td,
+  .responsive-table th {
+    padding: 0.3rem 0.4rem;
   }
 }
 
@@ -798,4 +876,5 @@ select option {
   .container {
     padding: 2rem;
   }
+  .show-mobile { display: none !important; }
 }

@@ -559,7 +559,7 @@ export default function CharacterSheet() {
             </div>
           )}
         </div>
-        <div className="flex-row" style={{ gap: '0.5rem' }}>
+        <div className="flex-row char-header-buttons" style={{ gap: '0.5rem' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/skills`)}><Target size={16} /> Habilidades</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/spells`)}><BookOpen size={16} /> Grimorio</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/inventory`)}><Shield size={16} /> Inventario</button>
@@ -569,7 +569,7 @@ export default function CharacterSheet() {
 
       {/* Dice notification */}
       {diceResult && (
-        <div className="glass-panel slide-up" style={{ position: 'fixed', top: '80px', right: '20px', zIndex: 999, borderColor: 'var(--accent-gold)', padding: '1rem', maxWidth: '300px' }}>
+        <div className="glass-panel slide-up dice-notification" style={{ position: 'fixed', top: '80px', right: '20px', zIndex: 999, borderColor: 'var(--accent-gold)', padding: '1rem', maxWidth: '300px' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{diceResult.description}</div>
           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-gold)' }}>{diceResult.total}</div>
           <div style={{ fontSize: '0.7rem', color: '#888' }}>{diceResult.dice_formula}</div>
@@ -719,12 +719,12 @@ export default function CharacterSheet() {
                 const unarmedAtk = `1d20${strMod >= 0 ? '+' : ''}${strMod}`;
                 const unarmedDmg = `1${strMod >= 0 ? '+' : ''}${strMod}`;
                 return (
-                  <div className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px', opacity: 0.8 }}>
+                  <div className="weapon-armor-item flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px', opacity: 0.8 }}>
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#888' }}>Ataque sin Armas</div>
                       <div style={{ fontSize: '0.75rem', color: '#666' }}>1 contundente • Cuerpo a cuerpo</div>
                     </div>
-                    <div className="flex-row" style={{ gap: '0.5rem' }}>
+                    <div className="flex-row btn-group" style={{ gap: '0.5rem' }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(unarmedAtk, 'Ataque sin Armas')} title="Tirar Ataque" style={{ color: 'var(--accent-blue)', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>
                         Atq {strMod >= 0 ? '+' : ''}{strMod}
                       </button>
@@ -743,12 +743,12 @@ export default function CharacterSheet() {
                 const dmgMod = mod(stats[baseStat]);
                 
                 return (
-                  <div key={idx} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                  <div key={idx} className="weapon-armor-item flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{w.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#888' }}>{w.damage_dice || '1'} {w.damage_type?.name || w.damage_type || ''} • {w.weapon_range}</div>
                     </div>
-                    <div className="flex-row" style={{ gap: '0.5rem' }}>
+                    <div className="flex-row btn-group" style={{ gap: '0.5rem' }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`1d20+${attackMod}`, `Ataque con ${w.name}`)} title="Tirar Ataque" style={{ color: 'var(--accent-blue)', padding: '0.2rem 0.5rem' }}>
                         Atq {attackMod >= 0 ? '+' : ''}{attackMod}
                       </button>
@@ -772,7 +772,7 @@ export default function CharacterSheet() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {armor.map((a, idx) => (
-                  <div key={idx} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                  <div key={idx} className="weapon-armor-item flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{a.name}</div>
                       <div style={{ fontSize: '0.75rem', color: '#888' }}>
