@@ -370,7 +370,7 @@ export default function Spellbook() {
             {[0,1,2,3,4,5,6,7,8,9].map(lvl => {
               const spellsAtLevel = knownByLevel[lvl] || [];
               const slot = statsObj.spellSlots?.[lvl] || { max: 0, used: 0 };
-              if (lvl > 0 && slot.max <= 0 && spellsAtLevel.length === 0 && lvl > 1) return null;
+              if (lvl > 1 && slot.max <= 0 && spellsAtLevel.length === 0) return null;
 
               return (
                 <div key={lvl} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(139,0,0,0.2)' }}>
@@ -425,8 +425,8 @@ export default function Spellbook() {
                         const sp = allSpells.find(s => s.index === sIdx);
                         return (
                           <div key={sIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.6rem 0.8rem', borderRadius: '6px', borderLeft: `4px solid ${lvl === 0 ? 'var(--accent-gold)' : 'var(--accent-red)'}` }}>
-                            <div style={{ flex: 1 }}>
-                              <span style={{ fontSize: '0.95rem', color: '#ddd', fontWeight: '500' }}>{sp?.name || sIdx}</span>
+                            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                              <span style={{ fontSize: '0.95rem', color: '#ddd', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{sp?.name || '(hechizo desconocido)'}</span>
                               {sp?.ritual && <span style={{ fontSize: '0.65rem', color: 'var(--accent-gold)', marginLeft: '0.5rem', padding: '0.1rem 0.3rem', background: 'rgba(200,155,60,0.2)', borderRadius: '3px' }}>[R]</span>}
                               {sp?.concentration && <span style={{ fontSize: '0.65rem', color: 'var(--accent-red-bright)', marginLeft: '0.3rem', padding: '0.1rem 0.3rem', background: 'rgba(220,20,60,0.2)', borderRadius: '3px' }}>[C]</span>}
                             </div>
