@@ -66,6 +66,9 @@ export default function PlayerCreator() {
   });
 
   const [statPool, setStatPool] = useState([]);
+  const [cantrips, setCantrips] = useState([]);
+  const [level1Spells, setLevel1Spells] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
 
   useEffect(() => {
     Promise.all([getRaces(), getClasses(), getBackgrounds(), getCampaigns(), getSpells({ limit: 500 })])
