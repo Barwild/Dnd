@@ -112,6 +112,7 @@ export default function CharacterSheet() {
   const [subclassList, setSubclassList] = useState([]);
   const [subclassName, setSubclassName] = useState('');
   const [allSpells, setAllSpells] = useState([]);
+  const [expandedSpell, setExpandedSpell] = useState(null);
 
 
   const normalizeCoins = (coins) => ({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...coins });
@@ -836,6 +837,56 @@ export default function CharacterSheet() {
           </div>
         </div>
       </div>
+
+      {/* Known Spells */}
+      {knownSpells.length > 0 && (
+        <div className="glass-panel" style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent-red)' }}>
+          <h3 style={{ marginBottom: '1rem' }}><BookOpen size={18} style={{ color: 'var(--accent-red)' }} /> Conjuros Conocidos</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {[0,1,2,3,4,5,6,7,8,9].map(lvl => {
+              const spellsAtLevel = knownByLevel[lvl] || [];
+              const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
+              if (lvl > 1 && slot.max <= 0 && spellsAtLevel.length === 0) return null;
+              return (
+                <div key={lvl}>
+                  <div className="flex-row flex-between" style={{ background: 'rgba(139,0,0,0.15)', padding: '0.4rem 0.6rem', borderRadius: '6px', marginBottom: '0.3rem' }}>
+                    <strong style={{ color: '#e88', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                      {lvl === 0 ? 'Trucos' : `Nivel ${lvl}`}
+                    </strong>
+                    {lvl > 0 && slot.max > 0 && (
+                      <span style={{ fontSize: '0.75rem', color: '#aaa' }}>
+                        Espacios: {slot.used}/{slot.max}
+                      </span>
+                    )}
+                  </div>
+                  {spellsAtLevel.map(sp => (
+                    <div key={sp.id || sp.index} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.3rem 0.6rem' }}>
+                      <div className="flex-row flex-between" style={{ cursor: 'pointer' }} onClick={() => setExpandedSpell(expandedSpell === sp.id ? null : sp.id)}>
+                        <div>
+                          <span style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{sp.name}</span>
+                          <span style={{ fontSize: '0.65rem', color: '#888', marginLeft: '0.5rem' }}>
+                            {sp.school} {sp.concentration ? '• [C]' : ''} {sp.ritual ? '• [R]' : ''}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.65rem', color: '#666' }}>{expandedSpell === sp.id ? '▲' : '▼'}</span>
+                      </div>
+                      {expandedSpell === sp.id && (
+                        <div style={{ marginTop: '0.3rem', padding: '0.4rem', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', fontSize: '0.75rem', color: '#ccc' }}>
+                          <div style={{ color: '#999', marginBottom: '0.2rem' }}>
+                            Tiempo: {sp.casting_time} • Rango: {sp.range} • Duración: {sp.duration}
+                          </div>
+                          {sp.components && <div style={{ color: '#999', marginBottom: '0.2rem' }}>Componentes: {sp.components}</div>}
+                          <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4', margin: 0 }}>{sp.description || 'Sin descripción'}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Notes */}
       <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
