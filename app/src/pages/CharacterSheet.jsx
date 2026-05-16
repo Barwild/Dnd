@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry } from '../api';
-import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus } from 'lucide-react';
+import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus, Printer } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
 const STAT_NAMES = { STR: 'FUE', DEX: 'DES', CON: 'CON', INT: 'INT', WIS: 'SAB', CHA: 'CAR' };
@@ -564,6 +564,7 @@ export default function CharacterSheet() {
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/spells`)}><BookOpen size={16} /> Grimorio</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/inventory`)}><Shield size={16} /> Inventario</button>
           <button className="btn btn-gold btn-sm" onClick={save} disabled={saving}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
+          <button className="btn btn-ghost btn-sm print-trigger" onClick={() => window.print()}><Printer size={16} /> PDF</button>
         </div>
       </div>
 

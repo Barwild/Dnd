@@ -878,3 +878,136 @@ select option {
   }
   .show-mobile { display: none !important; }
 }
+
+/* ═══════ PRINT STYLES ═══════ */
+@media print {
+  @page {
+    margin: 0.5in;
+    size: A4 portrait;
+  }
+
+  * {
+    background: transparent !important;
+    background-color: #fff !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    color: #000 !important;
+    font-size: 10pt;
+    overflow: visible !important;
+  }
+
+  /* Hide non-essential elements */
+  .navbar,
+  .dice-notification,
+  .print-trigger,
+  .char-header-buttons .btn:not(.print-trigger),
+  textarea,
+  .btn-ghost,
+  .btn-secondary,
+  .btn-gold,
+  .btn-danger,
+  .btn-primary {
+    display: none !important;
+  }
+
+  /* Keep only the save button hidden too, show nothing interactive */
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Glass panels become clean white cards */
+  .glass-panel {
+    border: 1px solid #ccc !important;
+    border-radius: 6px !important;
+    padding: 0.8rem !important;
+    margin-bottom: 0.6rem !important;
+    page-break-inside: avoid;
+  }
+
+  /* Typography in black */
+  h1, h2, h3, h4 {
+    color: #000 !important;
+    margin-bottom: 0.4rem;
+  }
+
+  .badge {
+    border: 1px solid #999 !important;
+    color: #000 !important;
+    background: #f5f5f5 !important;
+  }
+  .badge-gold { background: #f5f5f5 !important; color: #000 !important; }
+  .badge-red { background: #f5f5f5 !important; color: #c00 !important; }
+  .badge-blue { background: #f5f5f5 !important; color: #06c !important; }
+
+  /* Stat blocks black border */
+  .stat-block {
+    border: 2px solid #333 !important;
+    min-height: 100px !important;
+    padding: 0.8rem 0.6rem !important;
+  }
+  .stat-label { color: #000 !important; }
+  .stat-mod { color: #000 !important; }
+  .stat-score {
+    border: 2px solid #333 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .stat-icon { opacity: 0.5 !important; }
+
+  /* Combat badges */
+  .combat-badge {
+    border: 1px solid #333 !important;
+  }
+  .combat-badge .label { color: #555 !important; }
+  .combat-badge .value { color: #000 !important; }
+
+  /* Spell slots */
+  .combat-row { gap: 0.4rem; }
+
+  /* HP bar */
+  .hp-bar-bg {
+    border: 1px solid #333 !important;
+    background: #eee !important;
+  }
+  .hp-bar-fill {
+    background: #333 !important;
+  }
+
+  /* Links */
+  a { color: #000 !important; text-decoration: none !important; }
+
+  /* Page breaks */
+  .page-break { page-break-before: always; }
+
+  /* Force all content to be visible */
+  .fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .slide-up {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Keep equipment and weapons readable */
+  .weapon-armor-item {
+    border: 1px solid #ddd !important;
+    padding: 0.3rem 0.5rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  /* Show spell slot dots */
+  [style*="border: 2px solid var(--accent-red)"] {
+    border-color: #666 !important;
+  }
+  [style*="background: var(--accent-red)"] {
+    background: #666 !important;
+  }
+}
