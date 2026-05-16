@@ -63,6 +63,7 @@ export default function PlayerCreator() {
   const [cantrips, setCantrips] = useState([]);
   const [level1Spells, setLevel1Spells] = useState([]);
   const [step, setStep] = useState(1);
+  const [expandedSpell, setExpandedSpell] = useState(null);
   const navigate = useNavigate();
 
   const [charData, setCharData] = useState({
@@ -117,8 +118,10 @@ export default function PlayerCreator() {
 
   // If no spells are available at all for this class, skip the magic step
   const hasNoSpellsAvailable = availableCantrips.length === 0 && availableLevel1Spells.length === 0;
-  // If cleric/druid, they essentially know all their level 1 spells, so we don't force 'spell selection' here.
-  const needsMagicStep = !hasNoSpellsAvailable && (allowedCantripsCount > 0 || allowedLevel1Count > 0);
+  // For prepared casters (cleric, druid, artificer), let them select from all available level 1 spells
+  const preparedCasterL1Count = prepareAllClasses.includes(classNameLow) ? availableLevel1Spells.length : 0;
+  const effectiveL1Count = Math.max(allowedLevel1Count, preparedCasterL1Count);
+  const needsMagicStep = !hasNoSpellsAvailable && (allowedCantripsCount > 0 || effectiveL1Count > 0);
 
   const selectedCantripsCount = charData.spell_list.filter(sIndex => availableCantrips.some(c => c.index === sIndex)).length;
   const selectedLevel1Count = charData.spell_list.filter(sIndex => availableLevel1Spells.some(c => c.index === sIndex)).length;
@@ -613,25 +616,38 @@ export default function PlayerCreator() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem', maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
                         {availableCantrips.map(c => {
                             const isSelected = charData.spell_list.includes(c.index);
+                            const isExpanded = expandedSpell === c.index;
+                            const descPreview = c.description ? c.description.substring(0, 120) : '';
                             return (
-                                <div key={c.index} className="glass-panel clickable" 
-                                    onClick={() => {
+                                <div key={c.index} style={{
+                                    padding: '0.8rem',
+                                    border: `1px solid ${isSelected ? 'var(--accent-purple)' : 'var(--glass-border)'}`,
+                                    background: isSelected ? 'rgba(123, 94, 167, 0.15)' : '',
+                                    borderRadius: '8px',
+                                    opacity: (!isSelected && selectedCantripsCount >= allowedCantripsCount) ? 0.5 : 1
+                                }}>
+                                    <div className="clickable" onClick={() => {
                                         if (isSelected) {
                                             setCharData(prev => ({ ...prev, spell_list: prev.spell_list.filter(i => i !== c.index) }));
                                         } else if (selectedCantripsCount < allowedCantripsCount) {
                                             setCharData(prev => ({ ...prev, spell_list: [...prev.spell_list, c.index] }));
                                         }
-                                    }}
-                                    style={{
-                                        cursor: 'pointer', padding: '0.8rem',
-                                        borderColor: isSelected ? 'var(--accent-purple)' : '',
-                                        background: isSelected ? 'rgba(123, 94, 167, 0.15)' : '',
-                                        opacity: (!isSelected && selectedCantripsCount >= allowedCantripsCount) ? 0.5 : 1
-                                    }}>
-                                    <strong style={{ color: isSelected ? '#fff' : 'var(--text-main)' }}><Zap size={12} style={{marginRight: '4px', color:'var(--accent-purple)'}} /> {c.name}</strong>
-                                    <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>
-                                        {c.casting_time} • {c.range}
+                                    }} style={{ cursor: 'pointer' }}>
+                                        <strong style={{ color: isSelected ? '#fff' : 'var(--text-main)' }}><Zap size={12} style={{marginRight: '4px', color:'var(--accent-purple)'}} /> {c.name}</strong>
+                                        <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>
+                                            {c.casting_time} • {c.range}
+                                        </div>
                                     </div>
+                                    <button className="btn btn-ghost btn-sm" onClick={() => setExpandedSpell(isExpanded ? null : c.index)}
+                                        style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', marginTop: '0.3rem', color: 'var(--accent-blue)' }}>
+                                        {isExpanded ? 'Ocultar' : 'Ver descripción'}
+                                    </button>
+                                    {isExpanded && (
+                                        <div className="fade-in" style={{ fontSize: '0.75rem', color: '#ccc', marginTop: '0.4rem', borderTop: '1px solid #333', paddingTop: '0.4rem', lineHeight: 1.4 }}>
+                                            {descPreview}{c.description && c.description.length > 120 ? '...' : ''}
+                                            {!c.description && <span style={{ color: '#666', fontStyle: 'italic' }}>Sin descripción disponible</span>}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -645,41 +661,57 @@ export default function PlayerCreator() {
                 )}
 
                 {/* LEVEL 1 SPELLS SECTION */}
-                {allowedLevel1Count > 0 && (
+                {effectiveL1Count > 0 && (
                   <div>
-                    <h3 style={{ color: 'var(--accent-blue-bright)' }}>Conjuros Conocidos (Nivel 1)</h3>
+                    <h3 style={{ color: 'var(--accent-blue-bright)' }}>Conjuros de Nivel 1</h3>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        Como {selectedClass?.name}, comienzas con <strong>{allowedLevel1Count} conjuros</strong> de nivel 1. {prepareAllClasses.includes(classNameLow) ? '(Conoces todos, solo selecciona aquellos que usualmente prepararías en tu lista).' : ''}
+                        {prepareAllClasses.includes(classNameLow)
+                          ? `Como ${selectedClass?.name}, conoces todos los conjuros de nivel 1 de tu lista. Selecciona los que quieras preparar (en el Grimorio podrás cambiarlos después).`
+                          : `Como ${selectedClass?.name}, comienzas con <strong>${effectiveL1Count} conjuros</strong> de nivel 1.`
+                        }
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem', maxHeight: '400px', overflowY: 'auto', padding: '0.5rem' }}>
                         {availableLevel1Spells.map(c => {
                             const isSelected = charData.spell_list.includes(c.index);
+                            const isExpanded = expandedSpell === c.index;
+                            const descPreview = c.description ? c.description.substring(0, 120) : '';
                             return (
-                                <div key={c.index} className="glass-panel clickable" 
-                                    onClick={() => {
+                                <div key={c.index} style={{
+                                    padding: '0.8rem',
+                                    border: `1px solid ${isSelected ? 'var(--accent-blue-bright)' : 'var(--glass-border)'}`,
+                                    background: isSelected ? 'rgba(0, 150, 255, 0.1)' : '',
+                                    borderRadius: '8px',
+                                    opacity: (!isSelected && selectedLevel1Count >= effectiveL1Count) ? 0.5 : 1
+                                }}>
+                                    <div className="clickable" onClick={() => {
                                         if (isSelected) {
                                             setCharData(prev => ({ ...prev, spell_list: prev.spell_list.filter(i => i !== c.index) }));
-                                        } else if (selectedLevel1Count < allowedLevel1Count) {
+                                        } else if (selectedLevel1Count < effectiveL1Count) {
                                             setCharData(prev => ({ ...prev, spell_list: [...prev.spell_list, c.index] }));
                                         }
-                                    }}
-                                    style={{
-                                        cursor: 'pointer', padding: '0.8rem',
-                                        borderColor: isSelected ? 'var(--accent-blue-bright)' : '',
-                                        background: isSelected ? 'rgba(0, 150, 255, 0.1)' : '',
-                                        opacity: (!isSelected && selectedLevel1Count >= allowedLevel1Count) ? 0.5 : 1
-                                    }}>
-                                    <strong style={{ color: isSelected ? '#fff' : 'var(--text-main)' }}>{c.name}</strong>
-                                    <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>
-                                        {c.casting_time} • {c.range}
+                                    }} style={{ cursor: 'pointer' }}>
+                                        <strong style={{ color: isSelected ? '#fff' : 'var(--text-main)' }}>{c.name}</strong>
+                                        <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>
+                                            {c.casting_time} • {c.range}
+                                        </div>
                                     </div>
+                                    <button className="btn btn-ghost btn-sm" onClick={() => setExpandedSpell(isExpanded ? null : c.index)}
+                                        style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', marginTop: '0.3rem', color: 'var(--accent-blue)' }}>
+                                        {isExpanded ? 'Ocultar' : 'Ver descripción'}
+                                    </button>
+                                    {isExpanded && (
+                                        <div className="fade-in" style={{ fontSize: '0.75rem', color: '#ccc', marginTop: '0.4rem', borderTop: '1px solid #333', paddingTop: '0.4rem', lineHeight: 1.4 }}>
+                                            {descPreview}{c.description && c.description.length > 120 ? '...' : ''}
+                                            {!c.description && <span style={{ color: '#666', fontStyle: 'italic' }}>Sin descripción disponible</span>}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
                     </div>
                     <div style={{marginTop: '0.5rem', textAlign: 'right'}}>
-                        <span style={{ fontSize: '0.85rem', color: selectedLevel1Count === allowedLevel1Count ? 'var(--accent-green)' : 'var(--accent-blue-bright)' }}>
-                            Conjuros Seleccionados: {selectedLevel1Count} / {allowedLevel1Count}
+                        <span style={{ fontSize: '0.85rem', color: selectedLevel1Count === effectiveL1Count ? 'var(--accent-green)' : 'var(--accent-blue-bright)' }}>
+                            Conjuros Seleccionados: {selectedLevel1Count} / {effectiveL1Count}
                         </span>
                     </div>
                   </div>
@@ -688,7 +720,7 @@ export default function PlayerCreator() {
                 <div className="flex-row flex-between" style={{ marginTop: '2rem' }}>
                     <button className="btn btn-ghost" onClick={() => setStep(getStepNumber('Vocación'))}><ChevronLeft size={16} /> Clase</button>
                     <button className="btn btn-gold" onClick={() => setStep(getStepNumber('Atributos'))} 
-                      disabled={(allowedCantripsCount > 0 && selectedCantripsCount < allowedCantripsCount) || (allowedLevel1Count > 0 && selectedLevel1Count < allowedLevel1Count)}>
+                      disabled={(allowedCantripsCount > 0 && selectedCantripsCount < allowedCantripsCount) || (effectiveL1Count > 0 && selectedLevel1Count < effectiveL1Count)}>
                         Atributos <ChevronRight size={16} />
                     </button>
                 </div>
