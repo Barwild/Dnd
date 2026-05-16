@@ -881,473 +881,89 @@ select option {
 
 /* ═══════ PRINT STYLES ═══════ */
 @media print {
-  @page { margin: 0; size: A4 portrait; }
+  @page { margin: 6mm 8mm; size: A4 portrait; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-  /* ─── HIDE EVERYTHING ON SCREEN ─── */
-  .navbar, .dice-notification, .print-trigger,
-  .char-header-buttons .btn:not(.print-trigger),
-  textarea, .btn-ghost, .btn-secondary, .btn-gold, .btn-danger, .btn-primary,
-  .container > :not(.print-sheet),
-  .character-content, .sidebar, .modal-overlay, .level-up-modal,
-  .hp-bar-bg, .hp-bar-fill,
-  [class*="badge"] { display: none !important; }
-
   body { margin: 0; padding: 0; background: #fff !important; color: #000; overflow: visible !important; }
-
-  /* ─── PRINT SHEET BASE ─── */
-  .print-sheet {
-    display: block !important;
-    font-family: 'Times New Roman', 'Georgia', 'Palatino', serif !important;
-    font-size: 10pt;
-    line-height: 1.2;
-    color: #000;
-  }
-  .print-page {
-    width: 210mm;
-    height: 297mm;
-    padding: 10mm 8mm;
-    box-sizing: border-box;
-    page-break-after: always;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ─── HEADER BAR (page 1 top) ─── */
-  .ps-header {
-    display: flex;
-    flex-wrap: wrap;
-    border: 2px solid #000;
-    margin-bottom: 4mm;
-  }
-  .ps-header .ps-field {
-    border-right: 1px solid #000;
-    border-bottom: 1px solid #000;
-    padding: 1mm 2mm;
-    flex: 1 0 25%;
-    min-width: 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-  }
+  .navbar, .dice-notification, .print-trigger, .char-header-buttons .btn:not(.print-trigger), textarea, .btn-ghost, .btn-secondary, .btn-gold, .btn-danger, .btn-primary, .container > :not(.print-sheet), .character-content, .sidebar, .modal-overlay, .level-up-modal, .hp-bar-bg, .hp-bar-fill, [class*='badge'] { display: none !important; }
+  .print-sheet { display: block !important; font-family: 'Times New Roman', 'Georgia', 'Palatino', serif !important; font-size: 9.5pt; line-height: 1.15; color: #000; }
+  .print-page { width: 194mm; min-height: 285mm; padding: 0; box-sizing: border-box; page-break-after: always; position: relative; }
+  .ps-header { display: flex; flex-wrap: wrap; border: 2px solid #000; margin-bottom: 3mm; }
+  .ps-header .ps-field { border-right: 1px solid #000; border-bottom: 1px solid #000; padding: 0.8mm 1.5mm; flex: 1 0 25%; min-width: 0; box-sizing: border-box; display: flex; flex-direction: column; }
   .ps-header .ps-field:nth-child(4n) { border-right: none; }
   .ps-header .ps-field:nth-last-child(-n+4) { border-bottom: none; }
-  .ps-header .ps-field label {
-    font-size: 5pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #333;
-  }
-  .ps-header .ps-field span {
-    font-size: 10pt;
-    font-weight: bold;
-    padding: 1mm 0;
-    border-bottom: 1px dotted #999;
-    min-height: 6mm;
-    font-family: 'Courier New', monospace;
-  }
-
-  /* ─── BODY LAYOUT (page 1) ─── */
-  .ps-body {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1.8fr;
-    grid-template-rows: 1fr auto auto;
-    gap: 3mm;
-    margin-top: 3mm;
-  }
-
-  /* ─── STATS COLUMN ─── */
-  .ps-stats-col { grid-column: 1; grid-row: 1; }
-  .ps-stat-row {
-    display: flex;
-    align-items: stretch;
-    margin-bottom: 2mm;
-  }
-  .ps-stat-box {
-    width: 36mm;
-    height: 22mm;
-    border: 2px solid #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    background: #f9f9f9;
-  }
-  .ps-stat-label {
-    font-size: 7pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #333;
-    position: absolute;
-    top: 1mm;
-  }
-  .ps-stat-score {
-    font-size: 20pt;
-    font-weight: bold;
-    line-height: 1;
-  }
-  .ps-stat-mod {
-    font-size: 10pt;
-    border-top: 1px solid #000;
-    padding-top: 1mm;
-    width: 80%;
-    text-align: center;
-  }
-  .ps-save-row {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding-left: 2mm;
-    gap: 1mm;
-    border-bottom: 1px solid #ccc;
-    font-size: 9pt;
-  }
-  .ps-save-dot {
-    width: 6px; height: 6px;
-    border: 1.5px solid #000;
-    border-radius: 50%;
-    display: inline-block;
-  }
+  .ps-header .ps-field label { font-size: 5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #555; }
+  .ps-header .ps-field span { font-size: 10pt; font-weight: bold; padding: 0.5mm 0; min-height: 5mm; border-bottom: 1px dotted #aaa; font-family: 'Courier New', monospace; }
+  .ps-body { display: grid; grid-template-columns: 1fr 1.6fr; grid-template-rows: auto 1fr; gap: 2.5mm; margin-top: 2.5mm; min-height: 0; }
+  .ps-stats-col { grid-column: 1; grid-row: 1 / 3; }
+  .ps-stat-row { display: flex; align-items: stretch; margin-bottom: 2mm; }
+  .ps-stat-box { width: 34mm; height: 20mm; border: 2px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: #f4f4f0; }
+  .ps-stat-label { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px; color: #333; position: absolute; top: 1mm; }
+  .ps-stat-score { font-size: 22pt; font-weight: bold; line-height: 1; margin-top: 2mm; }
+  .ps-stat-mod-above { font-size: 4.5pt; text-transform: uppercase; color: #888; margin-top: 0.5mm; }
+  .ps-stat-mod { font-size: 11pt; font-weight: bold; border-top: 1px solid #000; padding-top: 0.3mm; width: 70%; text-align: center; }
+  .ps-save-box { flex: 1; display: flex; align-items: center; padding-left: 2mm; gap: 1.5mm; border-bottom: 1px solid #ccc; }
+  .ps-save-dot { width: 6px; height: 6px; border: 1.5px solid #000; border-radius: 50%; display: inline-block; flex-shrink: 0; }
   .ps-save-dot.filled { background: #000 !important; }
-
-  /* ─── SKILLS COLUMN ─── */
-  .ps-skills-col {
-    grid-column: 2;
-    grid-row: 1;
-    border: 2px solid #000;
-    padding: 2mm;
-  }
-  .ps-inspiration {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #000;
-    padding-bottom: 1mm;
-    margin-bottom: 1mm;
-    font-size: 8pt;
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-  .ps-dot-box {
-    width: 12mm; height: 6mm;
-    border: 1px solid #000;
-    border-radius: 2px;
-  }
-  .ps-prof-bonus {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #000;
-    padding-bottom: 1mm;
-    margin-bottom: 1mm;
-    font-size: 8pt;
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-  .ps-prof-bonus .ps-value {
-    font-size: 14pt;
-    font-weight: bold;
-    border: 1px solid #000;
-    padding: 0.5mm 3mm;
-    border-radius: 2px;
-  }
-
-  .ps-skills-list { flex: 1; }
-  .ps-skill-row {
-    display: flex;
-    align-items: center;
-    gap: 1mm;
-    padding: 0.5mm 0;
-    border-bottom: 1px solid #ddd;
-    font-size: 7.5pt;
-  }
-  .ps-skill-dot {
-    width: 5px; height: 5px;
-    border: 1.5px solid #000;
-    display: inline-block;
-    flex-shrink: 0;
-  }
+  .ps-save-val { font-size: 10pt; font-weight: bold; }
+  .ps-skills-col { grid-column: 2; grid-row: 1; border: 2px solid #000; padding: 1.5mm; display: flex; flex-direction: column; }
+  .ps-skills-top-row { display: flex; gap: 2mm; border-bottom: 1px solid #000; padding-bottom: 1mm; margin-bottom: 0.5mm; }
+  .ps-inspiration { display: flex; align-items: center; gap: 2mm; font-size: 7pt; font-weight: bold; text-transform: uppercase; flex: 1; }
+  .ps-dot-box { width: 10mm; height: 5mm; border: 1px solid #000; border-radius: 2px; }
+  .ps-prof-bonus { display: flex; align-items: center; gap: 2mm; font-size: 7pt; font-weight: bold; text-transform: uppercase; flex: 1; }
+  .ps-prof-bonus .ps-value { font-size: 13pt; font-weight: bold; border: 1px solid #000; padding: 0.3mm 2.5mm; border-radius: 2px; }
+  .ps-skill-header-row { display: flex; align-items: center; gap: 1mm; font-size: 5.5pt; font-weight: bold; text-transform: uppercase; color: #666; padding: 0.3mm 0; border-bottom: 1px solid #ccc; }
+  .ps-sh-dot { width: 4mm; } .ps-sh-bonus { width: 7mm; text-align: right; } .ps-sh-name { flex: 1; } .ps-sh-stat { width: 6mm; }
+  .ps-skills-list { flex: 1; overflow: hidden; }
+  .ps-skill-row { display: flex; align-items: center; gap: 1mm; padding: 0.3mm 0; border-bottom: 1px solid #e8e8e8; font-size: 6.8pt; }
+  .ps-skill-dot { width: 4px; height: 4px; border: 1.5px solid #000; display: inline-block; flex-shrink: 0; }
   .ps-skill-dot.filled { background: #000 !important; }
-  .ps-skill-dot.double {
-    background: #000 !important;
-    box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px #000;
-  }
-  .ps-skill-total { width: 8mm; text-align: right; font-weight: bold; font-size: 8pt; }
-  .ps-skill-name { flex: 1; }
-  .ps-skill-stat { color: #666; font-size: 6.5pt; width: 12mm; }
-
-  .ps-passive {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-top: 1px solid #000;
-    padding-top: 1mm;
-    margin-top: 1mm;
-    font-size: 8pt;
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-  .ps-passive .ps-value {
-    font-size: 14pt;
-    font-weight: bold;
-    border: 1px solid #000;
-    padding: 0.5mm 3mm;
-    border-radius: 2px;
-  }
-
-  /* ─── COMBAT SECTION ─── */
-  .ps-combat {
-    grid-column: 1 / 3;
-    grid-row: 3;
-    border: 2px solid #000;
-    padding: 2mm;
-    display: flex;
-    gap: 3mm;
-    align-items: flex-start;
-  }
-  .ps-combat-row {
-    display: flex;
-    gap: 2mm;
-    flex: 0 0 auto;
-  }
-  .ps-combat-item {
-    text-align: center;
-    border: 1px solid #000;
-    padding: 1mm 3mm;
-    min-width: 20mm;
-  }
-  .ps-combat-item label {
-    font-size: 5.5pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    display: block;
-    color: #333;
-  }
-  .ps-value-lg {
-    font-size: 16pt;
-    font-weight: bold;
-    display: block;
-  }
-  .ps-hp-section {
-    flex: 1;
-    border-left: 1px solid #000;
-    padding-left: 2mm;
-  }
-  .ps-hp-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 7pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    padding: 0.3mm 0;
-    border-bottom: 1px dotted #999;
-  }
-  .ps-hp-row .ps-value {
-    font-size: 9pt;
-  }
-  .ps-hd-section {
-    flex: 1;
-    border-left: 1px solid #000;
-    padding-left: 2mm;
-  }
-  .ps-hd-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 7pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    padding: 0.3mm 0;
-    border-bottom: 1px dotted #999;
-  }
-  .ps-hd-row .ps-value { font-size: 9pt; }
-  .ps-dots { font-size: 10pt; letter-spacing: 2mm; }
-
-  /* ─── ATTACKS TABLE ─── */
-  .ps-attacks {
-    grid-column: 1 / 3;
-    border: 2px solid #000;
-    padding: 2mm;
-    margin-top: 0;
-  }
-  .ps-attacks-header {
-    font-size: 6pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #333;
-    margin-bottom: 1mm;
-    border-bottom: 1px solid #000;
-    padding-bottom: 0.5mm;
-  }
+  .ps-skill-dot.double { background: #000 !important; box-shadow: 0 0 0 2.5px #fff, 0 0 0 4px #000; }
+  .ps-skill-total { width: 7mm; text-align: right; font-weight: bold; font-size: 7pt; }
+  .ps-skill-name { flex: 1; } .ps-skill-stat { color: #666; font-size: 6pt; width: 5mm; text-align: center; }
+  .ps-passive { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #000; padding-top: 0.5mm; margin-top: 0.5mm; font-size: 6.5pt; font-weight: bold; text-transform: uppercase; }
+  .ps-passive .ps-value { font-size: 11pt; font-weight: bold; border: 1px solid #000; padding: 0.3mm 2.5mm; border-radius: 2px; }
+  .ps-combat { grid-column: 2; grid-row: 2; border: 2px solid #000; padding: 1.5mm; display: flex; flex-wrap: wrap; gap: 1.5mm; align-content: flex-start; }
+  .ps-combat-stats { display: flex; gap: 1.5mm; width: 100%; }
+  .ps-combat-item { text-align: center; border: 1px solid #000; padding: 0.5mm 2mm; flex: 1; min-width: 15mm; }
+  .ps-combat-item label { font-size: 5pt; font-weight: bold; text-transform: uppercase; display: block; color: #555; }
+  .ps-value-lg { font-size: 14pt; font-weight: bold; display: block; }
+  .ps-vida-section, .ps-dados-section, .ps-muerte-section, .ps-otros-section { flex: 1; min-width: 35mm; }
+  .ps-vida-title, .ps-dados-title, .ps-muerte-title, .ps-otros-title { font-size: 5.5pt; font-weight: bold; text-transform: uppercase; color: #555; border-bottom: 1px solid #000; margin-bottom: 0.3mm; padding-bottom: 0.2mm; }
+  .ps-vida-row, .ps-dados-row, .ps-muerte-row, .ps-otros-row { display: flex; justify-content: space-between; font-size: 6.5pt; padding: 0.2mm 0; }
+  .ps-underline { border-bottom: 1px solid #000; min-width: 12mm; text-align: center; font-family: 'Courier New', monospace; font-size: 8pt; font-weight: bold; }
+  .ps-check-dots { font-size: 10pt; letter-spacing: 2mm; }
+  .ps-attacks { grid-column: 1 / 3; border: 2px solid #000; padding: 1.5mm; }
+  .ps-attacks-header { font-size: 6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #555; border-bottom: 1px solid #000; padding-bottom: 0.3mm; margin-bottom: 0.5mm; }
   .ps-attacks-table { width: 100%; }
-  .ps-attack-row {
-    display: grid;
-    grid-template-columns: 1fr 0.7fr 1fr;
-    gap: 2mm;
-    padding: 0.5mm 0;
-    border-bottom: 1px dotted #ccc;
-    font-size: 7.5pt;
-  }
-  .ps-attack-row.header { font-weight: bold; font-size: 6pt; text-transform: uppercase; color: #333; border-bottom: 1px solid #000; }
-
-  /* ════════════════════════════════════════════ */
-  /* ─── PAGE 2: Equipment, Features, Traits  ─── */
-  /* ════════════════════════════════════════════ */
-
-  .ps-ppl {
-    border: 2px solid #000;
-    margin-bottom: 2mm;
-    min-height: 18mm;
-    display: flex;
-    flex-direction: column;
-  }
-  .ps-ppl-label {
-    font-size: 5.5pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #333;
-    padding: 0.5mm 1mm;
-    border-bottom: 1px solid #000;
-    background: #f5f5f5;
-  }
-  .ps-ppl-content {
-    flex: 1;
-    padding: 1mm;
-    font-size: 8.5pt;
-    min-height: 12mm;
-  }
-
-  .ps-features {
-    border: 2px solid #000;
-    margin: 2mm 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  .ps-section-title {
-    font-size: 7pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.8mm 1mm;
-    border-bottom: 1px solid #000;
-    background: #f5f5f5;
-    color: #333;
-  }
-  .ps-features-content {
-    flex: 1;
-    padding: 1mm;
-    font-size: 8pt;
-  }
-
-  .ps-equipment {
-    border: 2px solid #000;
-    margin-top: 2mm;
-  }
-  .ps-equip-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2mm;
-    padding: 1mm;
-  }
-  .ps-equip-list { font-size: 7.5pt; }
-  .ps-equip-item {
-    padding: 0.3mm 0;
-    border-bottom: 1px dotted #ddd;
-  }
-  .ps-coins {
-    border-left: 1px solid #000;
-    padding-left: 2mm;
-  }
-  .ps-coin-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5mm 0;
-    border-bottom: 1px dotted #ddd;
-    font-size: 8pt;
-  }
-  .ps-coin-row span:first-child {
-    font-weight: bold;
-    width: 8mm;
-  }
-  .ps-coin-row span:last-child {
-    font-family: 'Courier New', monospace;
-    font-size: 9pt;
-    border-bottom: 1px solid #000;
-    min-width: 15mm;
-    text-align: center;
-  }
-
-  /* ════════════════════════════════ */
-  /* ─── PAGE 3: Spellcasting     ─── */
-  /* ════════════════════════════════ */
-
-  .ps-spell-header {
-    display: flex;
-    border: 2px solid #000;
-    margin-bottom: 3mm;
-  }
-  .ps-spell-header .ps-spell-field {
-    flex: 1;
-    padding: 1mm 2mm;
-    border-right: 1px solid #000;
-    display: flex;
-    flex-direction: column;
-  }
+  .ps-attack-row { display: grid; grid-template-columns: 1fr 0.7fr 1.2fr; gap: 1.5mm; padding: 0.3mm 0; border-bottom: 1px dotted #ddd; font-size: 7pt; }
+  .ps-attack-header { font-weight: bold; font-size: 5.5pt; text-transform: uppercase; color: #555; border-bottom: 1px solid #000; }
+  .ps-attack-divider { font-size: 5.5pt; font-weight: bold; text-transform: uppercase; color: #555; border-bottom: 1px dotted #999; padding: 0.5mm 0; margin-top: 0.5mm; }
+  .ps-page2-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; gap: 2mm; height: 285mm; align-content: start; }
+  .ps-rasgos { border: 2px solid #000; display: flex; flex-direction: column; min-height: 20mm; }
+  .ps-rasgos-label { font-size: 5.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #555; padding: 0.5mm 1mm; border-bottom: 1px solid #000; background: #f4f4f0; }
+  .ps-rasgos-content { flex: 1; padding: 1mm; font-size: 8pt; min-height: 14mm; background-image: repeating-linear-gradient(transparent, transparent 5.5mm, #e0e0e0 5.5mm, #e0e0e0 5.6mm); }
+  .ps-equipment-block { grid-column: 1 / 3; border: 2px solid #000; }
+  .ps-block-title { font-size: 6pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; padding: 0.5mm 1mm; border-bottom: 1px solid #000; background: #f4f4f0; color: #555; }
+  .ps-equipment-inner { display: grid; grid-template-columns: 2fr 1fr; gap: 1mm; padding: 1mm; }
+  .ps-equipment-list { font-size: 7pt; } .ps-eq-item { padding: 0.2mm 0; border-bottom: 1px dotted #e0e0e0; }
+  .ps-moneda-box { border-left: 1px solid #000; padding-left: 1.5mm; }
+  .ps-moneda-title { font-size: 5.5pt; font-weight: bold; text-transform: uppercase; color: #555; border-bottom: 1px solid #000; margin-bottom: 0.5mm; }
+  .ps-moneda-grid { display: flex; flex-wrap: wrap; gap: 0.5mm; } .ps-moneda-row { display: flex; align-items: center; gap: 1mm; width: 45%; padding: 0.3mm 0; border-bottom: 1px dotted #e0e0e0; }
+  .ps-coin-icon { font-size: 7pt; font-weight: bold; text-transform: uppercase; width: 6mm; } .ps-coin-val { font-family: 'Courier New', monospace; font-size: 8pt; font-weight: bold; border-bottom: 1px solid #000; min-width: 10mm; text-align: center; }
+  .ps-features-block { grid-column: 1 / 3; border: 2px solid #000; min-height: 40mm; display: flex; flex-direction: column; }
+  .ps-features-text { flex: 1; padding: 1mm; font-size: 7.5pt; background-image: repeating-linear-gradient(transparent, transparent 5mm, #e8e8e8 5mm, #e8e8e8 5.1mm); }
+  .ps-notes-block { grid-column: 1 / 3; border: 2px solid #000; min-height: 25mm; display: flex; flex-direction: column; }
+  .ps-notes-text { flex: 1; padding: 1mm; font-size: 7.5pt; background-image: repeating-linear-gradient(transparent, transparent 5mm, #e8e8e8 5mm, #e8e8e8 5.1mm); }
+  .ps-spell-header { display: flex; border: 2px solid #000; margin-bottom: 2.5mm; }
+  .ps-spell-header .ps-spell-field { flex: 1; padding: 0.8mm 1.5mm; border-right: 1px solid #000; display: flex; flex-direction: column; }
   .ps-spell-header .ps-spell-field:last-child { border-right: none; }
-  .ps-spell-field label {
-    font-size: 5.5pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    color: #333;
-  }
-  .ps-spell-field span {
-    font-size: 10pt;
-    font-weight: bold;
-    font-family: 'Courier New', monospace;
-    border-bottom: 1px dotted #999;
-    min-height: 5mm;
-  }
-
-  .ps-cantrips {
-    border: 2px solid #000;
-    margin-bottom: 2mm;
-  }
-  .ps-spell-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5mm 2mm;
-    padding: 1mm;
-  }
-  .ps-spell-name {
-    font-size: 7.5pt;
-    padding: 0.3mm 1mm;
-    border-bottom: 1px dotted #ddd;
-  }
-
-  .ps-spell-level {
-    border: 2px solid #000;
-    margin-bottom: 2mm;
-  }
-  .ps-spell-level-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5mm 1mm;
-    border-bottom: 1px solid #000;
-    background: #f5f5f5;
-    font-size: 7pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    color: #333;
-  }
+  .ps-spell-field label { font-size: 5pt; font-weight: bold; text-transform: uppercase; color: #555; }
+  .ps-spell-field span { font-size: 10pt; font-weight: bold; font-family: 'Courier New', monospace; border-bottom: 1px dotted #aaa; min-height: 5mm; }
+  .ps-spell-section { border: 2px solid #000; margin-bottom: 2mm; }
+  .ps-spell-section-title { display: flex; justify-content: space-between; align-items: center; padding: 0.5mm 1mm; border-bottom: 1px solid #000; background: #f4f4f0; font-size: 6.5pt; font-weight: bold; text-transform: uppercase; color: #555; }
+  .ps-spell-slots { font-size: 6pt; color: #666; }
+  .ps-spell-list { display: flex; flex-wrap: wrap; gap: 0.3mm 1.5mm; padding: 0.8mm; }
+  .ps-spell-entry { font-size: 7.5pt; padding: 0.2mm 0.8mm; border-bottom: 1px dotted #ddd; }
 }
 
 /* Hide print layout on screen */

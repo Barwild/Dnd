@@ -1033,12 +1033,12 @@ export default function CharacterSheet() {
         <div className="print-page">
           <div className="ps-header">
             <div className="ps-field"><label>Nombre del Personaje</label><span>{character?.name || ''}</span></div>
-            <div className="ps-field"><label>Clase y Nivel</label><span>{className} {character?.level}</span></div>
+            <div className="ps-field"><label>Clase y Nivel</label><span>{className}{subclassName ? ` (${subclassName})` : ''} {character?.level}</span></div>
             <div className="ps-field"><label>Trasfondo</label><span>{character?.background_name || ''}</span></div>
             <div className="ps-field"><label>Jugador</label><span>{character?.user_name || ''}</span></div>
             <div className="ps-field"><label>Raza</label><span>{raceName}</span></div>
-            <div className="ps-field"><label>Alineamiento</label><span></span></div>
-            <div className="ps-field"><label>P. Experiencia</label><span></span></div>
+            <div className="ps-field"><label>Alineamiento</label><span>{character?.alignment || ''}</span></div>
+            <div className="ps-field"><label>Puntos de Experiencia</label><span>{character?.xp || ''}</span></div>
           </div>
 
           <div className="ps-body">
@@ -1054,11 +1054,12 @@ export default function CharacterSheet() {
                     <div className="ps-stat-box">
                       <span className="ps-stat-label">{STAT_NAMES[k].substring(0,3)}</span>
                       <span className="ps-stat-score">{val}</span>
+                      <span className="ps-stat-mod-above">Modificador</span>
                       <span className="ps-stat-mod">{m >= 0 ? '+' : ''}{m}</span>
                     </div>
-                    <div className="ps-save-row">
+                    <div className="ps-save-box">
                       <div className={`ps-save-dot ${saveProf ? 'filled' : ''}`}></div>
-                      <span>{saveVal >= 0 ? '+' : ''}{saveVal}</span>
+                      <span className="ps-save-val">{saveVal >= 0 ? '+' : ''}{saveVal}</span>
                     </div>
                   </div>
                 );
@@ -1067,13 +1068,21 @@ export default function CharacterSheet() {
 
             {/* RIGHT COLUMN: Skills */}
             <div className="ps-skills-col">
-              <div className="ps-inspiration">
-                <span>Inspiración</span>
-                <div className="ps-dot-box"></div>
+              <div className="ps-skills-top-row">
+                <div className="ps-inspiration">
+                  <span>Inspiración</span>
+                  <div className="ps-dot-box"></div>
+                </div>
+                <div className="ps-prof-bonus">
+                  <span>Bonificador de Competencia</span>
+                  <span className="ps-value">+{profBonus}</span>
+                </div>
               </div>
-              <div className="ps-prof-bonus">
-                <span>Bonificador de Competencia</span>
-                <span className="ps-value">+{profBonus}</span>
+              <div className="ps-skill-header-row">
+                <span className="ps-sh-dot"></span>
+                <span className="ps-sh-bonus">Bonus</span>
+                <span className="ps-sh-name">Habilidad</span>
+                <span className="ps-sh-stat">Atrib.</span>
               </div>
               <div className="ps-skills-list">
                 {printSkills.map(sk => (
@@ -1081,19 +1090,19 @@ export default function CharacterSheet() {
                     <div className={`ps-skill-dot ${sk.prof === 'expertise' ? 'double' : sk.prof ? 'filled' : ''}`}></div>
                     <span className="ps-skill-total">{sk.total >= 0 ? '+' : ''}{sk.total}</span>
                     <span className="ps-skill-name">{sk.name}</span>
-                    <span className="ps-skill-stat">({sk.stat})</span>
+                    <span className="ps-skill-stat">{sk.stat}</span>
                   </div>
                 ))}
               </div>
               <div className="ps-passive">
-                <span>Percepción Pasiva</span>
+                <span>Percepción Pasiva (Sabiduría)</span>
                 <span className="ps-value">{10 + mod(stats.WIS || 10) + (printSkills.find(s => s.index === 'perception')?.prof ? profBonus : 0)}</span>
               </div>
             </div>
 
-            {/* BOTTOM: Combat */}
+            {/* BOTTOM: Combat + HP */}
             <div className="ps-combat">
-              <div className="ps-combat-row">
+              <div className="ps-combat-stats">
                 <div className="ps-combat-item">
                   <label>Clase de Armadura</label>
                   <span className="ps-value-lg">{ac}</span>
@@ -1107,46 +1116,62 @@ export default function CharacterSheet() {
                   <span className="ps-value-lg">{speed}</span>
                 </div>
               </div>
-              <div className="ps-hp-section">
-                <div className="ps-hp-row">
-                  <span>Puntos de Golpe Máximos</span>
-                  <span className="ps-value">{stats.maxHP || 1}</span>
+              <div className="ps-vida-section">
+                <div className="ps-vida-title">Puntos de Golpe</div>
+                <div className="ps-vida-row">
+                  <span>Máximo</span><span className="ps-underline">{stats.maxHP || 1}</span>
                 </div>
-                <div className="ps-hp-row">
-                  <span>PG Actuales</span>
-                  <span className="ps-value">{stats.currHP || 0}</span>
+                <div className="ps-vida-row">
+                  <span>Actuales</span><span className="ps-underline">{stats.currHP || 0}</span>
                 </div>
-                <div className="ps-hp-row">
-                  <span>PG Temporales</span>
-                  <span className="ps-value">{stats.tempHP || 0}</span>
+                <div className="ps-vida-row">
+                  <span>Temporales</span><span className="ps-underline">{stats.tempHP || 0}</span>
                 </div>
               </div>
-              <div className="ps-hd-section">
-                <div className="ps-hd-row">
-                  <span>Dados de Golpe</span>
-                  <span className="ps-value">{character?.level || 1}d{hitDie}</span>
+              <div className="ps-dados-section">
+                <div className="ps-dados-title">Dados de Golpe</div>
+                <div className="ps-dados-row">
+                  <span>Total</span><span className="ps-underline">{character?.level || 1}d{hitDie}</span>
                 </div>
-                <div className="ps-hd-row">
-                  <span>Éxitos de Muerte</span>
-                  <div className="ps-dots"><span>○ ○ ○</span></div>
+                <div className="ps-dados-row">
+                  <span>Usados</span><span className="ps-underline">{stats.hitDiceUsed || 0}</span>
                 </div>
-                <div className="ps-hd-row">
-                  <span>Fallos de Muerte</span>
-                  <div className="ps-dots"><span>○ ○ ○</span></div>
+                <div className="ps-dados-row">
+                  <span>Disponibles</span><span className="ps-underline">{(character?.level || 1) - (stats.hitDiceUsed || 0)}</span>
+                </div>
+              </div>
+              <div className="ps-muerte-section">
+                <div className="ps-muerte-title">Tiradas de Muerte</div>
+                <div className="ps-muerte-row">
+                  <span>Éxitos</span>
+                  <span className="ps-check-dots">☐ ☐ ☐</span>
+                </div>
+                <div className="ps-muerte-row">
+                  <span>Fallos</span>
+                  <span className="ps-check-dots">☐ ☐ ☐</span>
+                </div>
+              </div>
+              <div className="ps-otros-section">
+                <div className="ps-otros-title">Otros</div>
+                <div className="ps-otros-row">
+                  <span>Objetos Atunados</span><span className="ps-underline">{Array.isArray(stats.attunedItems) ? stats.attunedItems.length : 0} / 3</span>
                 </div>
               </div>
             </div>
 
-            {/* BOTTOM: Attacks */}
+            {/* BOTTOM: Attacks + Armor */}
             <div className="ps-attacks">
-              <div className="ps-attacks-header">
-                <span>Ataques y Lanzamiento de Conjuros</span>
-              </div>
+              <div className="ps-attacks-header">Ataques y Lanzamiento de Conjuros</div>
               <div className="ps-attacks-table">
-                <div className="ps-attack-row header">
+                <div className="ps-attack-row ps-attack-header">
                   <span>Nombre</span>
                   <span>Bonif. Ataque</span>
-                  <span>Daño/Tipo</span>
+                  <span>Daño / Tipo</span>
+                </div>
+                <div className="ps-attack-row">
+                  <span>Ataque sin Armas</span>
+                  <span>{mod(stats.STR) >= 0 ? '+' : ''}{mod(stats.STR)}</span>
+                  <span>1 + {mod(stats.STR)} contundente</span>
                 </div>
                 {weapons.map((w, i) => {
                   const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
@@ -1162,54 +1187,74 @@ export default function CharacterSheet() {
                     </div>
                   );
                 })}
+                {armor.length > 0 && (
+                  <div className="ps-attack-divider">Armadura Equipada</div>
+                )}
+                {armor.map((a, i) => (
+                  <div key={i} className="ps-attack-row">
+                    <span>{a.name}</span>
+                    <span>CA {a.armor_class_base || 10}{a.armor_class_dex_bonus ? ' (+DES)' : ''}</span>
+                    <span>{a.stealth_disadvantage ? 'Sigilo Desv.' : '—'}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* ───── PAGE 2: Equipment, Features, Personality ───── */}
+        {/* ───── PAGE 2: Equipment, Features, Personality, Notes ───── */}
         <div className="print-page">
-          <div className="ps-ppl">
-            <div className="ps-ppl-label">Rasgos de Personalidad</div>
-            <div className="ps-ppl-content">{character?.personality || ''}</div>
-          </div>
-          <div className="ps-ppl">
-            <div className="ps-ppl-label">Ideales</div>
-            <div className="ps-ppl-content">{character?.ideals || ''}</div>
-          </div>
-          <div className="ps-ppl">
-            <div className="ps-ppl-label">Vínculos</div>
-            <div className="ps-ppl-content">{character?.bonds || ''}</div>
-          </div>
-          <div className="ps-ppl">
-            <div className="ps-ppl-label">Defectos</div>
-            <div className="ps-ppl-content">{character?.flaws || ''}</div>
-          </div>
-
-          <div className="ps-features">
-            <div className="ps-section-title">Características y Rasgos</div>
-            <div className="ps-features-content">
-              {character?.features ? (
-                Array.isArray(character.features) ? character.features.join(', ') : character.features
-              ) : '-'}
+          <div className="ps-page2-grid">
+            <div className="ps-rasgos">
+              <div className="ps-rasgos-label">Rasgos de Personalidad</div>
+              <div className="ps-rasgos-content">{character?.personality || ''}</div>
             </div>
-          </div>
+            <div className="ps-rasgos">
+              <div className="ps-rasgos-label">Ideales</div>
+              <div className="ps-rasgos-content">{character?.ideals || ''}</div>
+            </div>
+            <div className="ps-rasgos">
+              <div className="ps-rasgos-label">Vínculos</div>
+              <div className="ps-rasgos-content">{character?.bonds || ''}</div>
+            </div>
+            <div className="ps-rasgos">
+              <div className="ps-rasgos-label">Defectos</div>
+              <div className="ps-rasgos-content">{character?.flaws || ''}</div>
+            </div>
 
-          <div className="ps-equipment">
-            <div className="ps-section-title">Equipo</div>
-            <div className="ps-equip-grid">
-              <div className="ps-equip-list">
-                {equipment.map((eq, i) => (
-                  <div key={i} className="ps-equip-item">{eq.name || eq}</div>
-                ))}
+            <div className="ps-equipment-block">
+              <div className="ps-block-title">Equipo</div>
+              <div className="ps-equipment-inner">
+                <div className="ps-equipment-list">
+                  {equipment.map((eq, i) => (
+                    <div key={i} className="ps-eq-item">{eq.name || eq}</div>
+                  ))}
+                </div>
+                <div className="ps-moneda-box">
+                  <div className="ps-moneda-title">Monedas</div>
+                  <div className="ps-moneda-grid">
+                    <div className="ps-moneda-row"><span className="ps-coin-icon">pp</span><span className="ps-coin-val">{parseCoins(stats.coins).pp || 0}</span></div>
+                    <div className="ps-moneda-row"><span className="ps-coin-icon">gp</span><span className="ps-coin-val">{parseCoins(stats.coins).gp || 0}</span></div>
+                    <div className="ps-moneda-row"><span className="ps-coin-icon">ep</span><span className="ps-coin-val">{parseCoins(stats.coins).ep || 0}</span></div>
+                    <div className="ps-moneda-row"><span className="ps-coin-icon">sp</span><span className="ps-coin-val">{parseCoins(stats.coins).sp || 0}</span></div>
+                    <div className="ps-moneda-row"><span className="ps-coin-icon">cp</span><span className="ps-coin-val">{parseCoins(stats.coins).cp || 0}</span></div>
+                  </div>
+                </div>
               </div>
-              <div className="ps-coins">
-                <div className="ps-coin-row"><span>pp</span><span>{parseCoins(stats.coins).pp || 0}</span></div>
-                <div className="ps-coin-row"><span>gp</span><span>{parseCoins(stats.coins).gp || 0}</span></div>
-                <div className="ps-coin-row"><span>ep</span><span>{parseCoins(stats.coins).ep || 0}</span></div>
-                <div className="ps-coin-row"><span>sp</span><span>{parseCoins(stats.coins).sp || 0}</span></div>
-                <div className="ps-coin-row"><span>cp</span><span>{parseCoins(stats.coins).cp || 0}</span></div>
+            </div>
+
+            <div className="ps-features-block">
+              <div className="ps-block-title">Características y Rasgos</div>
+              <div className="ps-features-text">
+                {character?.features ? (
+                  Array.isArray(character.features) ? character.features.join(', ') : character.features
+                ) : ''}
               </div>
+            </div>
+
+            <div className="ps-notes-block">
+              <div className="ps-block-title">Notas</div>
+              <div className="ps-notes-text">{character?.notes || ''}</div>
             </div>
           </div>
         </div>
@@ -1218,32 +1263,33 @@ export default function CharacterSheet() {
         <div className="print-page">
           <div className="ps-spell-header">
             <div className="ps-spell-field"><label>Clase Conjuro</label><span>{className}</span></div>
-            <div className="ps-spell-field"><label>Habilidad</label><span>{spellAbility || '—'}</span></div>
-            <div className="ps-spell-field"><label>CD Salvación</label><span>{saveDC || '—'}</span></div>
+            <div className="ps-spell-field"><label>Habilidad de Conjuración</label><span>{spellAbility || '—'}</span></div>
+            <div className="ps-spell-field"><label>CD de Salvación</label><span>{saveDC || '—'}</span></div>
             <div className="ps-spell-field"><label>Bonif. Ataque</label><span>{spellAtk || '—'}</span></div>
           </div>
 
-          <div className="ps-cantrips">
-            <div className="ps-section-title">Trucos</div>
-            <div className="ps-spell-grid">
+          <div className="ps-spell-section">
+            <div className="ps-spell-section-title">Trucos (Nivel 0)</div>
+            <div className="ps-spell-list">
               {(knownSpells || []).filter(s => s.level === 0).map((sp, i) => (
-                <span key={i} className="ps-spell-name">{sp.name}</span>
+                <div key={i} className="ps-spell-entry">{sp.name}</div>
               ))}
             </div>
           </div>
 
           {[1,2,3,4,5,6,7,8,9].map(lvl => {
             const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
-            if (slot.max === 0 && !knownByLevel?.[lvl]?.length) return null;
+            const lvlSpells = knownByLevel?.[lvl] || [];
+            if (slot.max === 0 && lvlSpells.length === 0) return null;
             return (
-              <div key={lvl} className="ps-spell-level">
-                <div className="ps-spell-level-header">
+              <div key={lvl} className="ps-spell-section">
+                <div className="ps-spell-section-title">
                   <span>Nivel {lvl}</span>
-                  <span>Espacios: {slot.used}/{slot.max}</span>
+                  <span className="ps-spell-slots">Espacios: {slot.used}/{slot.max}</span>
                 </div>
-                <div className="ps-spell-grid">
-                  {(knownByLevel?.[lvl] || []).map((sp, i) => (
-                    <span key={i} className="ps-spell-name">{sp.name}</span>
+                <div className="ps-spell-list">
+                  {lvlSpells.map((sp, i) => (
+                    <div key={i} className="ps-spell-entry">{sp.name}</div>
                   ))}
                 </div>
               </div>
