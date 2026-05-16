@@ -1,8 +1,5 @@
 """Sync reference/compendium data from the bundled SQLite database
 to whatever database the app is configured to use (DATABASE_URL).
-
-Run standalone:  python sync_data.py
-Or imported:     from sync_data import sync_reference_data; sync_reference_data(engine)
 """
 
 import os
@@ -20,14 +17,31 @@ REFERENCE_TABLES = [
     "multiclass_rules", "leveling_tables",
 ]
 
+# Boolean columns that SQLite stores as 0/1 int but PostgreSQL expects boolean
+BOOL_COLUMNS = {
+    "spells": ["concentration", "ritual"],
+    "items": ["armor_class_dex_bonus", "stealth_disadvantage"],
+    "magic_items": ["requires_attunement"],
+}
+
 
 def _has_column(table_name, col_name, session):
-    """Check if a table has a column using a simple query."""
     try:
         session.execute(text(f'SELECT "{col_name}" FROM "{table_name}" LIMIT 0'))
         return True
     except Exception:
         return False
+
+
+def _get_pk(table_name, session):
+    """Get the primary key column name for a table."""
+    try:
+        result = session.execute(text(
+            f"SELECT name FROM pragma_table_info('{table_name}') WHERE pk = 1"
+        )).fetchone()
+        return result[0] if result else "id"
+    except Exception:
+        return "id"
 
 
 def sync_reference_data(target_engine=None):
@@ -56,15 +70,31 @@ def sync_reference_data(target_engine=None):
             continue
 
         cols = [c for c in rows[0]._mapping.keys()]
+        pk = _get_pk(table, source)
+
+        # Determine conflict column: use 'index' if available, else PK
         if _has_column(table, "index", source):
             conflict_col = '"index"'
             conflict_name = "index"
         else:
-            conflict_col = f'"{cols[0]}"'
-            conflict_name = cols[0]
+            conflict_col = f'"{pk}"'
+            conflict_name = pk
 
         col_list = ", ".join(f'"{c}"' for c in cols)
-        param_list = ", ".join(f":{c}" for c in cols)
+
+        # For PostgreSQL, cast boolean columns explicitly
+        if is_pg:
+            bool_cols = BOOL_COLUMNS.get(table, [])
+            param_parts = []
+            for c in cols:
+                if c in bool_cols:
+                    param_parts.append(f"(:{c})::boolean")
+                else:
+                    param_parts.append(f":{c}")
+            param_list = ", ".join(param_parts)
+        else:
+            param_list = ", ".join(f":{c}" for c in cols)
+
         update_list = ", ".join(
             f'"{c}" = excluded."{c}"' for c in cols if c != conflict_name
         )
@@ -81,12 +111,17 @@ def sync_reference_data(target_engine=None):
         errors = 0
         for row in rows:
             data = dict(row._mapping)
+            # Convert integer booleans to Python bool for SQLAlchemy
+            bool_cols = BOOL_COLUMNS.get(table, [])
+            for bc in bool_cols:
+                if bc in data and isinstance(data[bc], int):
+                    data[bc] = bool(data[bc])
             try:
                 target.execute(sql, data)
                 upserted += 1
             except Exception as e:
                 errors += 1
-                if errors <= 3:  # Only print first 3 errors per table
+                if errors <= 3:
                     print(f"[sync] ERROR {table} {conflict_name}={data.get(conflict_name)}: {e}")
                 if errors == 4:
                     print(f"[sync] ERROR {table}: ... more errors suppressed")

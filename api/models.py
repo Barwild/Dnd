@@ -330,8 +330,8 @@ class Vehicle(Base):
     name = Column(String(100), nullable=False)
     name_en = Column(String(100), default="")
     vehicle_type = Column(String(50), default="")  # Water, Land, Air
-    speed = Column(String(20), default="")
-    capacity = Column(String(50), default="")
+    speed = Column(String(200), default="")
+    capacity = Column(String(200), default="")
     cost_quantity = Column(Integer, default=0)
     cost_unit = Column(String(10), default="gp")
     description = Column(Text, default="")

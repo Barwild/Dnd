@@ -43,6 +43,39 @@ if 'characters' in inspector.get_table_names():
         except Exception:
             pass
 
+# Migrate column types for PostgreSQL compatibility
+if 'vehicles' in inspector.get_table_names():
+    vcols = {c['name']: c for c in inspector.get_columns('vehicles')}
+    try:
+        with engine.connect() as conn:
+            if vcols.get('speed', {}).get('type') and 'varchar(20)' in str(vcols['speed']['type']).lower():
+                conn.execute(text("ALTER TABLE vehicles ALTER COLUMN speed TYPE VARCHAR(200)"))
+            if vcols.get('capacity', {}).get('type') and 'varchar(50)' in str(vcols['capacity']['type']).lower():
+                conn.execute(text("ALTER TABLE vehicles ALTER COLUMN capacity TYPE VARCHAR(200)"))
+            conn.commit()
+    except Exception:
+        pass
+
+# Fix boolean columns that were created as INTEGER in PostgreSQL
+bool_fixes = [
+    ("spells", "concentration"),
+    ("spells", "ritual"),
+    ("items", "armor_class_dex_bonus"),
+    ("items", "stealth_disadvantage"),
+    ("magic_items", "requires_attunement"),
+]
+for tbl, col in bool_fixes:
+    if tbl in inspector.get_table_names():
+        tcols = {c['name']: c for c in inspector.get_columns(tbl)}
+        col_type = str(tcols.get(col, {}).get('type', '')).lower()
+        if 'integer' in col_type or 'int' == col_type:
+            try:
+                with engine.connect() as conn:
+                    conn.execute(text(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE BOOLEAN USING {col}::boolean"))
+                    conn.commit()
+            except Exception:
+                pass
+
 app = FastAPI(
     title="D&D 5E Nexus API",
     description="API para gestionar campañas, personajes y compendio de D&D 5ª Edición en español.",
