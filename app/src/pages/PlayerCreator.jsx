@@ -70,6 +70,7 @@ export default function PlayerCreator() {
   const [level1Spells, setLevel1Spells] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [step, setStep] = useState(1);
+  const [expandedSpell, setExpandedSpell] = useState(null);
 
   useEffect(() => {
     Promise.all([getRaces(), getClasses(), getBackgrounds(), getCampaigns(), getSpells({ limit: 500 })])
