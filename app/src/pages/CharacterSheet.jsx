@@ -90,10 +90,8 @@ export default function CharacterSheet() {
     .reduce((sum, [k, v]) => sum + (Number(v) || 0) * (COIN_VALUES[k] || 0), 0);
   const copperToCoins = (copper) => {
     let remaining = Math.max(0, Math.floor(copper));
-    const result = {};
-    result.pp = Math.floor(remaining / COIN_VALUES.pp); remaining %= COIN_VALUES.pp;
+    const result = { pp: 0, ep: 0 };
     result.gp = Math.floor(remaining / COIN_VALUES.gp); remaining %= COIN_VALUES.gp;
-    result.ep = Math.floor(remaining / COIN_VALUES.ep); remaining %= COIN_VALUES.ep;
     result.sp = Math.floor(remaining / COIN_VALUES.sp); remaining %= COIN_VALUES.sp;
     result.cp = remaining;
     return result;
@@ -311,14 +309,24 @@ export default function CharacterSheet() {
       alert('No te quedan dados de golpe. No puedes recuperar vida en este descanso corto.');
       return;
     }
-    const roll = Math.floor(Math.random() * hitDie) + 1 + mod(stats.CON || 10);
-    const healed = Math.max(0, roll);
+    const diceToSpend = parseInt(window.prompt(
+      `Tienes ${hitDiceAvail} d${hitDie} disponibles. ¿Cuántos quieres gastar? (1-${hitDiceAvail})`, '1'), 10);
+    if (!diceToSpend || diceToSpend < 1 || diceToSpend > hitDiceAvail) {
+      alert('Número inválido. No se gastaron dados de golpe.');
+      return;
+    }
+    
+    let totalHealed = 0;
+    for (let i = 0; i < diceToSpend; i++) {
+      totalHealed += Math.floor(Math.random() * hitDie) + 1 + mod(stats.CON || 10);
+    }
+    totalHealed = Math.max(0, totalHealed);
     
     setStats(prev => {
       const newState = {
         ...prev,
-        currHP: Math.min(prev.maxHP, (prev.currHP || 0) + healed),
-        hitDiceUsed: Math.min(character?.level || 1, (prev.hitDiceUsed || 0) + 1)
+        currHP: Math.min(prev.maxHP, (prev.currHP || 0) + totalHealed),
+        hitDiceUsed: Math.min(character?.level || 1, (prev.hitDiceUsed || 0) + diceToSpend)
       };
       
       // Warlocks restore spell slots on short rest
@@ -332,7 +340,7 @@ export default function CharacterSheet() {
       }
       return newState;
     });
-    alert(`Descanso Corto: Recuperas ${healed} PG. ${className.toLowerCase() === 'brujo' ? 'Espacios de pacto restaurados.' : ''}`);
+    alert(`Descanso Corto: Gastas ${diceToSpend}d${hitDie}. Recuperas ${totalHealed} PG. ${className.toLowerCase() === 'brujo' ? 'Espacios de pacto restaurados.' : ''}`);
   };
 
   const longRest = () => {
@@ -371,14 +379,22 @@ export default function CharacterSheet() {
     const cn = className.toLowerCase();
     const hd = CLASS_HIT_DICE[cn] || hitDie;
     const avg = Math.floor(hd / 2) + 1;
-    const hpGain = avg + mod(stats.CON || 10);
+    const conMod = mod(stats.CON || 10);
     const isCaster = FULL_CASTERS.includes(cn) || HALF_CASTERS.includes(cn) || cn === 'brujo';
 
-    setLevelUpModal({ newLevel, hpGain, hd, avg, cn, isCaster });
+    setLevelUpModal({ newLevel, hd, avg, conMod, cn, isCaster, rollMode: 'avg' });
   };
 
-  const confirmLevelUp = () => {
-    const { newLevel, hpGain, cn } = levelUpModal;
+  const confirmLevelUp = async () => {
+    const { newLevel, hd, conMod, cn, rollMode } = levelUpModal;
+    const hpRoll = rollMode === 'roll' ? Math.max(1, Math.floor(Math.random() * hd) + 1) : Math.floor(hd / 2) + 1;
+    const hpGain = hpRoll + conMod;
+
+    // Calcular los nuevos valores inmediatamente para el auto-guardado
+    const oldMaxHP = stats.maxHP || 1;
+    const oldCurrHP = stats.currHP || 0;
+    const newMaxHP = oldMaxHP + Math.max(1, hpGain);
+    const newCurrHP = oldCurrHP + Math.max(1, hpGain);
 
     setStats(prev => {
       const newState = { 
@@ -416,6 +432,10 @@ export default function CharacterSheet() {
     });
     setCharacter(prev => ({ ...prev, level: newLevel }));
     setLevelUpModal(null);
+    
+    // Auto-guardar subida de nivel
+    const newStats = { ...stats, maxHP: newMaxHP, currHP: newCurrHP };
+    await updateCharacter(id, { stats: JSON.stringify(newStats), level: newLevel });
   };
 
   const handleRoll = async (formula, desc) => {
@@ -596,6 +616,10 @@ export default function CharacterSheet() {
         <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textAlign: 'center', marginTop: '1rem' }}>
           Haz clic en un atributo para tirar un chequeo (1d20 + mod)
         </p>
+        {/* Objetos Atunados */}
+        <div style={{ marginTop: '0.8rem', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>
+          Objetos Atunados: {Array.isArray(stats.attunedItems) ? stats.attunedItems.length : 0} / 3
+        </div>
       </div>
 
       {/* Weapons & Armor */}
@@ -606,36 +630,54 @@ export default function CharacterSheet() {
             <h3 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-gold)' }}>
               <Swords size={18} /> Ataques y Armas
             </h3>
-            {weapons.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No tienes armas equipadas.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {weapons.map((w, idx) => {
-                  const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
-                  const isRanged = w.weapon_range === 'Ranged';
-                  const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
-                  const attackMod = mod(stats[baseStat]) + profBonus;
-                  const dmgMod = mod(stats[baseStat]);
-                  
-                  return (
-                    <div key={idx} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{w.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#888' }}>{w.damage_dice || '1'} {w.damage_type?.name || w.damage_type || ''} • {w.weapon_range}</div>
-                      </div>
-                      <div className="flex-row" style={{ gap: '0.5rem' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`1d20+${attackMod}`, `Ataque con ${w.name}`)} title="Tirar Ataque" style={{ color: 'var(--accent-blue)', padding: '0.2rem 0.5rem' }}>
-                          Atq {attackMod >= 0 ? '+' : ''}{attackMod}
-                        </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`${w.damage_dice || '1'}${dmgMod >= 0 ? '+' : ''}${dmgMod}`, `Daño con ${w.name}`)} title="Tirar Daño" style={{ color: 'var(--accent-red)', padding: '0.2rem 0.5rem' }}>
-                          Daño {dmgMod >= 0 ? '+' : ''}{dmgMod}
-                        </button>
-                      </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {/* Ataque sin armas (siempre disponible) */}
+              {(() => {
+                const strMod = mod(stats.STR);
+                const unarmedAtk = `1d20${strMod >= 0 ? '+' : ''}${strMod}`;
+                const unarmedDmg = `1${strMod >= 0 ? '+' : ''}${strMod}`;
+                return (
+                  <div className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px', opacity: 0.8 }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#888' }}>Ataque sin Armas</div>
+                      <div style={{ fontSize: '0.75rem', color: '#666' }}>1 contundente • Cuerpo a cuerpo</div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    <div className="flex-row" style={{ gap: '0.5rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(unarmedAtk, 'Ataque sin Armas')} title="Tirar Ataque" style={{ color: 'var(--accent-blue)', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>
+                        Atq {strMod >= 0 ? '+' : ''}{strMod}
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(unarmedDmg, 'Daño sin Armas')} title="Tirar Daño" style={{ color: 'var(--accent-red)', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>
+                        Daño {strMod >= 0 ? '+' : ''}{strMod}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+              {weapons.map((w, idx) => {
+                const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                const isRanged = w.weapon_range === 'Ranged';
+                const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
+                const attackMod = mod(stats[baseStat]) + profBonus;
+                const dmgMod = mod(stats[baseStat]);
+                
+                return (
+                  <div key={idx} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{w.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#888' }}>{w.damage_dice || '1'} {w.damage_type?.name || w.damage_type || ''} • {w.weapon_range}</div>
+                    </div>
+                    <div className="flex-row" style={{ gap: '0.5rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`1d20+${attackMod}`, `Ataque con ${w.name}`)} title="Tirar Ataque" style={{ color: 'var(--accent-blue)', padding: '0.2rem 0.5rem' }}>
+                        Atq {attackMod >= 0 ? '+' : ''}{attackMod}
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleRoll(`${w.damage_dice || '1'}${dmgMod >= 0 ? '+' : ''}${dmgMod}`, `Daño con ${w.name}`)} title="Tirar Daño" style={{ color: 'var(--accent-red)', padding: '0.2rem 0.5rem' }}>
+                        Daño {dmgMod >= 0 ? '+' : ''}{dmgMod}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Armaduras */}
@@ -684,20 +726,30 @@ export default function CharacterSheet() {
             </h2>
             <div style={{ background: 'rgba(0,100,0,0.15)', border: '1px solid rgba(0,100,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
               <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Puntos de Golpe</div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4a4' }}>+{Math.max(1, levelUpModal.hpGain)}</div>
-              <div style={{ fontSize: '0.75rem', color: '#888' }}>d{levelUpModal.hd} (prom. {levelUpModal.avg}) + CON ({mod(stats.CON || 10)})</div>
+              <div style={{ fontSize: '1.2rem', color: '#aaa' }}>d{levelUpModal.hd} + CON ({mod(stats.CON || 10)})</div>
+              <div className="flex-row" style={{ justifyContent: 'center', gap: '1rem', marginTop: '0.8rem' }}>
+                <button className={`btn btn-sm ${levelUpModal.rollMode === 'avg' ? 'btn-gold' : 'btn-ghost'}`}
+                  onClick={() => setLevelUpModal(prev => ({ ...prev, rollMode: 'avg' }))}>
+                  Promedio (+{levelUpModal.avg + levelUpModal.conMod})
+                </button>
+                <button className={`btn btn-sm ${levelUpModal.rollMode === 'roll' ? 'btn-gold' : 'btn-ghost'}`}
+                  onClick={() => setLevelUpModal(prev => ({ ...prev, rollMode: 'roll' }))}>
+                  Tirar d{levelUpModal.hd}
+                </button>
+              </div>
             </div>
             {levelUpModal.isCaster && (
               <div style={{ background: 'rgba(139,0,0,0.15)', border: '1px solid rgba(139,0,0,0.3)', padding: '1rem', borderRadius: '8px', textAlign: 'center', margin: '1rem 0' }}>
                 <div style={{ fontSize: '0.8rem', color: '#aaa' }}>Conjuros</div>
                 <div style={{ fontSize: '1rem', color: 'var(--accent-gold)' }}>Espacios de conjuro actualizados</div>
-                <button className="btn btn-gold btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { confirmLevelUp(); navigate(`/character/${id}/spells`); }}>
+                <button className="btn btn-gold btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { confirmLevelUp().then(() => navigate(`/character/${id}/spells`)); }}>
                   Ir al Grimorio para aprender nuevos conjuros
                 </button>
               </div>
             )}
-            <div className="flex-row" style={{ justifyContent: 'center', marginTop: '1rem' }}>
-              <button className="btn btn-gold" onClick={confirmLevelUp}>Aceptar</button>
+            <div className="flex-row" style={{ justifyContent: 'center', marginTop: '1rem', gap: '0.5rem' }}>
+              <button className="btn btn-ghost" onClick={() => setLevelUpModal(null)}>Cancelar</button>
+              <button className="btn btn-gold" onClick={confirmLevelUp}>Subir de Nivel</button>
             </div>
           </div>
         </div>

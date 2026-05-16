@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+import json
 
 from database import get_db
 import models
@@ -9,11 +10,82 @@ from auth import get_current_user
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
+# Listas de habilidades por clase (validadas contra el reglamento)
+_CLASS_SKILLS = {
+    'bárbaro': ['animal-handling', 'athletics', 'intimidation', 'nature', 'perception', 'survival'],
+    'bardo': ['acrobatics', 'animal-handling', 'arcana', 'athletics', 'deception', 'history', 'insight',
+              'intimidation', 'investigation', 'medicine', 'nature', 'perception', 'performance',
+              'persuasion', 'religion', 'sleight-of-hand', 'stealth', 'survival'],
+    'clérigo': ['history', 'insight', 'medicine', 'persuasion', 'religion'],
+    'druida': ['animal-handling', 'arcana', 'insight', 'medicine', 'nature', 'perception', 'religion', 'survival'],
+    'guerrero': ['acrobatics', 'animal-handling', 'athletics', 'history', 'insight', 'intimidation', 'perception', 'survival'],
+    'monje': ['acrobatics', 'athletics', 'history', 'insight', 'religion', 'stealth'],
+    'paladín': ['athletics', 'insight', 'intimidation', 'medicine', 'persuasion', 'religion'],
+    'explorador': ['animal-handling', 'athletics', 'insight', 'investigation', 'nature', 'perception', 'stealth', 'survival'],
+    'pícaro': ['acrobatics', 'athletics', 'deception', 'insight', 'intimidation', 'investigation', 'perception',
+               'performance', 'persuasion', 'sleight-of-hand', 'stealth'],
+    'hechicero': ['arcana', 'deception', 'insight', 'intimidation', 'persuasion', 'religion'],
+    'brujo': ['arcana', 'deception', 'history', 'intimidation', 'investigation', 'nature', 'religion'],
+    'mago': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'religion'],
+    'artífice': ['arcana', 'history', 'insight', 'investigation', 'medicine', 'perception', 'sleight-of-hand'],
+}
+
+_CLASS_SKILL_COUNT = {
+    'bárbaro': 2, 'bardo': 3, 'clérigo': 2, 'druida': 2, 'guerrero': 2, 'monje': 2,
+    'paladín': 2, 'explorador': 3, 'pícaro': 4, 'hechicero': 2, 'brujo': 2, 'mago': 2,
+    'artífice': 2
+}
+
+
+def _validate_skills(stats: dict, class_name: Optional[str]):
+    """Valida que las competencias del personaje cumplan con el reglamento."""
+    if not class_name:
+        return
+    cn = class_name.lower().strip()
+    options = _CLASS_SKILLS.get(cn, [])
+    limit = _CLASS_SKILL_COUNT.get(cn, 2)
+    bg_skills = stats.get('background_skills', []) or []
+    profs = stats.get('skillProficiencies', []) or []
+    expertise = stats.get('expertise', []) or []
+
+    # Contar competencias de clase (excluyendo trasfondo)
+    class_count = 0
+    for s in profs:
+        if s in options and s not in bg_skills:
+            class_count += 1
+        elif s not in options and s not in bg_skills:
+            # Intentar coincidencia por nombre traducido
+            name_match = False
+            for bg in bg_skills:
+                if isinstance(bg, str) and bg.lower() in s.lower() or s.lower() in bg.lower():
+                    name_match = True
+                    break
+            if not name_match:
+                raise HTTPException(status_code=400,
+                    detail=f'"{s}" no es una opción válida para {class_name}')
+
+    if class_count > limit:
+        raise HTTPException(status_code=400,
+            detail=f'Máximo {limit} competencias de clase para {class_name}, tienes {class_count}')
+
+    # Pericias solo para Pícaro y Bardo
+    if expertise and cn not in ('pícaro', 'bardo'):
+        raise HTTPException(status_code=400,
+            detail='Solo los pícaros y bardos pueden tener pericias')
+
 
 @router.post("", response_model=schemas.CharacterResponse)
 def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db),
                      current_user: models.User = Depends(get_current_user)):
     """Crear un nuevo personaje."""
+    # Validar competencias antes de crear
+    try:
+        stats_obj = json.loads(data.stats) if isinstance(data.stats, str) else data.stats
+        cls = db.query(models.Class).filter(models.Class.id == data.class_id).first()
+        _validate_skills(stats_obj, cls.name if cls else None)
+    except json.JSONDecodeError:
+        pass
+
     character = models.Character(
         name=data.name.strip(),
         level=data.level,
@@ -98,6 +170,16 @@ def update_character(char_id: int, data: schemas.CharacterUpdate, db: Session = 
         raise HTTPException(status_code=403, detail="No tienes permiso para editar este personaje")
     
     update_data = data.model_dump(exclude_unset=True)
+    
+    # Validar competencias si se están actualizando stats
+    if 'stats' in update_data:
+        try:
+            stats_obj = json.loads(update_data['stats']) if isinstance(update_data['stats'], str) else update_data['stats']
+            cls = db.query(models.Class).filter(models.Class.id == character.class_id).first()
+            _validate_skills(stats_obj, cls.name if cls else None)
+        except json.JSONDecodeError:
+            pass
+    
     for key, value in update_data.items():
         setattr(character, key, value)
     

@@ -209,7 +209,7 @@ export default function PlayerCreator() {
   };
 
   const isStatsComplete = charData.name && charData.name.trim() && 
-    Object.values(charData.stats).every(s => s !== null && s !== undefined && s.val >= 1 && s.val <= 20);
+    Object.values(charData.stats).every(s => s !== null && s !== undefined && s.val >= 3 && s.val <= 20);
   
   // Debug function to check stats
   const debugStats = () => {
@@ -251,13 +251,23 @@ export default function PlayerCreator() {
         try { saveProfs = JSON.parse(cls.saving_throws || '[]'); } catch {}
       }
 
+      // Limitar conjuros preparados para lanzadores de preparación (Clérigo, Druida, Artífice)
+      let spellList = charData.spell_list || [];
+      if (prepareAllClasses.includes(cn)) {
+        const prepAbilityStat = cn === 'artífice' ? final.INT : final.WIS;
+        const prepMod = Math.floor((prepAbilityStat - 10) / 2);
+        const maxPrepared = Math.max(1, prepMod + 1);
+        spellList = spellList.slice(0, maxPrepared);
+      }
+
       const statsPayload = {
         ...final, currHP: Math.max(maxHP, 1), maxHP: Math.max(maxHP, 1),
-        spells: charData.spell_list || [], spell_slots: spellSlots,
+        spells: spellList, spell_slots: spellSlots,
         skillProficiencies: Array.from(new Set([...bgSkills, ...charData.skill_proficiencies])), 
         background_skills: bgSkills,
         saveProficiencies: saveProfs, expertise: [],
-        background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0
+        background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0,
+        attunedItems: []
       };
 
       const startingEquipment = gatherStartingEquipment();
@@ -273,7 +283,7 @@ export default function PlayerCreator() {
         stats: JSON.stringify(statsPayload),
         equipment: JSON.stringify(equipmentPayload),
         starting_equipment: JSON.stringify(startingEquipment),
-        spell_list: JSON.stringify(charData.spell_list || []),
+        spell_list: JSON.stringify(spellList),
         notes: ''
       });
       navigate('/player-lobby');

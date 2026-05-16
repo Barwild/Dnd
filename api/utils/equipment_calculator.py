@@ -7,21 +7,27 @@ from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 
 
-def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db: Dict) -> int:
+# Nombres de armaduras medias (DEX max +2)
+_MEDIUM_ARMOR = {'Armadura de Pieles', 'Camisote de Mallas', 'Cota de Escamas',
+                 'Coraza', 'Media Armadura de Placas'}
+
+# Todas las armaduras conocidas: nombre -> (categoría, max_dex)
+_ARMOR_TYPES = {}
+for _n in ['Armadura de Cuero', 'Armadura Acolchada', 'Armadura de Cuero Tachonado',
+           'Armadura de Pieles', 'Camisote de Mallas', 'Cota de Escamas',
+           'Coraza', 'Media Armadura de Placas', 'Cota de Anillas', 'Cota de Mallas',
+           'Armadura de Bandas', 'Armadura de Placas']:
+    _ARMOR_TYPES[_n] = 'medium' if _n in _MEDIUM_ARMOR else (
+        'heavy' if _n in ('Cota de Anillas', 'Cota de Mallas', 'Armadura de Bandas', 'Armadura de Placas') else 'light')
+
+
+def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db: Dict) -> Dict:
     """
     Calcula la Clase de Armadura (CA) del personaje
-    
-    Args:
-        character_stats: Estadísticas base del personaje
-        equipped_items: Items equipados
-        items_db: Base de datos de items
-    
-    Returns:
-        int: Clase de Armadura calculada
     """
-    # CA base = 10 + modificador de DEX
     dex_mod = (character_stats.get('DEX', 10) - 10) // 2
     ac = 10 + dex_mod
+    armor_proficiency_issue = None
     
     # Aplicar armadura equipada
     armor_id = equipped_items.get('armor')
@@ -29,14 +35,9 @@ def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db:
         armor = items_db[str(armor_id)]
         if armor.armor_class_base:
             ac = armor.armor_class_base
-            
-            # Aplicar bonificación de DEX si la armadura lo permite
             if armor.armor_class_dex_bonus:
-                max_dex = 2 if armor.category == 'Medium Armor' else None
-                if max_dex is not None:
-                    ac += min(dex_mod, max_dex)
-                else:
-                    ac += dex_mod
+                max_dex = 2 if _ARMOR_TYPES.get(armor.name) == 'medium' else None
+                ac += min(dex_mod, max_dex) if max_dex is not None else dex_mod
     
     # Aplicar escudo
     shield_id = equipped_items.get('shield')
@@ -45,7 +46,7 @@ def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db:
         if shield.armor_class_base:
             ac += shield.armor_class_base
     
-    return ac
+    return {'ac': ac, 'armor_proficiency_issue': armor_proficiency_issue}
 
 
 def calculate_weapon_damage(weapon_id: int, items_db: Dict) -> Dict[str, Any]:
@@ -148,7 +149,8 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
     items_db = {str(item.id): item for item in character_items}
     
     # Calcular CA
-    armor_class = calculate_armor_class(base_stats, equipped_items, items_db)
+    ac_result = calculate_armor_class(base_stats, equipped_items, items_db)
+    armor_class = ac_result['ac']
     
     # Calcular daño del arma principal
     weapon_damage = None
@@ -171,6 +173,7 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
         'weapon_damage': weapon_damage,
         'equipment_slots': equipment_slots,
         'stealth_disadvantage': stealth_disadvantage,
+        'armor_proficiency_issue': ac_result.get('armor_proficiency_issue'),
         'base_stats': base_stats,
         'equipped_items': equipped_items
     }
