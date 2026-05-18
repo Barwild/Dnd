@@ -147,11 +147,15 @@ export default function Spellbook() {
     spellLimitLabel = 'Conjuros preparados';
   }
 
+  const maxSpellLevelAllowed = [1,2,3,4,5,6,7,8,9].reverse().find(lvl => (statsObj.spellSlots?.[lvl]?.max || 0) > 0) || 0;
+
   const canAdd = (spellIndex) => {
     if (isNonCaster) return false;
     const sp = allSpells.find(s => s.index === spellIndex);
     if (!sp) return false;
-    if (getSpellLevel(sp) === 0) return currentCantrips < maxCantrips;
+    const spellLevel = getSpellLevel(sp);
+    if (spellLevel > 0 && spellLevel > maxSpellLevelAllowed) return false;
+    if (spellLevel === 0) return currentCantrips < maxCantrips;
     if (maxSpells > 0) return currentNonCantrips < maxSpells;
     return true;
   };
@@ -319,7 +323,7 @@ export default function Spellbook() {
           </div>
 
           {(search.length > 1 || levelFilter !== 'all') && (
-            <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <div style={{ paddingBottom: '1rem' }}>
               {filteredSpells.map(sp => {
                 const isKnown = knownSpells.includes(sp.index);
                 return (
@@ -335,7 +339,7 @@ export default function Spellbook() {
                         <button className="btn btn-ghost btn-sm" onClick={() => setExpandedSpell(expandedSpell === sp.id ? null : sp.id)}>Info</button>
                         <button className={`btn btn-sm ${isKnown ? 'btn-danger' : 'btn-gold'}`}
                           onClick={() => toggleSpell(sp.index)} disabled={!isKnown && !canAdd(sp.index)}>
-                          {isKnown ? 'Quitar' : 'Aprender'}
+                          {isKnown ? 'Quitar' : (sp.level > maxSpellLevelAllowed && sp.level > 0 ? 'Nivel Alto' : 'Aprender')}
                         </button>
                       </div>
                     </div>
@@ -360,7 +364,7 @@ export default function Spellbook() {
         <div className="glass-panel spellbook-panel" style={{ flex: '1.2', minWidth: '300px' }}>
           <h3 style={{ textAlign: 'center', borderBottom: '2px solid var(--accent-red)', paddingBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Conjuros Preparados</h3>
 
-          <div className="spellbook-known" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '1rem', maxHeight: '600px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+          <div className="spellbook-known" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '1rem', paddingRight: '0.5rem' }}>
             {[0,1,2,3,4,5,6,7,8,9].map(lvl => {
               const spellsAtLevel = knownByLevel[lvl] || [];
               const slot = statsObj.spellSlots?.[lvl] || { max: 0, used: 0 };
@@ -422,8 +426,8 @@ export default function Spellbook() {
                           <div key={sIdx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.6rem 0.8rem', borderRadius: '6px', borderLeft: `4px solid ${lvl === 0 ? 'var(--accent-gold)' : 'var(--accent-red)'}` }}>
                             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                               <span style={{ fontSize: '0.95rem', color: '#ddd', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{sp?.name || '(hechizo desconocido)'}</span>
-                              {sp?.ritual && <span style={{ fontSize: '0.65rem', color: 'var(--accent-gold)', marginLeft: '0.5rem', padding: '0.1rem 0.3rem', background: 'rgba(200,155,60,0.2)', borderRadius: '3px' }}>[R]</span>}
-                              {sp?.concentration && <span style={{ fontSize: '0.65rem', color: 'var(--accent-red-bright)', marginLeft: '0.3rem', padding: '0.1rem 0.3rem', background: 'rgba(220,20,60,0.2)', borderRadius: '3px' }}>[C]</span>}
+                              {sp?.ritual && <span style={{ fontSize: '0.65rem', color: 'var(--accent-gold)', marginLeft: '0.5rem', padding: '0.1rem 0.3rem', background: 'rgba(200,155,60,0.2)', borderRadius: '3px' }}>Ritual</span>}
+                              {sp?.concentration && <span style={{ fontSize: '0.65rem', color: 'var(--accent-red-bright)', marginLeft: '0.3rem', padding: '0.1rem 0.3rem', background: 'rgba(220,20,60,0.2)', borderRadius: '3px' }}>Concentración</span>}
                             </div>
                             <button className="btn btn-ghost btn-sm" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', color: 'var(--accent-red)' }} onClick={() => toggleSpell(sIdx)}>✕ Olvidar</button>
                           </div>

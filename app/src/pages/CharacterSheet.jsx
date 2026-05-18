@@ -652,6 +652,14 @@ export default function CharacterSheet() {
           </span>
           <span style={{ fontSize: '0.7rem', color: '#888' }}>Clic para tirar</span>
         </div>
+        <div className="combat-badge" style={{ borderColor: 'var(--accent-gold)' }}>
+          <span className="label">Inspiración</span>
+          <span className="value" style={{ color: stats.inspiration ? 'var(--accent-gold)' : '#555', cursor: 'pointer' }}
+            onClick={() => setStatsObj(prev => ({ ...prev, inspiration: !prev.inspiration }))}>
+            {stats.inspiration ? '★' : '☆'}
+          </span>
+          <span style={{ fontSize: '0.7rem', color: '#888' }}>Clic para alternar</span>
+        </div>
         <div className="combat-badge" style={{ borderColor: 'var(--accent-purple)' }}>
           <span className="label">Velocidad</span>
           <span className="value" style={{ color: 'var(--accent-purple)' }}>{speed}</span>
@@ -865,7 +873,7 @@ export default function CharacterSheet() {
                         <div>
                           <span style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{sp.name}</span>
                           <span style={{ fontSize: '0.65rem', color: '#888', marginLeft: '0.5rem' }}>
-                            {sp.school} {sp.concentration ? '• [C]' : ''} {sp.ritual ? '• [R]' : ''}
+                            {sp.school} {sp.concentration ? '• Concentración' : ''} {sp.ritual ? '• Ritual' : ''}
                           </span>
                         </div>
                         <span style={{ fontSize: '0.65rem', color: '#666' }}>{expandedSpell === sp.id ? '▲' : '▼'}</span>
@@ -898,8 +906,8 @@ export default function CharacterSheet() {
 
       {/* Level Up Modal */}
       {levelUpModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ maxWidth: '520px', width: '90%', padding: '1.5rem', borderTop: '4px solid var(--accent-gold)', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(3px)' }}>
+          <div className="glass-panel" style={{ backgroundColor: '#15151e', maxWidth: '520px', width: '90%', padding: '1.5rem', borderTop: '4px solid var(--accent-gold)', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ textAlign: 'center', color: 'var(--accent-gold)' }}>
               <ArrowUp size={24} /> ¡Nivel {levelUpModal.newLevel}!
             </h2>
