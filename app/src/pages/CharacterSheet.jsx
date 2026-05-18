@@ -197,12 +197,10 @@ export default function CharacterSheet() {
         if (found) setSubclassName(found.name);
       }).catch(() => {});
       
-      if (char.campaign_id) {
-        getCharacters(char.campaign_id).then(res => {
-          const myChars = (res.data || []).filter(c => c.user_id === user?.id);
-          setCampaignCharacters(myChars);
-        }).catch(() => {});
-      }
+      getCharacters().then(res => {
+        const myChars = (res.data || []).filter(c => c.user_id === user?.id);
+        setCampaignCharacters(myChars);
+      }).catch(() => {});
     } catch (e) { console.error(e); }
   };
 
@@ -655,7 +653,7 @@ export default function CharacterSheet() {
         <div className="combat-badge" style={{ borderColor: 'var(--accent-gold)' }}>
           <span className="label">Inspiración</span>
           <span className="value" style={{ color: stats.inspiration ? 'var(--accent-gold)' : '#555', cursor: 'pointer' }}
-            onClick={() => setStatsObj(prev => ({ ...prev, inspiration: !prev.inspiration }))}>
+            onClick={() => setStats(prev => ({ ...prev, inspiration: !prev.inspiration }))}>
             {stats.inspiration ? '★' : '☆'}
           </span>
           <span style={{ fontSize: '0.7rem', color: '#888' }}>Clic para alternar</span>

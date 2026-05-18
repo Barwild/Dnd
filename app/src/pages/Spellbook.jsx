@@ -94,14 +94,12 @@ export default function Spellbook() {
       setStatsObj(s);
       if (c.class_id) getClassApi(c.class_id).then(r => setCharClass(r.data));
       
-      if (c.campaign_id) {
-        import('../api').then(api => {
-          api.getCharacters(c.campaign_id).then(res => {
-            const myChars = (res.data || []).filter(char => char.user_id === c.user_id);
-            setCampaignCharacters(myChars);
-          });
+      import('../api').then(api => {
+        api.getCharacters().then(res => {
+          const myChars = (res.data || []).filter(char => char.user_id === c.user_id);
+          setCampaignCharacters(myChars);
         });
-      }
+      });
     });
     getSpells({ limit: 500 }).then(r => setAllSpells(r.data || []));
   }, [id]);
