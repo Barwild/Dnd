@@ -454,7 +454,7 @@ export default function PlayerCreator() {
                 </div>
 
                 {/* Personality Traits / Ideals / Bonds / Flaws Selectors */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '0.8rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.8rem' }}>
                   {[
                     { key: 'personality_traits', label: 'Rasgo de Personalidad', state: bgPersonality, setter: setBgPersonality, custom: customPersonality, setCustom: setCustomPersonality },
                     { key: 'ideals', label: 'Ideal', state: bgIdeals, setter: setBgIdeals, custom: customIdeals, setCustom: setCustomIdeals },
@@ -468,11 +468,19 @@ export default function PlayerCreator() {
                         <label style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', display: 'block', marginBottom: '0.3rem' }}>{label}</label>
                         {options.length > 0 ? (
                           <>
-                            <select value={state} onChange={e => setter(e.target.value)} style={{ width: '100%', fontSize: '0.75rem', padding: '0.3rem' }}>
-                              <option value="">— Elegir —</option>
-                              {options.map((opt, i) => <option key={i} value={opt}>{opt.length > 60 ? opt.substring(0, 60) + '…' : opt}</option>)}
-                              <option value="__custom__">✏️ Otro (personalizado)</option>
-                            </select>
+                            <div style={{ display: 'flex', gap: '0.3rem' }}>
+                              <select value={state} onChange={e => setter(e.target.value)} style={{ flex: 1, fontSize: '0.75rem', padding: '0.3rem' }}>
+                                <option value="">— Elegir —</option>
+                                {options.map((opt, i) => <option key={i} value={opt}>{opt.length > 55 ? opt.substring(0, 55) + '…' : opt}</option>)}
+                                <option value="__custom__">✏️ Otro (personalizado)</option>
+                              </select>
+                              <button className="btn btn-sm" title="Elegir aleatoriamente" onClick={() => {
+                                const idx = Math.floor(Math.random() * options.length);
+                                setter(options[idx]);
+                              }} style={{ background: 'rgba(200,155,60,0.2)', border: '1px solid var(--accent-gold)', color: 'var(--accent-gold)', padding: '0.2rem 0.5rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                                🎲
+                              </button>
+                            </div>
                             {state === '__custom__' && (
                               <textarea value={custom} onChange={e => setCustom(e.target.value)} placeholder={`Escribe tu ${label.toLowerCase()}...`}
                                 style={{ width: '100%', marginTop: '0.3rem', fontSize: '0.75rem', padding: '0.3rem', minHeight: '50px' }} />
