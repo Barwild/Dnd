@@ -177,21 +177,16 @@ export default function SkillsSheet() {
     });
   };
 
+  // Saving throw proficiencies are FIXED by class in D&D 5e
+  // They cannot be freely added or removed — this function is kept for info display only
   const toggleSaveProf = (ability) => {
     const cn = className.toLowerCase();
     const classSaves = CLASS_SAVES[cn] || [];
     if (classSaves.includes(ability)) {
-      alert(`Como ${className}, ya eres competente en salvaciones de ${ABILITY_NAMES[ability]}.`);
-      return;
+      alert(`Las tiradas de salvación de ${ABILITY_NAMES[ability]} son parte de la clase ${className}. Son competencias fijas del reglamento y no se pueden quitar.`);
+    } else {
+      alert(`Las tiradas de salvación solo las otorga la clase al nivel 1. Solo puedes tener las 2 salvaciones de tu clase.`);
     }
-
-    setStats(prev => {
-      const list = prev.saveProficiencies || [];
-      if (list.includes(ability)) {
-        return { ...prev, saveProficiencies: list.filter(s => s !== ability) };
-      }
-      return { ...prev, saveProficiencies: [...list, ability] };
-    });
   };
 
   const getSkillMod = (skill) => {
@@ -256,7 +251,15 @@ export default function SkillsSheet() {
         await new Promise(resolve => setTimeout(resolve, remaining));
       }
 
-      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total } : null);
+      // Parse results to extract die value and modifier separately
+      let parsedResults = [];
+      try { parsedResults = JSON.parse(res.data.results || '[]'); } catch (_) {}
+      const dieRolls = parsedResults.filter(r => r.die !== 'mod');
+      const modifiers = parsedResults.filter(r => r.die === 'mod');
+      const dieValue = dieRolls.length > 0 ? dieRolls.reduce((s, r) => s + r.result, 0) : res.data.total;
+      const modifier = modifiers.reduce((s, r) => s + r.result, 0);
+
+      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total, dieValue, modifier } : null);
       
       setDiceResult({ ...res.data, description: desc });
       setTimeout(() => setDiceResult(null), 4000);
@@ -410,14 +413,17 @@ export default function SkillsSheet() {
                       }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-red)'; e.currentTarget.style.background = 'rgba(139,0,0,0.1)'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.background = 'rgba(0,0,0,0.3)'; }}>
-                      {/* Proficiency indicator */}
-                      <div onClick={e => { e.stopPropagation(); toggleSaveProf(ability); }}
+                      {/* Proficiency indicator — READ ONLY per D&D 5e rules */}
+                      <div
+                        title={proficient ? `Competente (clase ${className})` : 'Sin competencia (fijado por clase)'}
+                        onClick={e => { e.stopPropagation(); toggleSaveProf(ability); }}
                         style={{
                           width: '18px', height: '18px', borderRadius: '50%',
-                          border: `2px solid ${proficient ? 'var(--accent-gold)' : '#555'}`,
+                          border: `2px solid ${proficient ? 'var(--accent-gold)' : '#444'}`,
                           background: proficient ? 'var(--accent-gold)' : 'transparent',
-                          cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          cursor: 'not-allowed', transition: 'all 0.2s', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          opacity: proficient ? 1 : 0.4
                         }}>
                         {proficient && <span style={{ fontSize: '10px', color: '#000', fontWeight: 'bold' }}>✓</span>}
                       </div>
