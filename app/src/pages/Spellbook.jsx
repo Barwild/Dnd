@@ -215,7 +215,7 @@ export default function Spellbook() {
   return (
     <div className="container fade-in" style={{ maxWidth: '1200px' }}>
       <div className="flex-row flex-between" style={{ marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.8rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="flex-row" style={{ gap: '0.8rem' }}>
+        <div className="flex-row" style={{ gap: '0.8rem', flexWrap: 'wrap' }}>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/character/${id}`)}>← Ficha de {character.name}</button>
           {campaignCharacters.length > 1 && (
             <div className="flex-row" style={{ gap: '0.5rem', alignItems: 'center', background: 'rgba(200,155,60,0.1)', padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1px solid var(--accent-gold)' }}>
@@ -232,7 +232,7 @@ export default function Spellbook() {
           )}
         </div>
         <h1 style={{ margin: 0, fontSize: '1.6rem' }}>📖 Grimorio Mágico</h1>
-        <div className="flex-row" style={{ gap: '0.5rem' }}>
+        <div className="flex-row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
           {!isNonCaster && <button className="btn btn-blue btn-sm" onClick={restoreSpellSlots} title="Restaurar todos los espacios de conjuro">⚡ Restaurar Espacios</button>}
           <button className="btn btn-gold btn-sm" onClick={saveSpells}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
         </div>
@@ -370,7 +370,7 @@ export default function Spellbook() {
 
               return (
                 <div key={lvl} style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(139,0,0,0.2)' }}>
-                  <div style={{ background: 'linear-gradient(90deg, rgba(139,0,0,0.4), rgba(139,0,0,0.1))', padding: '0.8rem', borderBottom: '1px solid rgba(139,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                  <div style={{ background: 'linear-gradient(90deg, rgba(139,0,0,0.4), rgba(139,0,0,0.1))', padding: '0.8rem', borderBottom: '1px solid rgba(139,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                     <div>
                       <strong style={{ color: '#fff', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{lvl === 0 ? '✨ TRUCOS' : `📖 NIVEL ${lvl}`}</strong>
                     </div>

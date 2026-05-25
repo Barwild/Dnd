@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells } from '../api';
+import DiceRollingOverlay from '../components/DiceRollingOverlay';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus, Printer } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -108,11 +109,15 @@ export default function CharacterSheet() {
   const [armor, setArmor] = useState([]);
   const [saving, setSaving] = useState(false);
   const [diceResult, setDiceResult] = useState(null);
+  const [rollingDice, setRollingDice] = useState(null);
   const [levelUpModal, setLevelUpModal] = useState(null); // {newLevel, hpGain}
   const [subclassList, setSubclassList] = useState([]);
   const [subclassName, setSubclassName] = useState('');
   const [allSpells, setAllSpells] = useState([]);
   const [expandedSpell, setExpandedSpell] = useState(null);
+  const [raceObject, setRaceObject] = useState(null);
+  const [classObject, setClassObject] = useState(null);
+  const [backgroundObject, setBackgroundObject] = useState(null);
 
 
   const normalizeCoins = (coins) => ({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...coins });
@@ -190,8 +195,12 @@ export default function CharacterSheet() {
       // Cargar equipo específico
       loadEquipmentData(id);
 
-      if (char.race_id) getRace(char.race_id).then(r => setRaceName(r.data.name)).catch(() => {});
-      if (char.class_id) getClassApi(char.class_id).then(c => { setClassName(c.data.name); setClassIndex(c.data.index); setHitDie(c.data.hit_die); }).catch(() => {});
+      if (char.race_id) getRace(char.race_id).then(r => { setRaceName(r.data.name); setRaceObject(r.data); }).catch(() => {});
+      if (char.class_id) getClassApi(char.class_id).then(c => { setClassName(c.data.name); setClassIndex(c.data.index); setHitDie(c.data.hit_die); setClassObject(c.data); }).catch(() => {});
+      if (char.background_id) getBackgrounds().then(res => {
+        const bg = (res.data || []).find(b => b.id === char.background_id);
+        if (bg) setBackgroundObject(bg);
+      }).catch(() => {});
       if (char.subclass_id) getSubclasses().then(res => {
         const found = (res.data || []).find(s => s.id === char.subclass_id);
         if (found) setSubclassName(found.name);
@@ -444,7 +453,13 @@ export default function CharacterSheet() {
 
     const oldPB = Math.ceil((character?.level || 1) / 4) + 1;
     const pbIncreased = newPB > oldPB;
-    const asiLevels = [4, 8, 12, 16, 19];
+    // Official D&D 5E ASI Levels: Fighters get ASIs at 6 and 14, Rogues at 10.
+    let asiLevels = [4, 8, 12, 16, 19];
+    if (cn === 'guerrero') {
+      asiLevels = [4, 6, 8, 12, 14, 16, 19];
+    } else if (cn === 'pícaro') {
+      asiLevels = [4, 8, 10, 12, 16, 19];
+    }
     const isASI = asiLevels.includes(newLevel);
     const cantripIncreased = cantripCount > 0;
 
@@ -559,17 +574,111 @@ export default function CharacterSheet() {
     const isExpert = (stats.expertise || []).includes(sk.index);
     const total = statVal + (isExpert ? profBonus * 2 : isProf ? profBonus : 0);
     return { ...sk, stat: skStat, total, prof: isExpert ? 'expertise' : isProf ? 'proficient' : '' };
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+
+  // ── Otras Competencias e Idiomas ──
+  const getOtherProficienciesAndLanguages = () => {
+    const lines = [];
+    
+    // 1. Languages
+    let langs = [];
+    if (raceObject?.languages) {
+      try {
+        const parsed = JSON.parse(raceObject.languages);
+        if (Array.isArray(parsed)) langs = [...langs, ...parsed];
+      } catch {}
+    }
+    if (backgroundObject?.languages) {
+      try {
+        const parsed = JSON.parse(backgroundObject.languages);
+        if (Array.isArray(parsed)) langs = [...langs, ...parsed];
+      } catch {}
+    }
+    const uniqueLangs = Array.from(new Set(langs)).filter(Boolean);
+    if (uniqueLangs.length > 0) {
+      lines.push(`IDIOMAS: ${uniqueLangs.join(', ')}`);
+    }
+
+    // 2. Class Proficiencies (Armas, Armaduras)
+    let classProfs = [];
+    if (classObject?.proficiencies) {
+      try {
+        const parsed = JSON.parse(classObject.proficiencies);
+        if (Array.isArray(parsed)) classProfs = parsed;
+      } catch {}
+    }
+    
+    const weapons = classProfs.filter(p => p.toLowerCase().includes('arma') || p.toLowerCase().includes('weapon') || p.toLowerCase().includes('sencillas') || p.toLowerCase().includes('marciales'));
+    const armor = classProfs.filter(p => p.toLowerCase().includes('armadura') || p.toLowerCase().includes('escudo') || p.toLowerCase().includes('armor') || p.toLowerCase().includes('shield') || p.toLowerCase().includes('ligeras') || p.toLowerCase().includes('medianas') || p.toLowerCase().includes('pesadas'));
+    const tools = classProfs.filter(p => !weapons.includes(p) && !armor.includes(p) && !p.toLowerCase().includes('salvación') && !p.toLowerCase().includes('saving'));
+    
+    let bgTools = [];
+    if (backgroundObject?.tool_proficiencies) {
+      try {
+        const parsed = JSON.parse(backgroundObject.tool_proficiencies);
+        if (Array.isArray(parsed)) bgTools = parsed;
+      } catch {}
+    }
+    const allTools = Array.from(new Set([...tools, ...bgTools])).filter(Boolean);
+
+    if (armor.length > 0) {
+      lines.push(`ARMADURAS: ${armor.join(', ')}`);
+    }
+    if (weapons.length > 0) {
+      lines.push(`ARMAS: ${weapons.join(', ')}`);
+    }
+    if (allTools.length > 0) {
+      lines.push(`HERRAMIENTAS: ${allTools.join(', ')}`);
+    }
+
+    return lines.join('\n');
+  };
+
   const knownSpells = (stats.spells || []).map(sIdx => allSpells.find(s => s.index === sIdx)).filter(Boolean);
   const knownByLevel = {};
   for (let i = 0; i <= 9; i++) { knownByLevel[i] = knownSpells.filter(s => (s.level || 0) === i); }
 
   const handleRoll = async (formula, desc) => {
+    const parseDieType = (form) => {
+      const match = form.toLowerCase().match(/d(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if ([4, 6, 8, 10, 12, 20].includes(num)) return `d${num}`;
+      }
+      return 'd20';
+    };
+
+    const dieType = parseDieType(formula);
+    const startTime = Date.now();
+
+    setRollingDice({
+      description: desc,
+      formula: formula,
+      dieType: dieType,
+      stage: 'rolling',
+      total: null
+    });
+
     try {
       const res = await rollDice({ dice_formula: formula, character_name: character?.name || '', description: desc, roll_type: 'check' });
+      
+      const elapsed = Date.now() - startTime;
+      const remaining = 1300 - elapsed;
+      if (remaining > 0) {
+        await new Promise(resolve => setTimeout(resolve, remaining));
+      }
+
+      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total } : null);
+      
       setDiceResult({ ...res.data, description: desc });
       setTimeout(() => setDiceResult(null), 5000);
-    } catch { /* silent */ }
+
+      setTimeout(() => {
+        setRollingDice(null);
+      }, 2500);
+    } catch (e) {
+      setRollingDice(null);
+    }
   };
 
   if (!character) return <div className="page-center"><h2>Cargando ficha...</h2></div>;
@@ -621,6 +730,8 @@ export default function CharacterSheet() {
         </div>
       )}
 
+      <DiceRollingOverlay rolling={rollingDice} onClose={() => setRollingDice(null)} />
+
       {/* Character Name & Identity */}
       <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-gold)', marginBottom: '1.5rem', position: 'relative' }}>
         <h1 style={{ fontSize: '2.2rem', margin: 0, color: '#fff' }}>{character.name}</h1>
@@ -665,6 +776,15 @@ export default function CharacterSheet() {
         </div>
       </div>
 
+      {equipmentStats?.armor_proficiency_issue && (
+        <div style={{ background: 'rgba(255,0,0,0.15)', border: '1px solid rgba(255,0,0,0.3)', padding: '0.8rem 1.2rem', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <strong style={{ color: '#ff6c6c', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ⚠️ Penalización por Armadura Inexperta
+          </strong>
+          <span style={{ fontSize: '0.85rem', color: '#eee' }}>{equipmentStats.armor_proficiency_issue}</span>
+        </div>
+      )}
+
       {/* HP & Spell Slots Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {/* HP Block */}
@@ -705,7 +825,7 @@ export default function CharacterSheet() {
                 return (
                   <div key={lvl} className="flex-row flex-between" style={{ background: 'rgba(0,0,0,0.2)', padding: '0.3rem 0.6rem', borderRadius: '6px' }}>
                     <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#fff' }}>Nv {lvl}</span>
-                    <div className="flex-row" style={{ gap: '0.3rem' }}>
+                    <div className="flex-row" style={{ gap: '0.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       {Array.from({ length: slot.max }).map((_, i) => (
                         <div key={i} 
                           onClick={() => toggleSpellSlot(lvl, i < slot.used)}
@@ -867,14 +987,14 @@ export default function CharacterSheet() {
                   </div>
                   {spellsAtLevel.map(sp => (
                     <div key={sp.id || sp.index} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0.3rem 0.6rem' }}>
-                      <div className="flex-row flex-between" style={{ cursor: 'pointer' }} onClick={() => setExpandedSpell(expandedSpell === sp.id ? null : sp.id)}>
-                        <div>
-                          <span style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{sp.name}</span>
-                          <span style={{ fontSize: '0.65rem', color: '#888', marginLeft: '0.5rem' }}>
+                      <div className="flex-row flex-between" style={{ cursor: 'pointer', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setExpandedSpell(expandedSpell === sp.id ? null : sp.id)}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', flex: 1, minWidth: 0 }}>
+                          <span style={{ color: 'var(--accent-gold)', fontSize: '0.85rem', fontWeight: 'bold' }}>{sp.name}</span>
+                          <span style={{ fontSize: '0.65rem', color: '#888' }}>
                             {sp.school} {sp.concentration ? '• Concentración' : ''} {sp.ritual ? '• Ritual' : ''}
                           </span>
                         </div>
-                        <span style={{ fontSize: '0.65rem', color: '#666' }}>{expandedSpell === sp.id ? '▲' : '▼'}</span>
+                        <span style={{ fontSize: '0.65rem', color: '#666', alignSelf: 'center' }}>{expandedSpell === sp.id ? '▲' : '▼'}</span>
                       </div>
                       {expandedSpell === sp.id && (
                         <div style={{ marginTop: '0.3rem', padding: '0.4rem', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', fontSize: '0.75rem', color: '#ccc' }}>
@@ -975,7 +1095,7 @@ export default function CharacterSheet() {
                           <span style={{ fontSize: '0.8rem', minWidth: '16px', textAlign: 'center', color: change > 0 ? '#fd0' : '#666' }}>{change || ''}</span>
                           <button className="btn btn-ghost btn-sm"
                             style={{ padding: '0 0.3rem', fontSize: '0.7rem', minWidth: '22px', lineHeight: '20px' }}
-                            disabled={totalUsed >= 2 || change >= 2 || (change >= 1 && totalUsed >= 2)}
+                            disabled={totalUsed >= 2 || change >= 2 || (change >= 1 && totalUsed >= 2) || (stats[k] || 10) + change >= 20}
                             onClick={() => setLevelUpModal(prev => ({
                               ...prev,
                               asiChanges: { ...prev.asiChanges, [k]: change + 1 }
@@ -1026,284 +1146,459 @@ export default function CharacterSheet() {
             <div className="flex-row" style={{ justifyContent: 'center', marginTop: '1rem', gap: '0.5rem' }}>
               <button className="btn btn-ghost" onClick={() => setLevelUpModal(null)}>Cancelar</button>
               <button className="btn btn-gold" onClick={confirmLevelUp}
-                disabled={levelUpModal.needsSubclass && !levelUpModal.selectedSubclassId}>Subir de Nivel</button>
+                disabled={
+                  (levelUpModal.needsSubclass && !levelUpModal.selectedSubclassId) ||
+                  (levelUpModal.isASI && Object.values(levelUpModal.asiChanges || {}).reduce((s, v) => s + v, 0) < 2)
+                }>Subir de Nivel</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ═══════ PRINT LAYOUT — Official D&D 5E Spanish Sheet ═══════ */}
-      <div className="print-sheet">
+            {/* ═══════ PRINT LAYOUT — Official D&D 5E Spanish Sheet ═══════ */}
+      {(() => {
+        const CLASS_SAVES = {
+          'bárbaro': ['STR', 'CON'], 'bardo': ['DEX', 'CHA'], 'clérigo': ['WIS', 'CHA'],
+          'druida': ['INT', 'WIS'], 'guerrero': ['STR', 'CON'], 'monje': ['STR', 'DEX'],
+          'paladín': ['WIS', 'CHA'], 'explorador': ['STR', 'DEX'], 'pícaro': ['DEX', 'INT'],
+          'hechicero': ['CON', 'CHA'], 'brujo': ['WIS', 'CHA'], 'mago': ['INT', 'WIS'],
+          'artífice': ['INT', 'WIS']
+        };
+        const isSavingThrowProficient = (k) => {
+          const cn = className?.toLowerCase() || '';
+          const classSaves = CLASS_SAVES[cn] || [];
+          const customSaves = stats.saveProficiencies || stats.savingThrows || [];
+          return classSaves.includes(k) || customSaves.includes(k);
+        };
+        const SKILL_STAT_MAP_ES = {
+          STR: 'Fue', DEX: 'Des', CON: 'Con', INT: 'Int', WIS: 'Sab', CHA: 'Car'
+        };
 
-        {/* ───── PAGE 1: Stats, Skills, Combat, Attacks ───── */}
-        <div className="print-page">
-          <div className="ps-header">
-            <div className="ps-field"><label>Nombre del Personaje</label><span>{character?.name || ''}</span></div>
-            <div className="ps-field"><label>Clase y Nivel</label><span>{className}{subclassName ? ` (${subclassName})` : ''} {character?.level}</span></div>
-            <div className="ps-field"><label>Trasfondo</label><span>{character?.background_name || ''}</span></div>
-            <div className="ps-field"><label>Jugador</label><span>{character?.user_name || ''}</span></div>
-            <div className="ps-field"><label>Raza</label><span>{raceName}</span></div>
-            <div className="ps-field"><label>Alineamiento</label><span>{character?.alignment || ''}</span></div>
-            <div className="ps-field"><label>Puntos de Experiencia</label><span>{character?.xp || ''}</span></div>
-          </div>
+        return (
+          <div className="print-sheet">
 
-          <div className="ps-body">
-            {/* LEFT COLUMN: Stats */}
-            <div className="ps-stats-col">
-              {STAT_KEYS.map(k => {
-                const val = stats[k] || 10;
-                const m = mod(val);
-                const saveProf = (stats.savingThrows || []).includes(k);
-                const saveVal = m + (saveProf ? profBonus : 0);
-                return (
-                  <div key={k} className="ps-stat-row">
-                    <div className="ps-stat-box">
-                      <span className="ps-stat-label">{STAT_NAMES[k].substring(0,3)}</span>
-                      <span className="ps-stat-score">{val}</span>
-                      <span className="ps-stat-mod-above">Modificador</span>
-                      <span className="ps-stat-mod">{m >= 0 ? '+' : ''}{m}</span>
+            {/* ───── PAGE 1: Stats, Skills, Combat, Personality ───── */}
+            <div className="print-page">
+              {/* Header */}
+              <div className="ps-header">
+                <div className="ps-header-left">
+                  <div className="ps-header-logo">DUNGEONS & DRAGONS</div>
+                  <div className="ps-header-charname">
+                    <span className="ps-header-val">{character?.name || ''}</span>
+                    <label>NOMBRE DEL PERSONAJE</label>
+                  </div>
+                </div>
+                <div className="ps-header-right">
+                  <div className="ps-header-grid">
+                    <div className="ps-field"><label>Clase y Nivel</label><span>{className}{subclassName ? ` (${subclassName})` : ''} {character?.level}</span></div>
+                    <div className="ps-field"><label>Trasfondo</label><span>{backgroundObject?.name || character?.background_name || ''}</span></div>
+                    <div className="ps-field"><label>Nombre del Jugador</label><span>{character?.user_name || ''}</span></div>
+                    <div className="ps-field"><label>Raza</label><span>{raceName}</span></div>
+                    <div className="ps-field"><label>Alineamiento</label><span>{stats.alignment || character?.alignment || ''}</span></div>
+                    <div className="ps-field"><label>Puntos de Experiencia</label><span>{stats.xp || character?.xp || ''}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ps-body-page1">
+                {/* COLUMN 1: Stats, Passive, Otras Competencias */}
+                <div className="ps-col-1">
+                  <div className="ps-stats-list">
+                    {STAT_KEYS.map(k => {
+                      const val = stats[k] || 10;
+                      const m = mod(val);
+                      return (
+                        <div key={k} className="ps-stat-card">
+                          <span className="ps-stat-label">{FULL_NAMES[k] || STAT_NAMES[k]}</span>
+                          <span className="ps-stat-mod">{m >= 0 ? '+' : ''}{m}</span>
+                          <div className="ps-stat-score-bubble">{val}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="ps-passive-box">
+                    <div className="ps-passive-val">
+                      {10 + mod(stats.WIS || 10) + (printSkills.find(s => s.index === 'perception')?.prof ? profBonus : 0)}
                     </div>
-                    <div className="ps-save-box">
-                      <div className={`ps-save-dot ${saveProf ? 'filled' : ''}`}></div>
-                      <span className="ps-save-val">{saveVal >= 0 ? '+' : ''}{saveVal}</span>
+                    <span className="ps-passive-label">SABIDURÍA PASIVA (PERCEPCIÓN)</span>
+                  </div>
+
+                  <div className="ps-other-profs-box">
+                    <label className="ps-box-title-lbl">OTRAS COMPETENCIAS E IDIOMAS</label>
+                    <div className="ps-other-profs-content">
+                      {getOtherProficienciesAndLanguages()}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
 
-            {/* RIGHT COLUMN: Skills */}
-            <div className="ps-skills-col">
-              <div className="ps-skills-top-row">
-                <div className="ps-inspiration">
-                  <span>Inspiración</span>
-                  <div className="ps-dot-box"></div>
-                </div>
-                <div className="ps-prof-bonus">
-                  <span>Bonificador de Competencia</span>
-                  <span className="ps-value">+{profBonus}</span>
-                </div>
-              </div>
-              <div className="ps-skill-header-row">
-                <span className="ps-sh-dot"></span>
-                <span className="ps-sh-bonus">Bonus</span>
-                <span className="ps-sh-name">Habilidad</span>
-                <span className="ps-sh-stat">Atrib.</span>
-              </div>
-              <div className="ps-skills-list">
-                {printSkills.map(sk => (
-                  <div key={sk.index} className="ps-skill-row">
-                    <div className={`ps-skill-dot ${sk.prof === 'expertise' ? 'double' : sk.prof ? 'filled' : ''}`}></div>
-                    <span className="ps-skill-total">{sk.total >= 0 ? '+' : ''}{sk.total}</span>
-                    <span className="ps-skill-name">{sk.name}</span>
-                    <span className="ps-skill-stat">{sk.stat}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="ps-passive">
-                <span>Percepción Pasiva (Sabiduría)</span>
-                <span className="ps-value">{10 + mod(stats.WIS || 10) + (printSkills.find(s => s.index === 'perception')?.prof ? profBonus : 0)}</span>
-              </div>
-            </div>
-
-            {/* BOTTOM: Combat + HP */}
-            <div className="ps-combat">
-              <div className="ps-combat-stats">
-                <div className="ps-combat-item">
-                  <label>Clase de Armadura</label>
-                  <span className="ps-value-lg">{ac}</span>
-                </div>
-                <div className="ps-combat-item">
-                  <label>Iniciativa</label>
-                  <span className="ps-value-lg">{initiative >= 0 ? '+' : ''}{initiative}</span>
-                </div>
-                <div className="ps-combat-item">
-                  <label>Velocidad</label>
-                  <span className="ps-value-lg">{speed}</span>
-                </div>
-              </div>
-              <div className="ps-vida-section">
-                <div className="ps-vida-title">Puntos de Golpe</div>
-                <div className="ps-vida-row">
-                  <span>Máximo</span><span className="ps-underline">{stats.maxHP || 1}</span>
-                </div>
-                <div className="ps-vida-row">
-                  <span>Actuales</span><span className="ps-underline">{stats.currHP || 0}</span>
-                </div>
-                <div className="ps-vida-row">
-                  <span>Temporales</span><span className="ps-underline">{stats.tempHP || 0}</span>
-                </div>
-              </div>
-              <div className="ps-dados-section">
-                <div className="ps-dados-title">Dados de Golpe</div>
-                <div className="ps-dados-row">
-                  <span>Total</span><span className="ps-underline">{character?.level || 1}d{hitDie}</span>
-                </div>
-                <div className="ps-dados-row">
-                  <span>Usados</span><span className="ps-underline">{stats.hitDiceUsed || 0}</span>
-                </div>
-                <div className="ps-dados-row">
-                  <span>Disponibles</span><span className="ps-underline">{(character?.level || 1) - (stats.hitDiceUsed || 0)}</span>
-                </div>
-              </div>
-              <div className="ps-muerte-section">
-                <div className="ps-muerte-title">Tiradas de Muerte</div>
-                <div className="ps-muerte-row">
-                  <span>Éxitos</span>
-                  <span className="ps-check-dots">☐ ☐ ☐</span>
-                </div>
-                <div className="ps-muerte-row">
-                  <span>Fallos</span>
-                  <span className="ps-check-dots">☐ ☐ ☐</span>
-                </div>
-              </div>
-              <div className="ps-otros-section">
-                <div className="ps-otros-title">Otros</div>
-                <div className="ps-otros-row">
-                  <span>Objetos Atunados</span><span className="ps-underline">{Array.isArray(stats.attunedItems) ? stats.attunedItems.length : 0} / 3</span>
-                </div>
-              </div>
-            </div>
-
-            {/* BOTTOM: Attacks + Armor */}
-            <div className="ps-attacks">
-              <div className="ps-attacks-header">Ataques y Lanzamiento de Conjuros</div>
-              <div className="ps-attacks-table">
-                <div className="ps-attack-row ps-attack-header">
-                  <span>Nombre</span>
-                  <span>Bonif. Ataque</span>
-                  <span>Daño / Tipo</span>
-                </div>
-                <div className="ps-attack-row">
-                  <span>Ataque sin Armas</span>
-                  <span>{mod(stats.STR) >= 0 ? '+' : ''}{mod(stats.STR)}</span>
-                  <span>1 + {mod(stats.STR)} contundente</span>
-                </div>
-                {weapons.map((w, i) => {
-                  const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
-                  const isRanged = w.weapon_range === 'Ranged';
-                  const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
-                  const atkMod = mod(stats[baseStat]) + profBonus;
-                  const dmgMod = mod(stats[baseStat]);
-                  return (
-                    <div key={i} className="ps-attack-row">
-                      <span>{w.name}</span>
-                      <span>{atkMod >= 0 ? '+' : ''}{atkMod}</span>
-                      <span>{w.damage_dice || '1'}{dmgMod >= 0 ? '+' : ''}{dmgMod} {w.damage_type?.name || w.damage_type || ''}</span>
+                {/* COLUMN 2: Inspiration, Prof Bonus, Saving Throws, Skills */}
+                <div className="ps-col-2">
+                  <div className="ps-inspiration-box">
+                    <div className={`ps-check-circle ${stats.inspiration ? 'checked' : ''}`}>
+                      {stats.inspiration ? '✓' : ''}
                     </div>
-                  );
-                })}
-                {armor.length > 0 && (
-                  <div className="ps-attack-divider">Armadura Equipada</div>
-                )}
-                {armor.map((a, i) => (
-                  <div key={i} className="ps-attack-row">
-                    <span>{a.name}</span>
-                    <span>CA {a.armor_class_base || 10}{a.armor_class_dex_bonus ? ' (+DES)' : ''}</span>
-                    <span>{a.stealth_disadvantage ? 'Sigilo Desv.' : '—'}</span>
+                    <span className="ps-ins-lbl">INSPIRACIÓN</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* ───── PAGE 2: Equipment, Features, Personality, Notes ───── */}
-        <div className="print-page">
-          <div className="ps-page2-grid">
-            <div className="ps-rasgos">
-              <div className="ps-rasgos-label">Rasgos de Personalidad</div>
-              <div className="ps-rasgos-content">{character?.personality || ''}</div>
-            </div>
-            <div className="ps-rasgos">
-              <div className="ps-rasgos-label">Ideales</div>
-              <div className="ps-rasgos-content">{character?.ideals || ''}</div>
-            </div>
-            <div className="ps-rasgos">
-              <div className="ps-rasgos-label">Vínculos</div>
-              <div className="ps-rasgos-content">{character?.bonds || ''}</div>
-            </div>
-            <div className="ps-rasgos">
-              <div className="ps-rasgos-label">Defectos</div>
-              <div className="ps-rasgos-content">{character?.flaws || ''}</div>
-            </div>
+                  <div className="ps-prof-bonus-box">
+                    <div className="ps-prof-val">+{profBonus}</div>
+                    <span className="ps-prof-lbl">BONIFICADOR DE COMPETENCIA</span>
+                  </div>
 
-            <div className="ps-equipment-block">
-              <div className="ps-block-title">Equipo</div>
-              <div className="ps-equipment-inner">
-                <div className="ps-equipment-list">
-                  {equipment.map((eq, i) => (
-                    <div key={i} className="ps-eq-item">{eq.name || eq}</div>
-                  ))}
-                </div>
-                <div className="ps-moneda-box">
-                  <div className="ps-moneda-title">Monedas</div>
-                  <div className="ps-moneda-grid">
-                    <div className="ps-moneda-row"><span className="ps-coin-icon">pp</span><span className="ps-coin-val">{parseCoins(stats.coins).pp || 0}</span></div>
-                    <div className="ps-moneda-row"><span className="ps-coin-icon">gp</span><span className="ps-coin-val">{parseCoins(stats.coins).gp || 0}</span></div>
-                    <div className="ps-moneda-row"><span className="ps-coin-icon">ep</span><span className="ps-coin-val">{parseCoins(stats.coins).ep || 0}</span></div>
-                    <div className="ps-moneda-row"><span className="ps-coin-icon">sp</span><span className="ps-coin-val">{parseCoins(stats.coins).sp || 0}</span></div>
-                    <div className="ps-moneda-row"><span className="ps-coin-icon">cp</span><span className="ps-coin-val">{parseCoins(stats.coins).cp || 0}</span></div>
+                  <div className="ps-saves-box">
+                    <label className="ps-box-title-lbl">TIRADAS DE SALVACIÓN</label>
+                    <div className="ps-saves-list">
+                      {STAT_KEYS.map(k => {
+                        const val = stats[k] || 10;
+                        const m = mod(val);
+                        const proficient = isSavingThrowProficient(k);
+                        const saveVal = m + (proficient ? profBonus : 0);
+                        return (
+                          <div key={k} className="ps-save-row">
+                            <span className={`ps-dot ${proficient ? 'filled' : ''}`}></span>
+                            <span className="ps-save-mod-val">{saveVal >= 0 ? '+' : ''}{saveVal}</span>
+                            <span className="ps-save-name">{FULL_NAMES[k] || STAT_NAMES[k]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="ps-skills-box">
+                    <label className="ps-box-title-lbl">HABILIDADES</label>
+                    <div className="ps-skills-list-print">
+                      {printSkills.map(sk => {
+                        const isProf = sk.prof === 'proficient' || sk.prof === 'expertise';
+                        const isExpert = sk.prof === 'expertise';
+                        return (
+                          <div key={sk.index} className="ps-skill-row-print">
+                            <span className={`ps-dot ${isExpert ? 'double-dot' : isProf ? 'filled' : ''}`}></span>
+                            <span className="ps-skill-mod-val">{sk.total >= 0 ? '+' : ''}{sk.total}</span>
+                            <span className="ps-skill-name-lbl">{sk.name} <span className="ps-skill-stat-lbl">({SKILL_STAT_MAP_ES[sk.stat] || sk.stat})</span></span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="ps-features-block">
-              <div className="ps-block-title">Características y Rasgos</div>
-              <div className="ps-features-text">
-                {character?.features ? (
-                  Array.isArray(character.features) ? character.features.join(', ') : character.features
-                ) : ''}
-              </div>
-            </div>
+                {/* COLUMN 3: Combat, HP, Attacks, Equipment */}
+                <div className="ps-col-3">
+                  {/* AC, Initiative, Speed */}
+                  <div className="ps-combat-header">
+                    <div className="ps-combat-box-ac">
+                      <div className="ps-combat-val">{ac}</div>
+                      <label>CLASE DE ARMADURA</label>
+                    </div>
+                    <div className="ps-combat-box-init">
+                      <div className="ps-combat-val">{initiative >= 0 ? '+' : ''}{initiative}</div>
+                      <label>INICIATIVA</label>
+                    </div>
+                    <div className="ps-combat-box-speed">
+                      <div className="ps-combat-val">{speed}</div>
+                      <label>VELOCIDAD</label>
+                    </div>
+                  </div>
 
-            <div className="ps-notes-block">
-              <div className="ps-block-title">Notas</div>
-              <div className="ps-notes-text">{character?.notes || ''}</div>
-            </div>
-          </div>
-        </div>
+                  {/* Hit Points Box */}
+                  <div className="ps-hp-container">
+                    <div className="ps-hp-max">
+                      <span>Puntos de Golpe Máximos</span>
+                      <span className="ps-hp-max-val">{stats.maxHP || 1}</span>
+                    </div>
+                    <div className="ps-hp-current">
+                      <span className="ps-hp-curr-val">{stats.currHP || 0}</span>
+                      <label>PUNTOS DE GOLPE ACTUALES</label>
+                    </div>
+                  </div>
 
-        {/* ───── PAGE 3: Spellcasting ───── */}
-        <div className="print-page">
-          <div className="ps-spell-header">
-            <div className="ps-spell-field"><label>Clase Conjuro</label><span>{className}</span></div>
-            <div className="ps-spell-field"><label>Habilidad de Conjuración</label><span>{spellAbility || '—'}</span></div>
-            <div className="ps-spell-field"><label>CD de Salvación</label><span>{saveDC || '—'}</span></div>
-            <div className="ps-spell-field"><label>Bonif. Ataque</label><span>{spellAtk || '—'}</span></div>
-          </div>
+                  {/* Temporary Hit Points */}
+                  <div className="ps-temp-hp-box">
+                    <span className="ps-temp-hp-val">{stats.tempHP || 0}</span>
+                    <label>PUNTOS DE GOLPE TEMPORALES</label>
+                  </div>
 
-          <div className="ps-spell-section">
-            <div className="ps-spell-section-title">Trucos (Nivel 0)</div>
-            <div className="ps-spell-list">
-              {(knownSpells || []).filter(s => s.level === 0).map((sp, i) => (
-                <div key={i} className="ps-spell-entry">{sp.name}</div>
-              ))}
-            </div>
-          </div>
+                  {/* Hit Dice and Death Saves */}
+                  <div className="ps-dice-saves-row">
+                    <div className="ps-hit-dice-box">
+                      <div className="ps-hd-max">Total <span>{character?.level || 1}d{hitDie}</span></div>
+                      <div className="ps-hd-val">{(character?.level || 1) - (stats.hitDiceUsed || 0)}</div>
+                      <label>DADOS DE GOLPE</label>
+                    </div>
+                    <div className="ps-death-saves-box">
+                      <div className="ps-ds-row">
+                        <span>ÉXITOS</span>
+                        <span className="ps-ds-dots">〇 〇 〇</span>
+                      </div>
+                      <div className="ps-ds-row">
+                        <span>FALLOS</span>
+                        <span className="ps-ds-dots">〇 〇 〇</span>
+                      </div>
+                      <label>SALVACIONES CONTRA LA MUERTE</label>
+                    </div>
+                  </div>
 
-          {[1,2,3,4,5,6,7,8,9].map(lvl => {
-            const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
-            const lvlSpells = knownByLevel?.[lvl] || [];
-            if (slot.max === 0 && lvlSpells.length === 0) return null;
-            return (
-              <div key={lvl} className="ps-spell-section">
-                <div className="ps-spell-section-title">
-                  <span>Nivel {lvl}</span>
-                  <span className="ps-spell-slots">Espacios: {slot.used}/{slot.max}</span>
+                  {/* Attacks & Spellcasting */}
+                  <div className="ps-attacks-box-print">
+                    <label className="ps-box-title-lbl">ATAQUES Y LANZAMIENTO DE CONJUROS</label>
+                    <div className="ps-attacks-content-print">
+                      <table className="ps-attacks-table-print">
+                        <thead>
+                          <tr>
+                            <th>Nombre</th>
+                            <th>Bono</th>
+                            <th>Daño/Tipo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Ataque sin Armas</td>
+                            <td>{mod(stats.STR) >= 0 ? '+' : ''}{mod(stats.STR)}</td>
+                            <td>1 + {mod(stats.STR)} cont.</td>
+                          </tr>
+                          {weapons.slice(0, 3).map((w, idx) => {
+                            const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                            const isRanged = w.weapon_range === 'Ranged';
+                            const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
+                            const atkMod = mod(stats[baseStat]) + profBonus;
+                            const dmgMod = mod(stats[baseStat]);
+                            return (
+                              <tr key={idx}>
+                                <td className="truncate-text">{w.name}</td>
+                                <td>{atkMod >= 0 ? '+' : ''}{atkMod}</td>
+                                <td className="truncate-text">{w.damage_dice || '1'}{dmgMod >= 0 ? '+' : ''}{dmgMod} {w.damage_type?.name || w.damage_type || ''}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      <div className="ps-attacks-notes-print">
+                        {weapons.length > 3 && (
+                          <div className="ps-attacks-overflow-text">
+                            Ataques adicionales: {weapons.slice(3).map(w => w.name).join(', ')}
+                          </div>
+                        )}
+                        {armor.map((a, i) => (
+                          <div key={i} className="ps-armor-note-print">
+                            🛡️ {a.name} (CA {a.armor_class_base || 10}{a.armor_class_dex_bonus ? ' +DES' : ''}{a.stealth_disadvantage ? ', sigilo desv.' : ''})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Equipment Box */}
+                  <div className="ps-equipment-box-print">
+                    <label className="ps-box-title-lbl">EQUIPO</label>
+                    <div className="ps-equipment-content-print">
+                      <div className="ps-coins-col-print">
+                        <div className="ps-coin-row-print"><span className="ps-coin-lbl">cp</span><span className="ps-coin-val-box">{parseCoins(stats.coins).cp || 0}</span></div>
+                        <div className="ps-coin-row-print"><span className="ps-coin-lbl">sp</span><span className="ps-coin-val-box">{parseCoins(stats.coins).sp || 0}</span></div>
+                        <div className="ps-coin-row-print"><span className="ps-coin-lbl">ep</span><span className="ps-coin-val-box">{parseCoins(stats.coins).ep || 0}</span></div>
+                        <div className="ps-coin-row-print"><span className="ps-coin-lbl">gp</span><span className="ps-coin-val-box">{parseCoins(stats.coins).gp || 0}</span></div>
+                        <div className="ps-coin-row-print"><span className="ps-coin-lbl">pp</span><span className="ps-coin-val-box">{parseCoins(stats.coins).pp || 0}</span></div>
+                      </div>
+                      <div className="ps-eq-list-print">
+                        {equipment.map((eq, i) => (
+                          <div key={i} className="ps-eq-item-print">{eq.name || eq}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="ps-spell-list">
-                  {lvlSpells.map((sp, i) => (
-                    <div key={i} className="ps-spell-entry">{sp.name}</div>
-                  ))}
+
+                {/* COLUMN 4: Personality Traits, Ideals, Bonds, Flaws, Features & Traits */}
+                <div className="ps-col-4">
+                  <div className="ps-personality-group">
+                    <div className="ps-personality-box-print">
+                      <span className="ps-pers-lbl">RASGOS DE PERSONALIDAD</span>
+                      <div className="ps-pers-content-print">{character?.personality || ''}</div>
+                    </div>
+                    <div className="ps-personality-box-print">
+                      <span className="ps-pers-lbl">IDEALES</span>
+                      <div className="ps-pers-content-print">{character?.ideals || ''}</div>
+                    </div>
+                    <div className="ps-personality-box-print">
+                      <span className="ps-pers-lbl">VÍNCULOS</span>
+                      <div className="ps-pers-content-print">{character?.bonds || ''}</div>
+                    </div>
+                    <div className="ps-personality-box-print">
+                      <span className="ps-pers-lbl">DEFECTOS</span>
+                      <div className="ps-pers-content-print">{character?.flaws || ''}</div>
+                    </div>
+                  </div>
+
+                  <div className="ps-features-box-print">
+                    <label className="ps-box-title-lbl">RASGOS Y CARACTERÍSTICAS</label>
+                    <div className="ps-features-content-print">
+                      {character?.features ? (
+                        Array.isArray(character.features) ? character.features.join('\n') : character.features
+                      ) : ''}
+                    </div>
+                  </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-      </div>
+            {/* ───── PAGE 2: Backstory, Appearance, Allies, Treasure ───── */}
+            <div className="print-page">
+              <div className="ps-header">
+                <div className="ps-header-left">
+                  <div className="ps-header-logo">DUNGEONS & DRAGONS</div>
+                  <div className="ps-header-charname">
+                    <span className="ps-header-val">{character?.name || ''}</span>
+                    <label>NOMBRE DEL PERSONAJE</label>
+                  </div>
+                </div>
+                <div className="ps-header-right">
+                  <div className="ps-header-grid">
+                    <div className="ps-field"><label>Edad</label><span>{stats.age || character?.age || '—'}</span></div>
+                    <div className="ps-field"><label>Altura</label><span>{stats.height || character?.height || '—'}</span></div>
+                    <div className="ps-field"><label>Peso</label><span>{stats.weight || character?.weight || '—'}</span></div>
+                    <div className="ps-field"><label>Ojos</label><span>{stats.eyes || character?.eyes || '—'}</span></div>
+                    <div className="ps-field"><label>Piel</label><span>{stats.skin || character?.skin || '—'}</span></div>
+                    <div className="ps-field"><label>Cabello</label><span>{stats.hair || character?.hair || '—'}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ps-body-page2">
+                <div className="ps-page2-left-col">
+                  <div className="ps-portrait-box-print">
+                    <label className="ps-box-title-lbl">ASPECTO DEL PERSONAJE</label>
+                    <div className="ps-portrait-content-print">
+                      {character?.portrait_url ? (
+                        <img src={character.portrait_url} alt="Retrato" className="ps-portrait-img-print" />
+                      ) : (
+                        <div className="ps-portrait-placeholder-print">RETRATO DEL PERSONAJE</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="ps-backstory-box-print">
+                    <label className="ps-box-title-lbl">HISTORIA DEL PERSONAJE</label>
+                    <div className="ps-backstory-content-print">
+                      {character?.notes || ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ps-page2-right-col">
+                  <div className="ps-allies-box-print">
+                    <label className="ps-box-title-lbl">ALIADOS Y ORGANIZACIONES</label>
+                    <div className="ps-allies-content-print">
+                      <div className="ps-org-symbol-placeholder-print">SÍMBOLO DE LA ORGANIZACIÓN</div>
+                      <div className="ps-allies-text-print">
+                        {stats.allies || '—'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ps-treasure-box-print">
+                    <label className="ps-box-title-lbl">TESORO</label>
+                    <div className="ps-treasure-content-print">
+                      {stats.treasure || '—'}
+                    </div>
+                  </div>
+
+                  <div className="ps-additional-traits-box-print">
+                    <label className="ps-box-title-lbl">RASGOS Y CARACTERÍSTICAS ADICIONALES</label>
+                    <div className="ps-additional-traits-content-print">
+                      {stats.additionalTraits || '—'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ───── PAGE 3: Spellcasting ───── */}
+            <div className="print-page">
+              <div className="ps-spell-header">
+                <div className="ps-spell-field"><label>Clase de Conjurador</label><span>{className}</span></div>
+                <div className="ps-spell-field"><label>Habilidad de Conjuración</label><span>{spellAbility || '—'}</span></div>
+                <div className="ps-spell-field"><label>CD de Salvación de Conjuros</label><span>{saveDC || '—'}</span></div>
+                <div className="ps-spell-field"><label>Bonificador de Ataque de Conjuros</label><span>{spellAtk >= 0 ? `+${spellAtk}` : spellAtk || '—'}</span></div>
+              </div>
+
+              <div className="ps-spell-grid-print">
+                <div className="ps-spell-col-print">
+                  <div className="ps-spell-section-print">
+                    <div className="ps-spell-section-title-print">TRUCOS (NIVEL 0)</div>
+                    <div className="ps-spell-list-print-page">
+                      {(knownSpells || []).filter(s => s.level === 0).map((sp, i) => (
+                        <div key={i} className="ps-spell-entry-print">〇 {sp.name}</div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {[1, 2, 3].map(lvl => {
+                    const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
+                    const lvlSpells = knownByLevel?.[lvl] || [];
+                    if (slot.max === 0 && lvlSpells.length === 0) return null;
+                    return (
+                      <div key={lvl} className="ps-spell-section-print">
+                        <div className="ps-spell-section-title-print">
+                          <span>NIVEL {lvl}</span>
+                          <span className="ps-spell-slots-print">Espacios: {slot.max}</span>
+                        </div>
+                        <div className="ps-spell-list-print-page">
+                          {lvlSpells.map((sp, i) => (
+                            <div key={i} className="ps-spell-entry-print">〇 {sp.name}</div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="ps-spell-col-print">
+                  {[4, 5, 6].map(lvl => {
+                    const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
+                    const lvlSpells = knownByLevel?.[lvl] || [];
+                    if (slot.max === 0 && lvlSpells.length === 0) return null;
+                    return (
+                      <div key={lvl} className="ps-spell-section-print">
+                        <div className="ps-spell-section-title-print">
+                          <span>NIVEL {lvl}</span>
+                          <span className="ps-spell-slots-print">Espacios: {slot.max}</span>
+                        </div>
+                        <div className="ps-spell-list-print-page">
+                          {lvlSpells.map((sp, i) => (
+                            <div key={i} className="ps-spell-entry-print">〇 {sp.name}</div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="ps-spell-col-print">
+                  {[7, 8, 9].map(lvl => {
+                    const slot = (stats.spellSlots || {})[lvl] || { max: 0, used: 0 };
+                    const lvlSpells = knownByLevel?.[lvl] || [];
+                    if (slot.max === 0 && lvlSpells.length === 0) return null;
+                    return (
+                      <div key={lvl} className="ps-spell-section-print">
+                        <div className="ps-spell-section-title-print">
+                          <span>NIVEL {lvl}</span>
+                          <span className="ps-spell-slots-print">Espacios: {slot.max}</span>
+                        </div>
+                        <div className="ps-spell-list-print-page">
+                          {lvlSpells.map((sp, i) => (
+                            <div key={i} className="ps-spell-entry-print">〇 {sp.name}</div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        );
+      })()}
 
     </div>
   );

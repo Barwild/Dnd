@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getCharacter, updateCharacter, getItems, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, rollDice } from '../api';
 import { Shield, Swords, ArrowLeft, Coins, ShieldPlus } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import DiceRollingOverlay from '../components/DiceRollingOverlay';
 
 const COIN_VALUES = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 };
 
@@ -24,6 +25,7 @@ export default function EquipmentSheet() {
   const [shopLoading, setShopLoading] = useState(false);
   const [shopExpanded, setShopExpanded] = useState(null);
   const [diceResult, setDiceResult] = useState(null);
+  const [rollingDice, setRollingDice] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const normalizeCoins = (coins) => ({ cp: 0, sp: 0, ep: 0, gp: 0, pp: 0, ...coins });
@@ -194,19 +196,57 @@ export default function EquipmentSheet() {
   };
 
   const handleRoll = async (formula, desc) => {
+    const parseDieType = (form) => {
+      const match = form.toLowerCase().match(/d(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if ([4, 6, 8, 10, 12, 20].includes(num)) return `d${num}`;
+      }
+      return 'd20';
+    };
+
+    const dieType = parseDieType(formula);
+    const startTime = Date.now();
+
+    setRollingDice({
+      description: desc,
+      formula: formula,
+      dieType: dieType,
+      stage: 'rolling',
+      total: null
+    });
+
     try {
       const res = await rollDice({ dice_formula: formula, character_name: character?.name || '', description: desc, roll_type: 'combat' });
+      
+      const elapsed = Date.now() - startTime;
+      const remaining = 1300 - elapsed;
+      if (remaining > 0) {
+        await new Promise(resolve => setTimeout(resolve, remaining));
+      }
+
+      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total } : null);
+      
       setDiceResult({ ...res.data, description: desc });
       setTimeout(() => setDiceResult(null), 5000);
-    } catch {}
+
+      setTimeout(() => {
+        setRollingDice(null);
+      }, 2500);
+    } catch (e) {
+      setRollingDice(null);
+    }
   };
 
   const mod = (val) => Math.floor(((val || 10) - 10) / 2);
   const profBonus = Math.ceil((character?.level || 1) / 4) + 1;
 
   const rollWeaponAttack = (weapon) => {
-    // Detect if we should use DEX or STR
-    const isFinesse = weapon.properties && weapon.properties.includes('Finesse');
+    // Detect if we should use DEX or STR (finesse & ranged properties support objects and strings)
+    const isFinesse = (weapon.properties || []).some(p => {
+      const name = (typeof p === 'string' ? p : (p?.name || p?.index || '')).toLowerCase();
+      return name.includes('finesse') || name.includes('sutil');
+    });
     const isRanged = weapon.weapon_range && weapon.weapon_range.includes('ft');
     const dex = stats.DEX || 10;
     const str = stats.STR || 10;
@@ -218,7 +258,10 @@ export default function EquipmentSheet() {
 
   const rollWeaponDamage = (weapon) => {
     if (!weapon.damage_dice) return;
-    const isFinesse = weapon.properties && weapon.properties.includes('Finesse');
+    const isFinesse = (weapon.properties || []).some(p => {
+      const name = (typeof p === 'string' ? p : (p?.name || p?.index || '')).toLowerCase();
+      return name.includes('finesse') || name.includes('sutil');
+    });
     const isRanged = weapon.weapon_range && weapon.weapon_range.includes('ft');
     const dex = stats.DEX || 10;
     const str = stats.STR || 10;
@@ -250,6 +293,8 @@ export default function EquipmentSheet() {
         </div>
       )}
 
+      <DiceRollingOverlay rolling={rollingDice} onClose={() => setRollingDice(null)} />
+
       {equipmentStats && (
         <div className="glass-panel" style={{ marginBottom: '1.5rem', borderTop: '3px solid var(--accent-gold)' }}>
           <h3><ShieldPlus size={18} /> Estadísticas de Combate Actuales</h3>
@@ -274,6 +319,11 @@ export default function EquipmentSheet() {
           {equipmentStats.stealth_disadvantage && (
             <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', padding: '0.5rem', borderRadius: '6px', marginTop: '1rem' }}>
               <span style={{ color: '#ff6b6b' }}>⚠️ Penalización: Tu armadura te otorga desventaja en Sigilo.</span>
+            </div>
+          )}
+          {equipmentStats.armor_proficiency_issue && (
+            <div style={{ background: 'rgba(255,0,0,0.15)', border: '2px solid rgba(255,0,0,0.5)', padding: '0.8rem', borderRadius: '8px', marginTop: '1rem' }}>
+              <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>⚠️ Falta de Competencia: {equipmentStats.armor_proficiency_issue}</span>
             </div>
           )}
         </div>

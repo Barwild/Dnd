@@ -7,18 +7,95 @@ from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 
 
-# Nombres de armaduras medias (DEX max +2)
-_MEDIUM_ARMOR = {'Armadura de Pieles', 'Camisote de Mallas', 'Cota de Escamas',
-                 'Coraza', 'Media Armadura de Placas'}
+def is_medium_armor(name: str) -> bool:
+    if not name:
+        return False
+    name_low = name.lower()
+    # Spanish keywords
+    if any(k in name_low for k in ['pieles', 'camisote', 'escamas', 'coraza', 'media armadura']):
+        return True
+    # English keywords
+    if any(k in name_low for k in ['hide', 'chain shirt', 'scale mail', 'breastplate', 'half plate']):
+        return True
+    return False
 
-# Todas las armaduras conocidas: nombre -> (categoría, max_dex)
-_ARMOR_TYPES = {}
-for _n in ['Armadura de Cuero', 'Armadura Acolchada', 'Armadura de Cuero Tachonado',
-           'Armadura de Pieles', 'Camisote de Mallas', 'Cota de Escamas',
-           'Coraza', 'Media Armadura de Placas', 'Cota de Anillas', 'Cota de Mallas',
-           'Armadura de Bandas', 'Armadura de Placas']:
-    _ARMOR_TYPES[_n] = 'medium' if _n in _MEDIUM_ARMOR else (
-        'heavy' if _n in ('Cota de Anillas', 'Cota de Mallas', 'Armadura de Bandas', 'Armadura de Placas') else 'light')
+
+def is_heavy_armor(name: str) -> bool:
+    if not name:
+        return False
+    name_low = name.lower()
+    # Spanish keywords
+    if any(k in name_low for k in ['anillas', 'cota de mallas', 'bandas', 'armadura de placas', 'placas completas']):
+        return True
+    # English keywords
+    if any(k in name_low for k in ['ring mail', 'chain mail', 'splint', 'plate']):
+        return True
+    return False
+
+
+def check_armor_proficiency(character, equipped_items: dict, items_db: dict, db: Session) -> Optional[str]:
+    # 1. Obtener la clase del personaje
+    from models import Class
+    cls = db.query(Class).filter(Class.id == character.class_id).first()
+    if not cls:
+        return None
+    
+    try:
+        class_profs = json.loads(cls.proficiencies or '[]')
+    except Exception:
+        class_profs = []
+        
+    class_name = cls.name.lower()
+    
+    # 2. Extraer competencias de armadura (normalizadas)
+    has_light = any(x in ["light armor", "all armor", "armadura ligera", "todas las armaduras"] for x in [p.lower() for p in class_profs])
+    has_medium = any(x in ["medium armor", "all armor", "armadura media", "todas las armaduras"] for x in [p.lower() for p in class_profs])
+    has_heavy = any(x in ["all armor", "armadura pesada", "todas las armaduras"] for x in [p.lower() for p in class_profs])
+    has_shields = any(x in ["shields", "escudos"] for x in [p.lower() for p in class_profs])
+    
+    # Soporte especial para Artífice
+    if "artifice" in class_name or "artífice" in class_name:
+        has_light = True
+        has_medium = True
+        has_shields = True
+        
+    # Verificar competencias otorgadas por la subclase/dominio (ej. clérigos de Vida, Forja, Guerra, etc.)
+    if character.subclass_id:
+        from models import Subclass
+        subclass = db.query(Subclass).filter(Subclass.id == character.subclass_id).first()
+        if subclass:
+            sc_name = subclass.name.lower()
+            if any(domain in sc_name for domain in ["vida", "guerra", "tempestad", "forja", "crepúsculo", "life", "war", "tempest", "forge", "twilight"]):
+                has_heavy = True
+            if any(sc in sc_name for sc in ["valor", "swords", "espadas"]):
+                has_medium = True
+                has_shields = True
+                
+    # 3. Comprobar armadura equipada
+    armor_id = equipped_items.get('armor')
+    if armor_id and str(armor_id) in items_db:
+        armor = items_db[str(armor_id)]
+        if armor.armor_class_base and armor.category in ['Armor', 'Armadura']:
+            if is_heavy_armor(armor.name):
+                if not has_heavy:
+                    return f"No tienes competencia con armaduras pesadas ({armor.name}). Tienes desventaja en tiradas de Fuerza/Destreza y no puedes lanzar conjuros."
+            elif is_medium_armor(armor.name):
+                if not has_medium:
+                    return f"No tienes competencia con armaduras medias ({armor.name}). Tienes desventaja en tiradas de Fuerza/Destreza y no puedes lanzar conjuros."
+            else:
+                # Light Armor
+                if not has_light:
+                    return f"No tienes competencia con armaduras ligeras ({armor.name}). Tienes desventaja en tiradas de Fuerza/Destreza y no puedes lanzar conjuros."
+                    
+    # 4. Comprobar escudo equipado
+    shield_id = equipped_items.get('shield')
+    if shield_id and str(shield_id) in items_db:
+        shield = items_db[str(shield_id)]
+        if shield.category in ['Shield', 'Escudo'] or 'escudo' in shield.name.lower() or 'shield' in shield.name.lower():
+            if not has_shields:
+                return f"No tienes competencia con escudos ({shield.name}). Tienes desventaja en tiradas de Fuerza/Destreza y no puedes lanzar conjuros."
+                
+    return None
 
 
 def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db: Dict) -> Dict:
@@ -35,9 +112,15 @@ def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db:
         armor = items_db[str(armor_id)]
         if armor.armor_class_base:
             ac = armor.armor_class_base
-            if armor.armor_class_dex_bonus:
-                max_dex = 2 if _ARMOR_TYPES.get(armor.name) == 'medium' else None
-                ac += min(dex_mod, max_dex) if max_dex is not None else dex_mod
+            # Si es armadura pesada, no sumamos modificador de DES
+            if is_heavy_armor(armor.name):
+                pass
+            # Si es armadura media, sumamos modificador de DES hasta un máximo de +2
+            elif is_medium_armor(armor.name):
+                ac += min(dex_mod, 2) if dex_mod > 0 else dex_mod
+            # Si es armadura ligera, sumamos el modificador completo de DES
+            else:
+                ac += dex_mod
     
     # Aplicar escudo
     shield_id = equipped_items.get('shield')
@@ -168,12 +251,14 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
         armor = items_db[str(armor_id)]
         stealth_disadvantage = armor.stealth_disadvantage
     
+    armor_proficiency_issue = check_armor_proficiency(character, equipped_items, items_db, db)
+    
     return {
         'armor_class': armor_class,
         'weapon_damage': weapon_damage,
         'equipment_slots': equipment_slots,
         'stealth_disadvantage': stealth_disadvantage,
-        'armor_proficiency_issue': ac_result.get('armor_proficiency_issue'),
+        'armor_proficiency_issue': armor_proficiency_issue,
         'base_stats': base_stats,
         'equipped_items': equipped_items
     }

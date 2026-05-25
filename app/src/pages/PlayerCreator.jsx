@@ -152,10 +152,25 @@ export default function PlayerCreator() {
   const getRacialBonuses = () => {
     if (!selectedRace) return {};
     const result = {};
+    
+    const getStatKey = (name) => {
+      if (!name) return null;
+      const clean = name.toLowerCase().trim();
+      if (clean.startsWith('fue') || clean.startsWith('str')) return 'STR';
+      if (clean.startsWith('des') || clean.startsWith('dex')) return 'DEX';
+      if (clean.startsWith('con')) return 'CON';
+      if (clean.startsWith('int')) return 'INT';
+      if (clean.startsWith('sab') || clean.startsWith('wis')) return 'WIS';
+      if (clean.startsWith('car') || clean.startsWith('cha')) return 'CHA';
+      return null;
+    };
+
     const addBonus = (bonusesArray) => {
       bonusesArray.forEach(b => {
-        const key = ABILITY_MAP[b.ability] || b.ability;
-        result[key] = (result[key] || 0) + (b.bonus || 0);
+        const key = getStatKey(b.ability);
+        if (key) {
+          result[key] = (result[key] || 0) + (b.bonus || 0);
+        }
       });
     };
     try { addBonus(JSON.parse(selectedRace.ability_bonuses || '[]')); } catch {}
@@ -245,6 +260,21 @@ export default function PlayerCreator() {
       if (cls) {
         try { saveProfs = JSON.parse(cls.saving_throws || '[]'); } catch {}
       }
+      
+      const getStatKey = (name) => {
+        if (!name) return null;
+        const clean = name.toLowerCase().trim();
+        if (clean.startsWith('fue') || clean.startsWith('str')) return 'STR';
+        if (clean.startsWith('des') || clean.startsWith('dex')) return 'DEX';
+        if (clean.startsWith('con')) return 'CON';
+        if (clean.startsWith('int')) return 'INT';
+        if (clean.startsWith('sab') || clean.startsWith('wis')) return 'WIS';
+        if (clean.startsWith('car') || clean.startsWith('cha')) return 'CHA';
+        return null;
+      };
+
+      // Translate Spanish saving throw keys to English for unified stats support
+      saveProfs = saveProfs.map(s => getStatKey(s) || s);
 
       // Limitar conjuros preparados para lanzadores de preparación (Clérigo, Druida, Artífice)
       let spellList = charData.spell_list || [];
@@ -741,7 +771,7 @@ export default function PlayerCreator() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', margin: '2rem 0' }}>
+            <div className="stats-creator-grid">
               {STAT_KEYS.map(statKey => {
                 const currentVal = charData.stats[statKey];
                 const bonus = racialBonuses[statKey] || 0;
@@ -818,7 +848,7 @@ export default function PlayerCreator() {
             </div>
 
             {/* Final stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <div className="stats-summary-grid">
               {STAT_KEYS.map(stat => {
                 const base = charData.stats[stat]?.val || 10;
                 const bonus = racialBonuses[stat] || 0;

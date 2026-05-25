@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCharacter, getClass as getClassApi, updateCharacter, rollDice } from '../api';
+import DiceRollingOverlay from '../components/DiceRollingOverlay';
 import { Save, Dice5, Eye, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 
 /* ── D&D 5E Skills mapped to abilities ── */
@@ -71,6 +72,7 @@ export default function SkillsSheet() {
   const [className, setClassName] = useState('');
   const [saving, setSaving] = useState(false);
   const [diceResult, setDiceResult] = useState(null);
+  const [rollingDice, setRollingDice] = useState(null);
   const [showSaves, setShowSaves] = useState(true);
   const [showSkills, setShowSkills] = useState(true);
 
@@ -225,11 +227,46 @@ export default function SkillsSheet() {
   const passivePerception = 10 + getSkillMod(SKILLS.find(s => s.index === 'perception'));
 
   const handleRoll = async (formula, desc) => {
+    const parseDieType = (form) => {
+      const match = form.toLowerCase().match(/d(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if ([4, 6, 8, 10, 12, 20].includes(num)) return `d${num}`;
+      }
+      return 'd20';
+    };
+
+    const dieType = parseDieType(formula);
+    const startTime = Date.now();
+
+    setRollingDice({
+      description: desc,
+      formula: formula,
+      dieType: dieType,
+      stage: 'rolling',
+      total: null
+    });
+
     try {
       const res = await rollDice({ dice_formula: formula, character_name: character?.name || '', description: desc, roll_type: 'check' });
+      
+      const elapsed = Date.now() - startTime;
+      const remaining = 1300 - elapsed;
+      if (remaining > 0) {
+        await new Promise(resolve => setTimeout(resolve, remaining));
+      }
+
+      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total } : null);
+      
       setDiceResult({ ...res.data, description: desc });
       setTimeout(() => setDiceResult(null), 4000);
-    } catch {}
+
+      setTimeout(() => {
+        setRollingDice(null);
+      }, 2500);
+    } catch (e) {
+      setRollingDice(null);
+    }
   };
 
   const rollSkill = (skill) => {
@@ -320,6 +357,8 @@ export default function SkillsSheet() {
           <div style={{ fontSize: '0.7rem', color: '#888' }}>{diceResult.dice_formula}</div>
         </div>
       )}
+
+      <DiceRollingOverlay rolling={rollingDice} onClose={() => setRollingDice(null)} />
 
       <div className="glass-panel" style={{ textAlign: 'center', borderTop: '3px solid var(--accent-purple)', marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--accent-purple)' }}>🎯 Habilidades y Salvaciones</h1>
