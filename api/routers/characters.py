@@ -101,7 +101,11 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
         equipped_items=data.equipped_items,
         spell_list=data.spell_list,
         notes=data.notes,
-        portrait_url=data.portrait_url
+        portrait_url=data.portrait_url,
+        personality=data.personality or "",
+        ideals=data.ideals or "",
+        bonds=data.bonds or "",
+        flaws=data.flaws or ""
     )
     db.add(character)
     db.commit()
@@ -220,6 +224,7 @@ def _char_response(char, db):
     owner = db.query(models.User).filter(models.User.id == char.user_id).first()
     race = db.query(models.Race).filter(models.Race.id == char.race_id).first()
     cls = db.query(models.Class).filter(models.Class.id == char.class_id).first()
+    bg = db.query(models.Background).filter(models.Background.id == char.background_id).first() if char.background_id else None
     return schemas.CharacterResponse(
         id=char.id, name=char.name, level=char.level,
         race_id=char.race_id, class_id=char.class_id,
@@ -232,7 +237,12 @@ def _char_response(char, db):
         portrait_url=char.portrait_url, created_at=char.created_at,
         owner_name=owner.display_name if owner else "",
         race_name=race.name if race else "",
-        class_name=cls.name if cls else ""
+        class_name=cls.name if cls else "",
+        background_name=bg.name if bg else "",
+        personality=char.personality or "",
+        ideals=char.ideals or "",
+        bonds=char.bonds or "",
+        flaws=char.flaws or ""
     )
 
 

@@ -17,6 +17,26 @@ const STAT_ICONS = {
 };
 const FULL_NAMES = { STR: 'Fuerza', DEX: 'Destreza', CON: 'Constitución', INT: 'Inteligencia', WIS: 'Sabiduría', CHA: 'Carisma' };
 
+const PROFIENCY_TRANS = {
+  'light armor': 'Armadura Ligera', 'medium armor': 'Armadura Mediana', 'heavy armor': 'Armadura Pesada',
+  'all armor': 'Todas las Armaduras', 'shields': 'Escudos', 'shield': 'Escudos',
+  'simple weapons': 'Armas Simples', 'martial weapons': 'Armas Marciales',
+  'longswords': 'Espadas Largas', 'rapiers': 'Espadas Rostro', 'shortswords': 'Espadas Cortas',
+  'hand crossbows': 'Ballestas de Mano', 'clubs': 'Clavas', 'daggers': 'Dagas', 'javelins': 'Jabalinas',
+  'maces': 'Mazas', 'quarterstaffs': 'Bastones', 'sickles': 'Hoces', 'spears': 'Lanzas',
+  'darts': 'Dardos', 'slings': 'Hondas', 'scimitars': 'Cimitarras',
+  "thieves' tools": 'Herramientas de Ladrón', 'herbalism kit': 'Kit de Herborista',
+  'crossbows, light': 'Ballestas Ligeras',
+  'saving throw: str': '', 'saving throw: dex': '', 'saving throw: con': '',
+  'saving throw: int': '', 'saving throw: wis': '', 'saving throw: cha': '',
+  'armadura no plateada, blindaje +1': 'Armadura No Plateada (blindaje +1)',
+  'herramientas de artífice': 'Herramientas de Artífice',
+  'instrumento musical': 'Instrumento Musical',
+  'armas simples': 'Armas Simples', 'armas de manopla': 'Armas de Manopla',
+  'dispositivos de exploración y de viaje': 'Dispositivos de Exploración y Viaje',
+};
+const translateProf = (p) => PROFIENCY_TRANS[p.toLowerCase().trim()] || p;
+
 // HP per level (beyond lvl 1): avg or roll
 const CLASS_HIT_DICE = { 'bárbaro': 12, 'guerrero': 10, 'paladín': 10, 'explorador': 10, 'bardo': 8, 'clérigo': 8, 'druida': 8, 'monje': 8, 'brujo': 8, 'pícaro': 8, 'hechicero': 6, 'mago': 6, 'artífice': 8 };
 
@@ -660,8 +680,8 @@ export default function CharacterSheet() {
       } catch {}
     }
     
-    const weapons = classProfs.filter(p => p.toLowerCase().includes('arma') || p.toLowerCase().includes('weapon') || p.toLowerCase().includes('sencillas') || p.toLowerCase().includes('marciales'));
-    const armor = classProfs.filter(p => p.toLowerCase().includes('armadura') || p.toLowerCase().includes('escudo') || p.toLowerCase().includes('armor') || p.toLowerCase().includes('shield') || p.toLowerCase().includes('ligeras') || p.toLowerCase().includes('medianas') || p.toLowerCase().includes('pesadas'));
+    const weapons = classProfs.filter(p => p.toLowerCase().includes('arma') || p.toLowerCase().includes('weapon') || p.toLowerCase().includes('sencillas') || p.toLowerCase().includes('marciales') || p.toLowerCase().includes('espada') || p.toLowerCase().includes('dagger') || p.toLowerCase().includes('crossbow') || p.toLowerCase().includes('clubs') || p.toLowerCase().includes('mace') || p.toLowerCase().includes('staff') || p.toLowerCase().includes('sickle') || p.toLowerCase().includes('spear') || p.toLowerCase().includes('dart') || p.toLowerCase().includes('sling') || p.toLowerCase().includes('scimitar'));
+    const armor = classProfs.filter(p => p.toLowerCase().includes('armadura') || p.toLowerCase().includes('escudo') || p.toLowerCase().includes('armor') || p.toLowerCase().includes('shield') || p.toLowerCase().includes('ligeras') || p.toLowerCase().includes('medianas') || p.toLowerCase().includes('pesadas') || p.toLowerCase().includes('all armor'));
     const tools = classProfs.filter(p => !weapons.includes(p) && !armor.includes(p) && !p.toLowerCase().includes('salvación') && !p.toLowerCase().includes('saving'));
     
     let bgTools = [];
@@ -674,13 +694,13 @@ export default function CharacterSheet() {
     const allTools = Array.from(new Set([...tools, ...bgTools])).filter(Boolean);
 
     if (armor.length > 0) {
-      lines.push(`ARMADURAS: ${armor.join(', ')}`);
+      lines.push(`ARMADURAS: ${armor.map(translateProf).join(', ')}`);
     }
     if (weapons.length > 0) {
-      lines.push(`ARMAS: ${weapons.join(', ')}`);
+      lines.push(`ARMAS: ${weapons.map(translateProf).join(', ')}`);
     }
     if (allTools.length > 0) {
-      lines.push(`HERRAMIENTAS: ${allTools.join(', ')}`);
+      lines.push(`HERRAMIENTAS: ${allTools.map(translateProf).join(', ')}`);
     }
 
     return lines.join('\n');
@@ -965,8 +985,8 @@ export default function CharacterSheet() {
               if (classObject?.proficiencies) {
                 try { const parsed = JSON.parse(classObject.proficiencies); if (Array.isArray(parsed)) classProfs = parsed; } catch {}
               }
-              const weapons = classProfs.filter(p => p.toLowerCase().includes('arma') || p.toLowerCase().includes('weapon') || p.toLowerCase().includes('sencillas') || p.toLowerCase().includes('marciales'));
-              const armor = classProfs.filter(p => p.toLowerCase().includes('armadura') || p.toLowerCase().includes('escudo') || p.toLowerCase().includes('armor') || p.toLowerCase().includes('shield') || p.toLowerCase().includes('ligeras') || p.toLowerCase().includes('medianas') || p.toLowerCase().includes('pesadas'));
+              const weapons = classProfs.filter(p => p.toLowerCase().includes('arma') || p.toLowerCase().includes('weapon') || p.toLowerCase().includes('sencillas') || p.toLowerCase().includes('marciales') || p.toLowerCase().includes('espada') || p.toLowerCase().includes('dagger') || p.toLowerCase().includes('crossbow') || p.toLowerCase().includes('clubs') || p.toLowerCase().includes('mace') || p.toLowerCase().includes('staff') || p.toLowerCase().includes('sickle') || p.toLowerCase().includes('spear') || p.toLowerCase().includes('dart') || p.toLowerCase().includes('sling') || p.toLowerCase().includes('scimitar'));
+              const armor = classProfs.filter(p => p.toLowerCase().includes('armadura') || p.toLowerCase().includes('escudo') || p.toLowerCase().includes('armor') || p.toLowerCase().includes('shield') || p.toLowerCase().includes('ligeras') || p.toLowerCase().includes('medianas') || p.toLowerCase().includes('pesadas') || p.toLowerCase().includes('all armor'));
               const tools = classProfs.filter(p => !weapons.includes(p) && !armor.includes(p) && !p.toLowerCase().includes('salvación') && !p.toLowerCase().includes('saving'));
               let bgTools = [];
               if (backgroundObject?.tool_proficiencies) {
@@ -979,9 +999,9 @@ export default function CharacterSheet() {
               const uniqueLangs = Array.from(new Set(langs)).filter(Boolean);
               return (
                 <>
-                  <div><strong style={{ color: 'var(--accent-gold)' }}>Armaduras:</strong><br /><span style={{ color: '#ccc' }}>{armor.length ? armor.join(', ') : '—'}</span></div>
-                  <div><strong style={{ color: 'var(--accent-gold)' }}>Armas:</strong><br /><span style={{ color: '#ccc' }}>{weapons.length ? weapons.join(', ') : '—'}</span></div>
-                  <div><strong style={{ color: 'var(--accent-gold)' }}>Herramientas:</strong><br /><span style={{ color: '#ccc' }}>{allTools.length ? allTools.join(', ') : '—'}</span></div>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Armaduras:</strong><br /><span style={{ color: '#ccc' }}>{armor.length ? armor.map(translateProf).join(', ') : '—'}</span></div>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Armas:</strong><br /><span style={{ color: '#ccc' }}>{weapons.length ? weapons.map(translateProf).join(', ') : '—'}</span></div>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Herramientas:</strong><br /><span style={{ color: '#ccc' }}>{allTools.length ? allTools.map(translateProf).join(', ') : '—'}</span></div>
                   <div><strong style={{ color: 'var(--accent-gold)' }}>Idiomas:</strong><br /><span style={{ color: '#ccc' }}>{uniqueLangs.length ? uniqueLangs.join(', ') : '—'}</span></div>
                 </>
               );
