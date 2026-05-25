@@ -104,6 +104,39 @@ export default function Spellbook() {
     getSpells({ limit: 500 }).then(r => setAllSpells(r.data || []));
   }, [id]);
 
+  useEffect(() => {
+    if (!charClass || !character) return;
+    const cn = charClass.name?.toLowerCase() || '';
+    if (NON_CASTERS.includes(cn)) return;
+    
+    // Auto-sanado si todos los slots de conjuro son cero
+    const allZero = [1,2,3,4,5,6,7,8,9].every(lvl => (statsObj.spellSlots?.[lvl]?.max || 0) === 0);
+    if (allZero) {
+      const newSlots = {};
+      const lvl = character.level || 1;
+      if (cn === 'brujo') {
+        const warlockInfo = WARLOCK_SLOTS[lvl] || { count: 1, level: 1 };
+        for (let i = 1; i <= 9; i++) {
+          newSlots[i] = { max: i === warlockInfo.level ? warlockInfo.count : 0, used: 0 };
+        }
+      } else if (HALF_CASTERS.includes(cn)) {
+        const halfLvl = Math.ceil(lvl / 2);
+        const slots = SPELL_SLOTS_TABLE[halfLvl] || [0,0,0,0,0,0,0,0,0];
+        for (let i = 1; i <= 9; i++) {
+          newSlots[i] = { max: slots[i-1] || 0, used: 0 };
+        }
+      } else if (FULL_CASTERS.includes(cn)) {
+        const slots = SPELL_SLOTS_TABLE[lvl] || [0,0,0,0,0,0,0,0,0];
+        for (let i = 1; i <= 9; i++) {
+          newSlots[i] = { max: slots[i-1] || 0, used: 0 };
+        }
+      }
+      if (Object.keys(newSlots).length > 0) {
+        setStatsObj(prev => ({ ...prev, spellSlots: newSlots }));
+      }
+    }
+  }, [charClass, character, statsObj.spellSlots]);
+
   const saveSpells = async () => {
     setSaving(true);
     await updateCharacter(id, {
