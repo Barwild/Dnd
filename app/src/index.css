@@ -608,6 +608,9 @@ select option {
   .combat-badge .value {
     font-size: 1.5rem;
   }
+  /* Spellbook: known spells first on mobile */
+  .spellbook-panel { order: 1 !important; }
+  .spellbook-panel:last-child { order: -1 !important; }
 }
 
 /* Mobile Portrait */

@@ -72,6 +72,14 @@ export default function PlayerCreator() {
   const [campaigns, setCampaigns] = useState([]);
   const [step, setStep] = useState(1);
   const [expandedSpell, setExpandedSpell] = useState(null);
+  const [bgPersonality, setBgPersonality] = useState('');
+  const [bgIdeals, setBgIdeals] = useState('');
+  const [bgBonds, setBgBonds] = useState('');
+  const [bgFlaws, setBgFlaws] = useState('');
+  const [customPersonality, setCustomPersonality] = useState('');
+  const [customIdeals, setCustomIdeals] = useState('');
+  const [customBonds, setCustomBonds] = useState('');
+  const [customFlaws, setCustomFlaws] = useState('');
 
   useEffect(() => {
     Promise.all([getRaces(), getClasses(), getBackgrounds(), getCampaigns(), getSpells({ limit: 500 })])
@@ -298,6 +306,11 @@ export default function PlayerCreator() {
       const startingEquipment = gatherStartingEquipment();
       const equipmentPayload = startingEquipment.length ? startingEquipment : [];
 
+      const finalPersonality = bgPersonality === '__custom__' ? customPersonality : bgPersonality;
+      const finalIdeals = bgIdeals === '__custom__' ? customIdeals : bgIdeals;
+      const finalBonds = bgBonds === '__custom__' ? customBonds : bgBonds;
+      const finalFlaws = bgFlaws === '__custom__' ? customFlaws : bgFlaws;
+
       await createCharacter({
         name: charData.name, level: 1,
         race_id: charData.race_id ? parseInt(charData.race_id) : null,
@@ -309,7 +322,11 @@ export default function PlayerCreator() {
         equipment: JSON.stringify(equipmentPayload),
         starting_equipment: JSON.stringify(startingEquipment),
         spell_list: JSON.stringify(spellList),
-        notes: ''
+        notes: '',
+        personality: finalPersonality,
+        ideals: finalIdeals,
+        bonds: finalBonds,
+        flaws: finalFlaws
       });
       navigate('/player-lobby');
     } catch (e) {
@@ -389,7 +406,7 @@ export default function PlayerCreator() {
                 try { skills = JSON.parse(b.skill_proficiencies || '[]'); } catch {}
                 return (
                   <div key={b.id} className="glass-panel clickable"
-                    onClick={() => setCharData({ ...charData, background_id: isSelected ? null : b.id })}
+                    onClick={() => { setCharData({ ...charData, background_id: isSelected ? null : b.id }); setBgPersonality(''); setBgIdeals(''); setBgBonds(''); setBgFlaws(''); }}
                     style={{
                       padding: '0.7rem', textAlign: 'center', cursor: 'pointer',
                       borderColor: isSelected ? 'var(--accent-gold)' : '',
@@ -407,9 +424,68 @@ export default function PlayerCreator() {
             </div>
 
             {selectedBg && (
-              <div style={{ background: 'rgba(200,155,60,0.08)', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid rgba(200,155,60,0.2)' }}>
-                <strong style={{ color: 'var(--accent-gold)' }}>{selectedBg.feature_name}</strong>
-                <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0.3rem 0 0' }}>{selectedBg.feature_desc}</p>
+              <div style={{ background: 'rgba(200,155,60,0.06)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid rgba(200,155,60,0.2)' }}>
+                <p style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '0.8rem', fontStyle: 'italic' }}>{selectedBg.description}</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.6rem', marginBottom: '0.8rem', fontSize: '0.8rem' }}>
+                  <div>
+                    <strong style={{ color: 'var(--accent-gold)' }}>Competencias:</strong>
+                    <span style={{ color: '#ccc', marginLeft: '0.3rem' }}>
+                      {(() => { try { return JSON.parse(selectedBg.skill_proficiencies || '[]').join(', '); } catch { return ''; } })()}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ color: 'var(--accent-gold)' }}>Herramientas:</strong>
+                    <span style={{ color: '#ccc', marginLeft: '0.3rem' }}>
+                      {(() => { try { const t = JSON.parse(selectedBg.tool_proficiencies || '[]'); return t.length ? t.join(', ') : '—'; } catch { return '—'; } })()}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ color: 'var(--accent-gold)' }}>Idiomas:</strong>
+                    <span style={{ color: '#ccc', marginLeft: '0.3rem' }}>
+                      {(() => { try { const l = JSON.parse(selectedBg.languages || '[]'); return l.length ? l.join(', ') : '—'; } catch { return '—'; } })()}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(200,155,60,0.08)', padding: '0.8rem', borderRadius: '8px', marginBottom: '0.8rem', border: '1px solid rgba(200,155,60,0.2)' }}>
+                  <strong style={{ color: 'var(--accent-gold)' }}>{selectedBg.feature_name}</strong>
+                  <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0.3rem 0 0' }}>{selectedBg.feature_desc}</p>
+                </div>
+
+                {/* Personality Traits / Ideals / Bonds / Flaws Selectors */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '0.8rem' }}>
+                  {[
+                    { key: 'personality_traits', label: 'Rasgo de Personalidad', state: bgPersonality, setter: setBgPersonality, custom: customPersonality, setCustom: setCustomPersonality },
+                    { key: 'ideals', label: 'Ideal', state: bgIdeals, setter: setBgIdeals, custom: customIdeals, setCustom: setCustomIdeals },
+                    { key: 'bonds', label: 'Vínculo', state: bgBonds, setter: setBgBonds, custom: customBonds, setCustom: setCustomBonds },
+                    { key: 'flaws', label: 'Defecto', state: bgFlaws, setter: setBgFlaws, custom: customFlaws, setCustom: setCustomFlaws },
+                  ].map(({ key, label, state, setter, custom, setCustom }) => {
+                    let options = [];
+                    try { const raw = JSON.parse(selectedBg[key] || '[]'); options = key === 'ideals' ? raw.map(i => i.desc) : raw; } catch {}
+                    return (
+                      <div key={key} style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem', borderRadius: '6px' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', display: 'block', marginBottom: '0.3rem' }}>{label}</label>
+                        {options.length > 0 ? (
+                          <>
+                            <select value={state} onChange={e => setter(e.target.value)} style={{ width: '100%', fontSize: '0.75rem', padding: '0.3rem' }}>
+                              <option value="">— Elegir —</option>
+                              {options.map((opt, i) => <option key={i} value={opt}>{opt.length > 60 ? opt.substring(0, 60) + '…' : opt}</option>)}
+                              <option value="__custom__">✏️ Otro (personalizado)</option>
+                            </select>
+                            {state === '__custom__' && (
+                              <textarea value={custom} onChange={e => setCustom(e.target.value)} placeholder={`Escribe tu ${label.toLowerCase()}...`}
+                                style={{ width: '100%', marginTop: '0.3rem', fontSize: '0.75rem', padding: '0.3rem', minHeight: '50px' }} />
+                            )}
+                          </>
+                        ) : (
+                          <textarea value={custom} onChange={e => setCustom(e.target.value)} placeholder={`Escribe tu ${label.toLowerCase()}...`}
+                            style={{ width: '100%', fontSize: '0.75rem', padding: '0.3rem', minHeight: '50px' }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

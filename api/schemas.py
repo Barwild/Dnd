@@ -210,6 +210,10 @@ class CharacterCreate(BaseModel):
     spell_list: str = "[]"
     notes: str = ""
     portrait_url: Optional[str] = None
+    personality: str = ""
+    ideals: str = ""
+    bonds: str = ""
+    flaws: str = ""
 
 
 class CharacterUpdate(BaseModel):
@@ -224,6 +228,10 @@ class CharacterUpdate(BaseModel):
     spell_list: Optional[str] = None
     notes: Optional[str] = None
     portrait_url: Optional[str] = None
+    personality: Optional[str] = None
+    ideals: Optional[str] = None
+    bonds: Optional[str] = None
+    flaws: Optional[str] = None
 
 
 class CharacterResponse(BaseModel):
@@ -243,10 +251,15 @@ class CharacterResponse(BaseModel):
     spell_list: str
     notes: str
     portrait_url: Optional[str] = None
+    personality: str = ""
+    ideals: str = ""
+    bonds: str = ""
+    flaws: str = ""
     created_at: Optional[str] = None
     owner_name: Optional[str] = ""
     race_name: Optional[str] = ""
     class_name: Optional[str] = ""
+    background_name: Optional[str] = ""
 
     class Config:
         from_attributes = True
@@ -403,12 +416,17 @@ class BackgroundResponse(BaseModel):
     id: int
     index: str
     name: str
+    description: str = ""
     skill_proficiencies: str
     tool_proficiencies: str
     languages: str
     equipment: str
     feature_name: str
     feature_desc: str
+    personality_traits: str = "[]"
+    ideals: str = "[]"
+    bonds: str = "[]"
+    flaws: str = "[]"
 
     class Config:
         from_attributes = True

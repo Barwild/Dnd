@@ -938,7 +938,58 @@ export default function CharacterSheet() {
         </div>
       </div>
 
-      {/* Weapons & Armor */}
+        {backgroundObject && (
+          <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+            <h3>📜 Trasfondo</h3>
+            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--accent-gold)', marginBottom: '0.5rem' }}>{backgroundObject.name}</div>
+            <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.8rem', fontStyle: 'italic' }}>{backgroundObject.description}</div>
+            <div style={{ background: 'rgba(200,155,60,0.08)', padding: '0.6rem', borderRadius: '6px', marginBottom: '0.8rem' }}>
+              <strong style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{backgroundObject.feature_name}:</strong>
+              <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0.3rem 0 0' }}>{backgroundObject.feature_desc}</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.8rem', marginBottom: '0.8rem' }}>
+              <div><strong style={{ color: 'var(--accent-gold)' }}>Personalidad:</strong> <span style={{ color: '#ccc' }}>{character?.personality || '—'}</span></div>
+              <div><strong style={{ color: 'var(--accent-gold)' }}>Ideal:</strong> <span style={{ color: '#ccc' }}>{character?.ideals || '—'}</span></div>
+              <div><strong style={{ color: 'var(--accent-gold)' }}>Vínculo:</strong> <span style={{ color: '#ccc' }}>{character?.bonds || '—'}</span></div>
+              <div><strong style={{ color: 'var(--accent-gold)' }}>Defecto:</strong> <span style={{ color: '#ccc' }}>{character?.flaws || '—'}</span></div>
+            </div>
+          </div>
+        )}
+
+        {/* Competencias */}
+        <div className="glass-panel" style={{ marginBottom: '1.5rem' }}>
+          <h3>⚔️ Competencias</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.8rem', fontSize: '0.85rem' }}>
+            {(() => {
+              let classProfs = [];
+              if (classObject?.proficiencies) {
+                try { const parsed = JSON.parse(classObject.proficiencies); if (Array.isArray(parsed)) classProfs = parsed; } catch {}
+              }
+              const weapons = classProfs.filter(p => p.toLowerCase().includes('arma') || p.toLowerCase().includes('weapon') || p.toLowerCase().includes('sencillas') || p.toLowerCase().includes('marciales'));
+              const armor = classProfs.filter(p => p.toLowerCase().includes('armadura') || p.toLowerCase().includes('escudo') || p.toLowerCase().includes('armor') || p.toLowerCase().includes('shield') || p.toLowerCase().includes('ligeras') || p.toLowerCase().includes('medianas') || p.toLowerCase().includes('pesadas'));
+              const tools = classProfs.filter(p => !weapons.includes(p) && !armor.includes(p) && !p.toLowerCase().includes('salvación') && !p.toLowerCase().includes('saving'));
+              let bgTools = [];
+              if (backgroundObject?.tool_proficiencies) {
+                try { const parsed = JSON.parse(backgroundObject.tool_proficiencies); if (Array.isArray(parsed)) bgTools = parsed; } catch {}
+              }
+              const allTools = Array.from(new Set([...tools, ...bgTools])).filter(Boolean);
+              let langs = [];
+              if (raceObject?.languages) { try { const p = JSON.parse(raceObject.languages); if (Array.isArray(p)) langs = [...langs, ...p]; } catch {} }
+              if (backgroundObject?.languages) { try { const p = JSON.parse(backgroundObject.languages); if (Array.isArray(p)) langs = [...langs, ...p]; } catch {} }
+              const uniqueLangs = Array.from(new Set(langs)).filter(Boolean);
+              return (
+                <>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Armaduras:</strong><br /><span style={{ color: '#ccc' }}>{armor.length ? armor.join(', ') : '—'}</span></div>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Armas:</strong><br /><span style={{ color: '#ccc' }}>{weapons.length ? weapons.join(', ') : '—'}</span></div>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Herramientas:</strong><br /><span style={{ color: '#ccc' }}>{allTools.length ? allTools.join(', ') : '—'}</span></div>
+                  <div><strong style={{ color: 'var(--accent-gold)' }}>Idiomas:</strong><br /><span style={{ color: '#ccc' }}>{uniqueLangs.length ? uniqueLangs.join(', ') : '—'}</span></div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Weapons & Armor */}
       <div className="glass-panel" style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--accent-gold)' }}>
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           {/* Armas */}

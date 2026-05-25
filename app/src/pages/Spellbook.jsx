@@ -349,8 +349,8 @@ export default function Spellbook() {
       )}
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        {/* Search side */}
-        <div className="glass-panel spellbook-panel" style={{ flex: '1', minWidth: '300px' }}>
+        {/* Search/Index side — on mobile shows BELOW known spells */}
+        <div className="glass-panel spellbook-panel" style={{ flex: '1', minWidth: '300px', order: 1 }}>
           <h3 style={{ color: 'var(--accent-red-bright)' }}>Aprender Hechizos</h3>
 
           {isNonCaster && (
@@ -410,8 +410,8 @@ export default function Spellbook() {
           </div>
         </div>
 
-        {/* Known spells side */}
-        <div className="glass-panel spellbook-panel" style={{ flex: '1.2', minWidth: '300px' }}>
+        {/* Known spells side — on mobile shows FIRST (order: 0) */}
+        <div className="glass-panel spellbook-panel" style={{ flex: '1.2', minWidth: '300px', order: 0 }}>
           <h3 style={{ textAlign: 'center', borderBottom: '2px solid var(--accent-red)', paddingBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Conjuros Preparados</h3>
 
           <div className="spellbook-known" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginTop: '1rem', paddingRight: '0.5rem' }}>

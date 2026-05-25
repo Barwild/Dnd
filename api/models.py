@@ -79,6 +79,10 @@ class Character(Base):
     spell_list = Column(Text, default="[]")  # JSON array of spell indexes
     notes = Column(Text, default="")
     portrait_url = Column(String(500), nullable=True)
+    personality = Column(Text, default="")
+    ideals = Column(Text, default="")
+    bonds = Column(Text, default="")
+    flaws = Column(Text, default="")
     created_at = Column(String, default=lambda: datetime.now().isoformat())
 
     owner = relationship("User", back_populates="characters")
@@ -145,12 +149,17 @@ class Background(Base):
     id = Column(Integer, primary_key=True, index=True)
     index = Column(String(50), unique=True, index=True)
     name = Column(String(100), nullable=False)
+    description = Column(Text, default="")
     skill_proficiencies = Column(Text, default="[]")  # JSON
     tool_proficiencies = Column(Text, default="[]")  # JSON
     languages = Column(Text, default="[]")  # JSON
     equipment = Column(Text, default="[]")  # JSON
     feature_name = Column(String(200), default="")
     feature_desc = Column(Text, default="")
+    personality_traits = Column(Text, default="[]")  # JSON list of strings
+    ideals = Column(Text, default="[]")  # JSON list of {desc, alignment}
+    bonds = Column(Text, default="[]")  # JSON list of strings
+    flaws = Column(Text, default="[]")  # JSON list of strings
 
 
 class Monster(Base):

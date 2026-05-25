@@ -5,6 +5,7 @@ from typing import List, Optional
 from database import get_db
 import models
 import schemas
+from auth import get_current_user
 
 router = APIRouter(prefix="/compendium", tags=["compendium"])
 
@@ -197,6 +198,19 @@ def list_subclasses(class_id: Optional[int] = None, db: Session = Depends(get_db
 @router.get("/backgrounds", response_model=List[schemas.BackgroundResponse])
 def list_backgrounds(db: Session = Depends(get_db)):
     return db.query(models.Background).all()
+
+
+@router.post("/backgrounds/seed")
+def seed_backgrounds(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Seed all official backgrounds. Requires DM role."""
+    if current_user.role != "dm":
+        raise HTTPException(status_code=403, detail="Solo el DM puede ejecutar el seed de trasfondos")
+    from scripts.patch_backgrounds_full import patch_backgrounds
+    result = patch_backgrounds(db)
+    return {"message": "Trasfondos actualizados correctamente", **result}
 
 
 # ═══════════════════════════════════════════════════════

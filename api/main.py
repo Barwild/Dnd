@@ -42,6 +42,15 @@ if 'characters' in inspector.get_table_names():
                 connection.commit()
         except Exception:
             pass
+    # Add personality/ideals/bonds/flaws columns if missing
+    for col_name in ['personality', 'ideals', 'bonds', 'flaws']:
+        if col_name not in columns:
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text(f"ALTER TABLE characters ADD COLUMN {col_name} TEXT DEFAULT ''"))
+                    connection.commit()
+            except Exception:
+                pass
 
 # Migrate column types for PostgreSQL compatibility
 if 'vehicles' in inspector.get_table_names():
