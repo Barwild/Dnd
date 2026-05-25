@@ -578,7 +578,26 @@ export default function CharacterSheet() {
       }
       return newState;
     });
-    setCharacter(prev => ({ ...prev, level: newLevel }));
+    let gainedSlots = false;
+    const oldSlots = stats.spellSlots || {};
+    
+    // Calcular si se ganan nuevos huecos de conjuro
+    let computedNewSlots = {};
+    if (HALF_CASTERS.includes(cn)) {
+      const halfLevel = Math.ceil(newLevel / 2);
+      const row = SPELL_SLOTS_TABLE[halfLevel] || [0,0,0,0,0,0,0,0,0];
+      row.forEach((max, i) => { computedNewSlots[i+1] = { max, used: (oldSlots[i+1]?.used || 0) }; });
+    } else if (FULL_CASTERS.includes(cn)) {
+      const row = SPELL_SLOTS_TABLE[newLevel] || [0,0,0,0,0,0,0,0,0];
+      row.forEach((max, i) => { computedNewSlots[i+1] = { max, used: (oldSlots[i+1]?.used || 0) }; });
+    } else if (cn === 'brujo') {
+      const pact = WARLOCK_SLOTS[newLevel] || { count: 0, level: 0 };
+      if (pact.level > 0) computedNewSlots[pact.level] = { max: pact.count, used: 0 };
+    }
+    
+    gainedSlots = [1,2,3,4,5,6,7,8,9].some(lvl => (computedNewSlots[lvl]?.max || 0) > (oldSlots[lvl]?.max || 0));
+
+    setCharacter(prev => ({ ...prev, level: newLevel, subclass_id: selectedSubclassId || prev.subclass_id }));
     if (selectedSubclassId) {
       const found = (subclassList || []).find(s => s.id === selectedSubclassId);
       if (found) setSubclassName(found.name);
@@ -590,7 +609,7 @@ export default function CharacterSheet() {
     if (selectedSubclassId) updatePayload.subclass_id = selectedSubclassId;
     await updateCharacter(id, updatePayload);
 
-    if (features.some(f => f.toLowerCase().includes('conjuro')) || cantripIncreased) {
+    if (gainedSlots || features.some(f => f.toLowerCase().includes('conjuro')) || cantripIncreased) {
       navigate(`/character/${id}/spells`);
     }
   };
@@ -725,7 +744,8 @@ export default function CharacterSheet() {
   const speed = stats.speed || 30;
 
   return (
-    <div className="container fade-in" style={{ maxWidth: '900px', paddingBottom: '3rem' }}>
+    <>
+      <div className="container fade-in" style={{ maxWidth: '900px', paddingBottom: '3rem' }}>
       {/* Header */}
       <div className="flex-row flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.8rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="flex-row" style={{ gap: '0.8rem' }}>
@@ -942,7 +962,8 @@ export default function CharacterSheet() {
                 );
               })()}
               {weapons.map((w, idx) => {
-                const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                const propsArr = Array.isArray(w.properties) ? w.properties : (() => { try { return JSON.parse(w.properties || '[]'); } catch { return []; } })();
+                const isFinesse = propsArr.some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
                 const isRanged = w.weapon_range === 'Ranged';
                 const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
                 const attackMod = mod(stats[baseStat]) + profBonus;
@@ -1198,10 +1219,10 @@ export default function CharacterSheet() {
           'artífice': ['INT', 'WIS']
         };
         const isSavingThrowProficient = (k) => {
-          const cn = className?.toLowerCase() || '';
+          const cn = (className || '').toLowerCase();
           const classSaves = CLASS_SAVES[cn] || [];
           const customSaves = stats.saveProficiencies || stats.savingThrows || [];
-          return classSaves.includes(k) || customSaves.includes(k);
+          return classSaves.includes(k) || (Array.isArray(customSaves) && customSaves.includes(k));
         };
         const SKILL_STAT_MAP_ES = {
           STR: 'Fue', DEX: 'Des', CON: 'Con', INT: 'Int', WIS: 'Sab', CHA: 'Car'
@@ -1391,7 +1412,8 @@ export default function CharacterSheet() {
                             <td>1 + {mod(stats.STR)} cont.</td>
                           </tr>
                           {weapons.slice(0, 3).map((w, idx) => {
-                            const isFinesse = (w.properties || []).some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                            const propsArr = Array.isArray(w.properties) ? w.properties : (() => { try { return JSON.parse(w.properties || '[]'); } catch { return []; } })();
+                            const isFinesse = propsArr.some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
                             const isRanged = w.weapon_range === 'Ranged';
                             const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
                             const atkMod = mod(stats[baseStat]) + profBonus;
@@ -1632,7 +1654,7 @@ export default function CharacterSheet() {
           </div>
         );
       })()}
-
-    </div>
+      </div>
+    </>
   );
 }

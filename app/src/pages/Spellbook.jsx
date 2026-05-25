@@ -187,6 +187,14 @@ export default function Spellbook() {
     const spellLevel = getSpellLevel(sp);
     if (spellLevel > 0 && spellLevel > maxSpellLevelAllowed) return false;
     if (spellLevel === 0) return currentCantrips < maxCantrips;
+    
+    // Bloquear si el número de conjuros de este nivel ya alcanza el máximo de espacios (ranuras) del nivel
+    if (spellLevel > 0) {
+      const slotMax = statsObj.spellSlots?.[spellLevel]?.max || 0;
+      const currentAtLevel = knownByLevel[spellLevel]?.length || 0;
+      if (currentAtLevel >= slotMax) return false;
+    }
+
     if (maxSpells > 0) return currentNonCantrips < maxSpells;
     return true;
   };
