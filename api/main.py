@@ -52,6 +52,18 @@ if 'characters' in inspector.get_table_names():
             except Exception:
                 pass
 
+# Add missing backgrounds columns
+if 'backgrounds' in inspector.get_table_names():
+    bg_cols = [c['name'] for c in inspector.get_columns('backgrounds')]
+    for col_name in ['description', 'personality_traits', 'ideals', 'bonds', 'flaws']:
+        if col_name not in bg_cols:
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text(f"ALTER TABLE backgrounds ADD COLUMN {col_name} TEXT DEFAULT '[]'"))
+                    connection.commit()
+            except Exception:
+                pass
+
 # Migrate column types for PostgreSQL compatibility
 if 'vehicles' in inspector.get_table_names():
     vcols = {c['name']: c for c in inspector.get_columns('vehicles')}
