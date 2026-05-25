@@ -884,7 +884,7 @@ select option {
 .ps-dice-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 8, 0.78);
+  background: rgba(5, 5, 8, 0.82);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   display: flex;
@@ -901,8 +901,6 @@ select option {
 }
 
 .ps-dice-overlay.fade-out-delay {
-  /* stage becomes 'result' after 1.3s of spin. Total overlay life is 2.5s more.
-     So we start fading out after 2.1s (0.4s fade-out duration). */
   animation: overlayFadeOut 0.4s ease forwards;
   animation-delay: 2.1s;
 }
@@ -914,20 +912,19 @@ select option {
 
 .ps-dice-glow-back {
   position: absolute;
-  width: 260px;
-  height: 260px;
+  width: 280px;
+  height: 280px;
   border-radius: 50%;
-  filter: blur(65px);
+  filter: blur(70px);
   pointer-events: none;
   z-index: 1;
-  opacity: 0.65;
-  transition: box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+  opacity: 0.6;
   animation: glowPulse 2.5s infinite ease-in-out;
 }
 
 @keyframes glowPulse {
-  0%, 100% { opacity: 0.5; transform: scale(0.95); }
-  50% { opacity: 0.85; transform: scale(1.15); }
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50% { opacity: 0.82; transform: scale(1.18); }
 }
 
 .ps-dice-container {
@@ -938,18 +935,41 @@ select option {
   justify-content: center;
   z-index: 2;
   width: 100%;
-  max-width: 480px;
-  padding: 2rem;
+  max-width: 520px;
+  padding: 1.5rem 2rem;
+  gap: 0.6rem;
+}
+
+/* Description text at the top */
+.ps-dice-desc-text {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+/* Die + Modifier side-by-side row */
+.ps-dice-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .ps-die-wrapper {
   position: relative;
   width: 200px;
   height: 200px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2.5rem;
   perspective: 1000px;
 }
 
@@ -957,70 +977,27 @@ select option {
   width: 100%;
   height: 100%;
   transition: stroke 0.35s ease, filter 0.35s ease;
-  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.15));
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.12));
 }
 
-/* Rolling animation: High-speed 3D-like spinning/vibrating */
-.ps-die-spinning {
-  animation: dieSpin 0.18s infinite linear;
-}
-
-@keyframes dieSpin {
-  0% { transform: rotate3d(1, 1, 0, 0deg) scale(1.05); filter: brightness(1.2); }
-  25% { transform: rotate3d(1, -1, 1, 90deg) scale(0.95); }
-  50% { transform: rotate3d(-1, 1, -1, 180deg) scale(1.1); filter: brightness(1.6); }
-  75% { transform: rotate3d(0, 1, 1, 270deg) scale(0.9); }
-  100% { transform: rotate3d(1, 1, 0, 360deg) scale(1.05); filter: brightness(1.2); }
-}
-
-/* Impact animation: Clean drop slam and bounce */
-.ps-die-impact {
-  animation: dieImpact 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes dieImpact {
-  0% { transform: scale(3.5) rotate(0deg); filter: brightness(4) blur(10px); opacity: 0; }
-  35% { transform: scale(0.85) rotate(-25deg); filter: brightness(1.8) blur(0px); opacity: 1; }
-  60% { transform: scale(1.25) rotate(15deg); filter: brightness(1.3); }
-  80% { transform: scale(0.95) rotate(-5deg); }
-  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-}
-
-/* Sibling screen shake impact */
-.ps-die-impact + .ps-dice-info-panel {
-  animation: screenShake 0.4s ease-out forwards;
-}
-
-@keyframes screenShake {
-  0% { transform: translate(0, 0); }
-  10% { transform: translate(-8px, -5px) rotate(-1deg); }
-  20% { transform: translate(6px, 4px) rotate(1deg); }
-  30% { transform: translate(-5px, 2px) rotate(-0.5deg); }
-  40% { transform: translate(4px, -3px) rotate(0.5deg); }
-  50% { transform: translate(-2px, 1px); }
-  60% { transform: translate(1px, -1px); }
-  100% { transform: translate(0, 0); }
-}
-
-/* Premium Pop-In for Result Number */
+/* Die value inside */
 .ps-die-result-text {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3.6rem;
+  font-size: 3.8rem;
   font-weight: 900;
-  color: #ffffff;
   font-family: 'Cinzel', serif;
-  text-shadow: 0 0 25px rgba(0, 0, 0, 0.95), 0 0 12px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 30px rgba(0, 0, 0, 0.95), 0 0 12px rgba(255, 255, 255, 0.5);
   z-index: 10;
   pointer-events: none;
 }
 
 .ps-die-result-text.pop-in {
   animation: textPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  animation-delay: 0.12s; /* Triggers right at the impact frame */
+  animation-delay: 0.12s;
   opacity: 0;
 }
 
@@ -1030,82 +1007,151 @@ select option {
   100% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
 }
 
-/* Info Panel Styling */
-.ps-dice-info-panel {
+/* Modifier badge — right side of die */
+.ps-dice-modifier-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
-  text-align: center;
-  width: 100%;
+  justify-content: center;
+  gap: 0.1rem;
+  border: 2px solid;
+  border-radius: 14px;
+  padding: 0.8rem 1.1rem;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  min-width: 72px;
+  animation: textPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
 }
 
-.ps-dice-desc-text {
-  font-family: 'Cinzel', serif;
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--accent-gold);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-}
-
-.ps-dice-formula-text {
+.ps-dice-mod-sign {
   font-size: 1.1rem;
+  font-weight: 900;
+  font-family: 'Cinzel', serif;
+  line-height: 1;
+}
+
+.ps-dice-mod-val {
+  font-size: 2.4rem;
+  font-weight: 900;
+  font-family: 'Cinzel', serif;
+  color: #fff;
+  line-height: 1;
+}
+
+.ps-dice-mod-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #888;
+  text-transform: uppercase;
+  margin-top: 0.2rem;
+}
+
+/* Total row — below the die+mod */
+.ps-dice-total-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
+  animation: totalSlideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation-delay: 0.5s;
+  opacity: 0;
+}
+
+@keyframes totalSlideUp {
+  0% { transform: translateY(18px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.ps-dice-total-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.ps-dice-total-val {
+  font-size: 5rem;
+  font-weight: 900;
+  font-family: 'Cinzel', serif;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+
+/* Formula chip */
+.ps-dice-formula-text {
+  font-size: 0.95rem;
   color: var(--text-muted);
   font-family: 'Inter', monospace;
   background: rgba(0, 0, 0, 0.45);
-  padding: 0.3rem 0.9rem;
+  padding: 0.25rem 0.85rem;
   border-radius: 6px;
   border: 1px solid var(--glass-border);
-  margin-top: 0.2rem;
   letter-spacing: 0.5px;
+  margin-top: 0.4rem;
 }
 
-.ps-dice-final-banner {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 1rem;
+/* Rolling animation: High-speed 3D-like spinning */
+.ps-die-spinning {
+  animation: dieSpin 0.18s infinite linear;
 }
 
-.glow-text {
-  animation: bannerGlow 1.5s ease-in-out infinite alternate;
+@keyframes dieSpin {
+  0%   { transform: rotate3d(1, 1, 0, 0deg) scale(1.05); filter: brightness(1.2); }
+  25%  { transform: rotate3d(1, -1, 1, 90deg) scale(0.95); }
+  50%  { transform: rotate3d(-1, 1, -1, 180deg) scale(1.1); filter: brightness(1.6); }
+  75%  { transform: rotate3d(0, 1, 1, 270deg) scale(0.9); }
+  100% { transform: rotate3d(1, 1, 0, 360deg) scale(1.05); filter: brightness(1.2); }
 }
 
-@keyframes bannerGlow {
-  from { 
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.4), 0 0 10px var(--accent-gold-dim); 
-    opacity: 0.85; 
-  }
-  to { 
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.9), 0 0 22px var(--accent-gold); 
-    opacity: 1; 
-  }
+/* Impact animation */
+.ps-die-impact {
+  animation: dieImpact 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* Mobile responsive scaling */
+@keyframes dieImpact {
+  0%   { transform: scale(3.5) rotate(0deg); filter: brightness(4) blur(10px); opacity: 0; }
+  35%  { transform: scale(0.85) rotate(-25deg); filter: brightness(1.8) blur(0px); opacity: 1; }
+  60%  { transform: scale(1.25) rotate(15deg); filter: brightness(1.3); }
+  80%  { transform: scale(0.95) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+}
+
+/* Mobile responsive */
 @media (max-width: 768px) {
   .ps-die-wrapper {
-    width: 160px;
-    height: 160px;
-    margin-bottom: 2rem;
+    width: 150px;
+    height: 150px;
   }
   .ps-die-result-text {
-    font-size: 2.8rem;
+    font-size: 3rem;
   }
   .ps-dice-desc-text {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
   }
   .ps-dice-formula-text {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
-  .ps-dice-final-banner {
-    font-size: 0.95rem;
+  .ps-dice-total-val {
+    font-size: 3.8rem;
+  }
+  .ps-dice-mod-val {
+    font-size: 2rem;
+  }
+  .ps-dice-main-row {
+    gap: 1rem;
+  }
+  .ps-dice-modifier-badge {
+    min-width: 60px;
+    padding: 0.6rem 0.85rem;
   }
 }
+
+
 
 /* ═══════ ADAPTIVE CREATOR & SUMMARY GRIDS ═══════ */
 .stats-creator-grid {
@@ -1180,8 +1226,25 @@ select option {
     print-color-adjust: exact !important;
   }
   
-  .navbar, .btn, .print-trigger, .char-header-buttons, .glass-panel, .container, .level-up-modal-backdrop, .dice-notification, .dice-rolling-overlay {
+  /* Hide UI elements — but NOT the container (it wraps the print-sheet) */
+  .navbar, .btn, .print-trigger, .char-header-buttons, .level-up-modal-backdrop, .dice-notification, .dice-rolling-overlay, .ps-dice-overlay {
     display: none !important;
+  }
+
+  /* Hide all glass-panels (web UI sections) */
+  .glass-panel {
+    display: none !important;
+  }
+
+  /* Make the container transparent so print-sheet can use its own layout */
+  .container {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
   /* Make print sheet visible */
@@ -1193,6 +1256,7 @@ select option {
     margin: 0 !important;
     padding: 0 !important;
   }
+
 
   .print-page {
     page-break-after: always;

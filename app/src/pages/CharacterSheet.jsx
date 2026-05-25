@@ -720,7 +720,15 @@ export default function CharacterSheet() {
         await new Promise(resolve => setTimeout(resolve, remaining));
       }
 
-      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total } : null);
+      // Parse results to extract die values and modifier
+      let parsedResults = [];
+      try { parsedResults = JSON.parse(res.data.results || '[]'); } catch(_) {}
+      const dieRolls = parsedResults.filter(r => r.die !== 'mod');
+      const modifiers = parsedResults.filter(r => r.die === 'mod');
+      const dieValue = dieRolls.length > 0 ? dieRolls.reduce((s, r) => s + r.result, 0) : res.data.total;
+      const modifier = modifiers.reduce((s, r) => s + r.result, 0);
+
+      setRollingDice(prev => prev ? { ...prev, stage: 'result', total: res.data.total, dieValue, modifier } : null);
       
       setDiceResult({ ...res.data, description: desc });
       setTimeout(() => setDiceResult(null), 5000);
@@ -1654,7 +1662,9 @@ export default function CharacterSheet() {
           </div>
         );
       })()}
+
       </div>
     </>
   );
 }
+
