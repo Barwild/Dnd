@@ -1180,7 +1180,7 @@ select option {
     print-color-adjust: exact !important;
   }
   
-  .navbar, .btn, .print-trigger, .char-header-buttons, .glass-panel, .container, #root > div:not(.print-sheet) {
+  .navbar, .btn, .print-trigger, .char-header-buttons, .glass-panel, .container, .level-up-modal-backdrop, .dice-notification, .dice-rolling-overlay {
     display: none !important;
   }
 
@@ -1208,9 +1208,45 @@ select option {
   }
 
   /* Font styling specifically for print */
-  .print-page h1, .print-page h2, .print-page h3, .print-page label, .print-page span, .print-page td, .print-page th {
+  .print-page h1, .print-page h2, .print-page h3, .print-page td, .print-page th, .print-page .ps-header-logo, .print-page .ps-box-title-lbl, .print-page .ps-stat-label, .print-page .ps-stat-mod, .print-page .ps-combat-val, .print-page .ps-hp-max, .print-page .ps-hp-curr-val, .print-page .ps-temp-hp-val, .print-page .ps-hd-val, .print-page .ps-passive-label, .print-page .ps-ins-lbl, .print-page .ps-prof-lbl {
+    font-family: 'Cinzel', 'Georgia', 'Times New Roman', serif !important;
+    color: #000 !important;
+  }
+  
+  .print-page label, .print-page span, .print-page div, .print-page p, .print-page li {
     font-family: 'Inter', system-ui, sans-serif !important;
     color: #000 !important;
+  }
+
+  /* Crisp 2px borders for high-fidelity official character sheet look */
+  .ps-stat-card,
+  .ps-passive-box,
+  .ps-other-profs-box,
+  .ps-inspiration-box,
+  .ps-prof-bonus-box,
+  .ps-saves-box,
+  .ps-skills-box,
+  .ps-combat-box-ac,
+  .ps-combat-box-init,
+  .ps-combat-box-speed,
+  .ps-hp-container,
+  .ps-temp-hp-box,
+  .ps-hit-dice-box,
+  .ps-death-saves-box,
+  .ps-attacks-box-print,
+  .ps-equipment-box-print,
+  .ps-personality-box-print,
+  .ps-features-box-print,
+  .ps-portrait-box-print,
+  .ps-backstory-box-print,
+  .ps-allies-box-print,
+  .ps-treasure-box-print,
+  .ps-additional-traits-box-print,
+  .ps-spell-section-print {
+    border: 2px solid #000 !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    box-shadow: none !important;
   }
 
   /* Header Styles */

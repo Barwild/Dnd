@@ -246,9 +246,23 @@ export default function Spellbook() {
   const attackBonus = profBonus + abilityMod;
 
   const filteredSpells = allSpells.filter(s => {
+    let matchClass = false;
+    if (charClass?.name) {
+      try {
+        const clsList = JSON.parse(s.classes || '[]');
+        matchClass = clsList.includes(charClass.name);
+      } catch {
+        matchClass = false;
+      }
+    } else {
+      matchClass = true;
+    }
     const matchName = s.name.toLowerCase().includes(search.toLowerCase());
     const matchLevel = levelFilter === 'all' || getSpellLevel(s) === parseInt(levelFilter);
-    return matchName && matchLevel;
+    return matchClass && matchName && matchLevel;
+  }).sort((a, b) => {
+    if (a.level !== b.level) return a.level - b.level;
+    return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
   });
 
   if (!character) return <div className="page-center"><h2>Cargando Grimorio...</h2></div>;
@@ -361,42 +375,39 @@ export default function Spellbook() {
             </select>
           </div>
 
-          {(search.length > 1 || levelFilter !== 'all') && (
-            <div style={{ paddingBottom: '1rem' }}>
-              {filteredSpells.map(sp => {
-                const isKnown = knownSpells.includes(sp.index);
-                return (
-                  <div key={sp.id} style={{ marginBottom: '0.6rem', borderBottom: '1px solid #222', paddingBottom: '0.6rem' }}>
-                    <div className="flex-row flex-between">
-                      <div>
-                        <strong style={{ color: 'var(--accent-gold)' }}>{sp.name}</strong>
-                        <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                          Nv {sp.level} • {sp.school} {sp.concentration && '• [C]'} {sp.ritual && '• [R]'}
-                        </div>
-                      </div>
-                      <div className="flex-row" style={{ gap: '0.3rem' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setExpandedSpell(expandedSpell === sp.id ? null : sp.id)}>Info</button>
-                        <button className={`btn btn-sm ${isKnown ? 'btn-danger' : 'btn-gold'}`}
-                          onClick={() => toggleSpell(sp.index)} disabled={!isKnown && !canAdd(sp.index)}>
-                          {isKnown ? 'Quitar' : (sp.level > maxSpellLevelAllowed && sp.level > 0 ? 'Nivel Alto' : 'Aprender')}
-                        </button>
+          <div style={{ paddingBottom: '1rem' }}>
+            {filteredSpells.map(sp => {
+              const isKnown = knownSpells.includes(sp.index);
+              return (
+                <div key={sp.id} style={{ marginBottom: '0.6rem', borderBottom: '1px solid #222', paddingBottom: '0.6rem' }}>
+                  <div className="flex-row flex-between">
+                    <div>
+                      <strong style={{ color: 'var(--accent-gold)' }}>{sp.name}</strong>
+                      <div style={{ fontSize: '0.7rem', color: '#888' }}>
+                        Nv {sp.level} • {sp.school} {sp.concentration && '• [C]'} {sp.ritual && '• [R]'}
                       </div>
                     </div>
-                    {expandedSpell === sp.id && (
-                      <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '0.6rem', borderRadius: '4px', fontSize: '0.8rem', color: '#ccc' }}>
-                        <div style={{ color: '#999', marginBottom: '0.3rem' }}>
-                          Tiempo: {sp.casting_time} • Rango: {sp.range} • Duración: {sp.duration}
-                        </div>
-                        <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{sp.description || 'Sin descripción'}</p>
-                      </div>
-                    )}
+                    <div className="flex-row" style={{ gap: '0.3rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setExpandedSpell(expandedSpell === sp.id ? null : sp.id)}>Info</button>
+                      <button className={`btn btn-sm ${isKnown ? 'btn-danger' : 'btn-gold'}`}
+                        onClick={() => toggleSpell(sp.index)} disabled={!isKnown && !canAdd(sp.index)}>
+                        {isKnown ? 'Quitar' : (sp.level > maxSpellLevelAllowed && sp.level > 0 ? 'Nivel Alto' : 'Aprender')}
+                      </button>
+                    </div>
                   </div>
-                );
-              })}
-              {filteredSpells.length === 0 && <p style={{ color: '#666', textAlign: 'center' }}>Sin resultados</p>}
-            </div>
-          )}
-          {search.length <= 1 && levelFilter === 'all' && <p style={{ color: 'var(--text-dim)' }}>Busca un conjuro o filtra por nivel.</p>}
+                  {expandedSpell === sp.id && (
+                    <div style={{ marginTop: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '0.6rem', borderRadius: '4px', fontSize: '0.8rem', color: '#ccc' }}>
+                      <div style={{ color: '#999', marginBottom: '0.3rem' }}>
+                        Tiempo: {sp.casting_time} • Rango: {sp.range} • Duración: {sp.duration}
+                      </div>
+                      <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>{sp.description || 'Sin descripción'}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {filteredSpells.length === 0 && <p style={{ color: '#666', textAlign: 'center' }}>Sin resultados</p>}
+          </div>
         </div>
 
         {/* Known spells side */}

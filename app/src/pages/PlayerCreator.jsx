@@ -794,15 +794,40 @@ export default function PlayerCreator() {
                              <div style={{position: 'absolute', top: '2px', right: '5px'}}><X size={14} color="#888" /></div>
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', flexWrap: 'wrap', minHeight: '60px', alignItems: 'center' }}>
-                            {statPool.map(poolItem => (
-                                <button key={poolItem.id} onClick={() => assignStat(statKey, poolItem)} 
-                                    className="btn btn-ghost btn-sm" 
-                                    style={{ padding: '0.2rem 0.5rem', fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-gold)' }}>
-                                    {poolItem.val}
-                                </button>
-                            ))}
-                            {statPool.length === 0 && <span style={{color:'var(--text-dim)', fontSize:'0.8rem'}}>-</span>}
+                        <div style={{ display: 'flex', justifyContent: 'center', minHeight: '60px', alignItems: 'center', width: '100%' }}>
+                            {statPool.length === 0 ? (
+                                <span style={{color:'var(--text-dim)', fontSize:'0.8rem'}}>-</span>
+                            ) : (
+                                <select
+                                    onChange={(e) => {
+                                        const valId = e.target.value;
+                                        if (!valId) return;
+                                        const poolItem = statPool.find(item => item.id === valId);
+                                        if (poolItem) assignStat(statKey, poolItem);
+                                    }}
+                                    value=""
+                                    style={{
+                                        background: 'rgba(0, 0, 0, 0.4)',
+                                        color: 'var(--accent-gold)',
+                                        border: '1px solid var(--accent-gold)',
+                                        borderRadius: '6px',
+                                        padding: '0.4rem 0.6rem',
+                                        fontSize: '0.95rem',
+                                        fontWeight: 'bold',
+                                        width: '100%',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        outline: 'none'
+                                    }}
+                                >
+                                    <option value="" disabled style={{ background: '#1a1a24', color: '#888' }}>Asignar...</option>
+                                    {statPool.map(poolItem => (
+                                        <option key={poolItem.id} value={poolItem.id} style={{ background: '#1a1a24', color: '#fff' }}>
+                                            {poolItem.val}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                     )}
 

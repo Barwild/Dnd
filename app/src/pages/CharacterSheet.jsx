@@ -464,8 +464,8 @@ export default function CharacterSheet() {
     const avg = Math.floor(hd / 2) + 1;
     const conMod = mod(stats.CON || 10);
     const isCaster = FULL_CASTERS.includes(cn) || HALF_CASTERS.includes(cn) || cn === 'brujo';
-    const subclassLevel = SUBCLASS_LEVELS[cn];
-    const needsSubclass = !character?.subclass_id && newLevel >= subclassLevel;
+    const subclassLevel = SUBCLASS_LEVELS[cn] || 3;
+    const needsSubclass = !character?.subclass_id && newLevel === subclassLevel;
 
     // Fetch leveling data from DB
     let levelData = null;
