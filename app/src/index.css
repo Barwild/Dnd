@@ -1162,3 +1162,824 @@ select option {
 
 /* ═══════ PRINT STYLES ═══════ */
 .print-sheet { display: none; }
+
+/* ═══════════════════════════════════════════════════════
+   PRINT SHEET D&D 5E OFFICIAL STYLES
+   ═══════════════════════════════════════════════════════ */
+@media print {
+  /* Hide regular web app interface */
+  body, html {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+    font-size: 8pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .navbar, .btn, .print-trigger, .char-header-buttons, .glass-panel, .container, #root > div:not(.print-sheet) {
+    display: none !important;
+  }
+
+  /* Make print sheet visible */
+  .print-sheet {
+    display: block !important;
+    background: #fff !important;
+    color: #000 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-page {
+    page-break-after: always;
+    page-break-inside: avoid;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 8mm;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: #fff !important;
+    color: #000 !important;
+    position: relative;
+  }
+
+  /* Font styling specifically for print */
+  .print-page h1, .print-page h2, .print-page h3, .print-page label, .print-page span, .print-page td, .print-page th {
+    font-family: 'Inter', system-ui, sans-serif !important;
+    color: #000 !important;
+  }
+
+  /* Header Styles */
+  .ps-header {
+    display: flex;
+    border-bottom: 2px solid #000;
+    padding-bottom: 3px;
+    margin-bottom: 10px;
+    align-items: flex-end;
+  }
+
+  .ps-header-left {
+    width: 35%;
+    border-right: 1px solid #000;
+    padding-right: 8px;
+  }
+
+  .ps-header-logo {
+    font-family: 'Cinzel', serif !important;
+    font-size: 13pt;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1px;
+  }
+
+  .ps-header-charname {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ps-header-val {
+    font-size: 12pt;
+    font-weight: bold;
+    min-height: 18px;
+    border-bottom: 1px solid #777;
+  }
+
+  .ps-header-charname label {
+    font-size: 6pt;
+    font-weight: bold;
+    color: #444;
+    margin-top: 1px;
+    text-transform: uppercase;
+  }
+
+  .ps-header-right {
+    width: 65%;
+    padding-left: 8px;
+  }
+
+  .ps-header-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .ps-field {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1px;
+  }
+
+  .ps-field label {
+    font-size: 6pt;
+    font-weight: bold;
+    color: #444;
+    text-transform: uppercase;
+  }
+
+  .ps-field span {
+    font-size: 8.5pt;
+    font-weight: bold;
+    min-height: 14px;
+  }
+
+  /* Body Page 1: 4 columns like official */
+  .ps-body-page1 {
+    display: grid;
+    grid-template-columns: 0.85fr 1.05fr 1.25fr 1fr;
+    gap: 8px;
+    height: auto;
+  }
+
+  /* Column 1: Stats */
+  .ps-col-1 {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ps-stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ps-stat-card {
+    border: 1px solid #000;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px;
+    background: #fff;
+    position: relative;
+  }
+
+  .ps-stat-label {
+    font-size: 6pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+  }
+
+  .ps-stat-mod {
+    font-size: 13pt;
+    font-weight: bold;
+    margin: 1px 0;
+  }
+
+  .ps-stat-score-bubble {
+    border: 1px solid #000;
+    border-radius: 50%;
+    width: 17px;
+    height: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7.5pt;
+    font-weight: bold;
+    background: #fff;
+  }
+
+  .ps-passive-box {
+    border: 1px solid #000;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    gap: 5px;
+  }
+
+  .ps-passive-val {
+    border: 1px solid #000;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8pt;
+    font-weight: bold;
+  }
+
+  .ps-passive-label {
+    font-size: 5.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+    line-height: 1.1;
+  }
+
+  .ps-other-profs-box {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 140px;
+  }
+
+  .ps-box-title-lbl {
+    font-size: 6.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1px;
+    margin-bottom: 3px;
+    text-align: center;
+  }
+
+  .ps-other-profs-content {
+    font-size: 7pt;
+    line-height: 1.25;
+    white-space: pre-wrap;
+    overflow: hidden;
+  }
+
+  /* Column 2: Saving throws & Skills */
+  .ps-col-2 {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ps-inspiration-box, .ps-prof-bonus-box {
+    border: 1px solid #000;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    padding: 3px 6px;
+    gap: 6px;
+  }
+
+  .ps-check-circle {
+    border: 1px solid #000;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8pt;
+    font-weight: bold;
+  }
+
+  .ps-ins-lbl, .ps-prof-lbl {
+    font-size: 6pt;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .ps-prof-val {
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 8.5pt;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .ps-saves-box, .ps-skills-box {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+  }
+
+  .ps-saves-list, .ps-skills-list-print {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ps-save-row, .ps-skill-row-print {
+    display: flex;
+    align-items: center;
+    font-size: 7pt;
+    gap: 4px;
+  }
+
+  .ps-dot {
+    border: 1px solid #000;
+    border-radius: 50%;
+    width: 6px;
+    height: 6px;
+    display: inline-block;
+  }
+
+  .ps-dot.filled {
+    background: #000;
+  }
+
+  .ps-dot.double-dot {
+    background: #000;
+    border: 2px double #fff;
+    outline: 1px solid #000;
+  }
+
+  .ps-save-mod-val, .ps-skill-mod-val {
+    font-weight: bold;
+    min-width: 18px;
+    border-bottom: 1px solid #aaa;
+    text-align: center;
+  }
+
+  .ps-save-name, .ps-skill-name-lbl {
+    text-transform: capitalize;
+  }
+
+  .ps-skill-stat-lbl {
+    color: #555;
+    font-size: 6pt;
+    text-transform: uppercase;
+  }
+
+  /* Column 3: Combat, HP, Attacks, Equipment */
+  .ps-col-3 {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ps-combat-header {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+
+  .ps-combat-box-ac, .ps-combat-box-init, .ps-combat-box-speed {
+    border: 1px solid #000;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px;
+    text-align: center;
+    background: #fff;
+  }
+
+  .ps-combat-val {
+    font-size: 11pt;
+    font-weight: bold;
+  }
+
+  .ps-combat-header label {
+    font-size: 5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+    text-align: center;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  .ps-hp-container {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 3px;
+  }
+
+  .ps-hp-max {
+    display: flex;
+    justify-content: space-between;
+    font-size: 6pt;
+    font-weight: bold;
+    border-bottom: 1px solid #aaa;
+    padding-bottom: 1px;
+    color: #333;
+  }
+
+  .ps-hp-max-val {
+    font-size: 7pt;
+    font-weight: bold;
+    color: #000;
+  }
+
+  .ps-hp-current {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 2px;
+  }
+
+  .ps-hp-curr-val {
+    font-size: 12pt;
+    font-weight: bold;
+    min-height: 18px;
+  }
+
+  .ps-hp-current label {
+    font-size: 5.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+  }
+
+  .ps-temp-hp-box {
+    border: 1px solid #000;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3px;
+  }
+
+  .ps-temp-hp-val {
+    font-size: 10pt;
+    font-weight: bold;
+    min-height: 14px;
+  }
+
+  .ps-temp-hp-box label {
+    font-size: 5.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+  }
+
+  .ps-dice-saves-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+
+  .ps-hit-dice-box, .ps-death-saves-box {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .ps-hd-max {
+    font-size: 5.5pt;
+    color: #444;
+    border-bottom: 1px solid #ccc;
+    width: 100%;
+    text-align: center;
+    padding-bottom: 1px;
+  }
+
+  .ps-hd-val {
+    font-size: 10pt;
+    font-weight: bold;
+    margin-top: 1px;
+  }
+
+  .ps-death-saves-box .ps-ds-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 5.5pt;
+    font-weight: bold;
+    margin: 1px 0;
+  }
+
+  .ps-ds-dots {
+    letter-spacing: 0.5px;
+    font-size: 7.5pt;
+  }
+
+  .ps-hit-dice-box label, .ps-death-saves-box label {
+    font-size: 5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+    margin-top: 2px;
+  }
+
+  .ps-attacks-box-print, .ps-equipment-box-print {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ps-attacks-content-print {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .ps-attacks-table-print {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7pt;
+  }
+
+  .ps-attacks-table-print th {
+    font-size: 5.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: left;
+    border-bottom: 1px solid #000;
+    padding-bottom: 1px;
+  }
+
+  .ps-attacks-table-print td {
+    padding: 2px 0;
+    border-bottom: 1px dashed #eee;
+  }
+
+  .ps-attacks-notes-print {
+    font-size: 6pt;
+    color: #333;
+    margin-top: 3px;
+    line-height: 1.15;
+  }
+
+  .ps-attacks-overflow-text {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1px;
+    margin-bottom: 1px;
+  }
+
+  .ps-equipment-content-print {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ps-coins-col-print {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 28px;
+  }
+
+  .ps-coin-row-print {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .ps-coin-lbl {
+    font-size: 6pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    width: 8px;
+  }
+
+  .ps-coin-val-box {
+    border: 1px solid #000;
+    border-radius: 3px;
+    font-size: 6.5pt;
+    font-weight: bold;
+    text-align: center;
+    flex: 1;
+    padding: 1px 0;
+  }
+
+  .ps-eq-list-print {
+    flex: 1;
+    font-size: 6.5pt;
+    line-height: 1.25;
+    max-height: 140px;
+    overflow: hidden;
+  }
+
+  /* Column 4: Personality & Features */
+  .ps-col-4 {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ps-personality-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .ps-personality-box-print {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 4px;
+    background: #fff;
+  }
+
+  .ps-pers-lbl {
+    font-size: 5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #333;
+    display: block;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1px;
+    margin-bottom: 1px;
+    text-align: center;
+  }
+
+  .ps-pers-content-print {
+    font-size: 6.5pt;
+    line-height: 1.2;
+    min-height: 20px;
+    white-space: pre-wrap;
+  }
+
+  .ps-features-box-print {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ps-features-content-print {
+    font-size: 7pt;
+    line-height: 1.25;
+    white-space: pre-wrap;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* PAGE 2: Backstory, portrait, allies */
+  .ps-body-page2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    height: auto;
+  }
+
+  .ps-page2-left-col, .ps-page2-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ps-portrait-box-print, .ps-backstory-box-print, .ps-allies-box-print, .ps-treasure-box-print, .ps-additional-traits-box-print {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ps-portrait-box-print {
+    height: 160px;
+  }
+
+  .ps-portrait-content-print {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #aaa;
+    border-radius: 4px;
+    background: #fafafa;
+    overflow: hidden;
+  }
+
+  .ps-portrait-img-print {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .ps-portrait-placeholder-print {
+    font-size: 7.5pt;
+    color: #777;
+    font-weight: bold;
+  }
+
+  .ps-backstory-box-print {
+    flex: 1;
+  }
+
+  .ps-backstory-content-print {
+    font-size: 7pt;
+    line-height: 1.3;
+    white-space: pre-wrap;
+  }
+
+  .ps-allies-box-print {
+    height: 120px;
+  }
+
+  .ps-allies-content-print {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .ps-org-symbol-placeholder-print {
+    width: 50px;
+    height: 50px;
+    border: 1px dashed #ccc;
+    font-size: 4pt;
+    color: #888;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+
+  .ps-allies-text-print {
+    flex: 1;
+    font-size: 7pt;
+    line-height: 1.25;
+  }
+
+  .ps-additional-traits-box-print {
+    flex: 1;
+  }
+
+  .ps-treasure-box-print {
+    height: 100px;
+  }
+
+  .ps-treasure-content-print, .ps-additional-traits-content-print {
+    font-size: 7pt;
+    line-height: 1.25;
+    white-space: pre-wrap;
+  }
+
+  /* PAGE 3: Spellcasting Grid style */
+  .ps-spell-header {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr 1fr;
+    gap: 8px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+  }
+
+  .ps-spell-field {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #ccc;
+  }
+
+  .ps-spell-field label {
+    font-size: 5.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #444;
+  }
+
+  .ps-spell-field span {
+    font-size: 8pt;
+    font-weight: bold;
+    min-height: 14px;
+    padding: 1px 0;
+  }
+
+  .ps-spell-grid-print {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    height: auto;
+  }
+
+  .ps-spell-col-print {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ps-spell-section-print {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 5px;
+    background: #fff;
+  }
+
+  .ps-spell-section-title-print {
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    font-weight: bold;
+    border-bottom: 1.5px solid #000;
+    padding-bottom: 1px;
+    margin-bottom: 3px;
+  }
+
+  .ps-spell-slots-print {
+    font-size: 6pt;
+    color: #333;
+  }
+
+  .ps-spell-list-print-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ps-spell-entry-print {
+    font-size: 7pt;
+    padding: 1px 0;
+    border-bottom: 1px dashed #eee;
+  }
+}
