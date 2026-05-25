@@ -31,6 +31,7 @@ const SKILLS_MASTER = [
   { index: 'religion', name: 'Religión' }, { index: 'sleight-of-hand', name: 'Juego de Manos' },
   { index: 'stealth', name: 'Sigilo' }, { index: 'survival', name: 'Supervivencia' }
 ];
+const SKILL_NAME_TO_INDEX = Object.fromEntries(SKILLS_MASTER.map(s => [s.name, s.index]));
 
 const CLASS_SKILL_COUNT = {
   'bárbaro': 2, 'bardo': 3, 'clérigo': 2, 'druida': 2, 'guerrero': 2, 'monje': 2,
@@ -261,7 +262,7 @@ export default function PlayerCreator() {
 
       let bgSkills = [];
       if (selectedBg) {
-        try { bgSkills = JSON.parse(selectedBg.skill_proficiencies || '[]'); } catch {}
+        try { bgSkills = JSON.parse(selectedBg.skill_proficiencies || '[]').map(s => SKILL_NAME_TO_INDEX[s] || s); } catch {}
       }
 
       let saveProfs = [];
