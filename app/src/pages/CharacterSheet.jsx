@@ -410,7 +410,23 @@ export default function CharacterSheet() {
       window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error('Error exportando PDF:', e);
-      alert('Error al exportar el PDF del personaje.');
+      let errorMsg = 'Error al exportar el PDF del personaje.';
+      if (e.response && e.response.data) {
+        try {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const resJson = JSON.parse(reader.result);
+              alert(`Error del Servidor: ${resJson.detail || errorMsg}`);
+            } catch {
+              alert(`Error del Servidor: ${reader.result || errorMsg}`);
+            }
+          };
+          reader.readAsText(e.response.data);
+          return;
+        } catch (_) {}
+      }
+      alert(errorMsg);
     }
   };
 
