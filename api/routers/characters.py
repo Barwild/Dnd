@@ -747,7 +747,28 @@ def export_character_pdf(char_id: int,
                 lines_langs.extend(langs)
         except Exception:
             pass
-    unique_langs = sorted(list(set(lines_langs)))
+            
+    # Traducir los idiomas al español
+    lang_translations = {
+        "common": "Común",
+        "dwarvish": "Enano",
+        "elvish": "Élfico",
+        "giant": "Gigante",
+        "gnomish": "Gnómico",
+        "goblin": "Goblin",
+        "halfling": "Mediano",
+        "orc": "Orco",
+        "abyssal": "Abisal",
+        "celestial": "Celestial",
+        "draconic": "Dracónico",
+        "deep speech": "Habla profunda",
+        "infernal": "Infernal",
+        "primordial": "Primordial",
+        "sylvan": "Silvano",
+        "undercommon": "Infracomún"
+    }
+    translated_langs = [lang_translations.get(l.lower().strip(), l) for l in lines_langs]
+    unique_langs = sorted(list(set(translated_langs)))
 
     class_profs = []
     if cls and cls.proficiencies:
