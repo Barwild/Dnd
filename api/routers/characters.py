@@ -487,24 +487,24 @@ def export_character_pdf(char_id: int,
     expertises = stats.get("expertise", []) or []
     
     skills_map = {
-        'acrobatics': ('ACR', 'DEX', 'Acrobacias'),
-        'animal-handling': ('ANI', 'WIS', 'Trato con Animales'),
-        'arcana': ('ARC', 'INT', 'Arcanos'),
-        'athletics': ('ATH', 'STR', 'Atletismo'),
-        'deception': ('DEC', 'CHA', 'Engaño'),
-        'history': ('HIS', 'INT', 'Historia'),
-        'insight': ('INS', 'WIS', 'Perspicacia'),
-        'intimidation': ('INTI', 'CHA', 'Intimidación'),
-        'investigation': ('INV', 'INT', 'Investigación'),
-        'medicine': ('MED', 'WIS', 'Medicina'),
-        'nature': ('NAT', 'INT', 'Naturaleza'),
-        'perception': ('PER', 'WIS', 'Percepción'),
-        'performance': ('PERF', 'CHA', 'Interpretación'),
-        'persuasion': ('PERSU', 'CHA', 'Persuasión'),
-        'religion': ('REL', 'INT', 'Religión'),
-        'sleight-of-hand': ('SLE', 'DEX', 'Juego de Manos'),
-        'stealth': ('STE', 'DEX', 'Sigilo'),
-        'survival': ('SUR', 'WIS', 'Supervivencia')
+        'acrobatics': ('acroPROF', 'Acrobatics', 'DEX'),
+        'animal-handling': ('anhanPROF', 'AnHan', 'WIS'),
+        'arcana': ('arcanaPROF', 'Arcana', 'INT'),
+        'athletics': ('athPROF', 'Athletics', 'STR'),
+        'deception': ('decepPROF', 'Deception', 'CHA'),
+        'history': ('histPROF', 'History', 'INT'),
+        'insight': ('insightPROF', 'Insight', 'WIS'),
+        'intimidation': ('intimPROF', 'Intimidation', 'CHA'),
+        'investigation': ('investPROF', 'Investigation', 'INT'),
+        'medicine': ('medPROF', 'Medicine', 'WIS'),
+        'nature': ('naturePROF', 'Nature', 'INT'),
+        'perception': ('perPROF', 'Perception', 'WIS'),
+        'performance': ('perfPROF', 'Performance', 'CHA'),
+        'persuasion': ('persPROF', 'Persuasion', 'CHA'),
+        'religion': ('religPROF', 'Religion', 'INT'),
+        'sleight-of-hand': ('sohPROF', 'SleightofHand', 'DEX'),
+        'stealth': ('stealthPROF', 'Stealth', 'DEX'),
+        'survival': ('survPROF', 'Survival', 'WIS')
     }
     
     ac = 10 + dex_mod
@@ -516,120 +516,55 @@ def export_character_pdf(char_id: int,
         pass
         
     fields = {
-        "Name": character.name,
-        "Name0": character.name,
-        "Clase": class_name,
-        "Class0": class_name,
-        "Subclase": subclass_name,
-        "Subclass0": subclass_name,
-        "Species": race_name,
-        "Species0": race_name,
+        # 1. Cabecera e Información General
+        "CharacterName": character.name,
+        "CharacterName 2": character.name,
+        "ClassLevel": f"{class_name}{' (' + subclass_name + ')' if subclass_name else ''} {level}",
         "Background": background_name,
-        "Background0": background_name,
-        "Level": str(level),
-        "Level0": str(level),
+        "PlayerName": current_user.display_name if current_user else "",
+        "Race  ": race_name,
+        "Alignment": stats.get("alignment", ""),
+        "XP": str(stats.get("xp", 0)),
         
-        "STR SCORE": str(str_score),
-        "STR SCORE1": str(str_score),
-        "STR SORE0": str(str_score),
-        "STR SCORE0": str(str_score),
-        "DEX SCORE": str(dex_score),
-        "DEX SCORE1": str(dex_score),
-        "DEX SCORE0": str(dex_score),
-        "CON SCORE": str(con_score),
-        "CON SCORE1": str(con_score),
-        "CON SCORE0": str(con_score),
-        "INT SCORE": str(int_score),
-        "INT SCORE1": str(int_score),
-        "INTR SCORE0": str(int_score),
-        "WIS SCORE": str(wis_score),
-        "WIS SCORE1": str(wis_score),
-        "WIS SCORE0": str(wis_score),
-        "CHA SCORE": str(cha_score),
-        "CHA SCORE1": str(cha_score),
-        "CHA SCORE0": str(cha_score),
+        # 2. Atributos y Modificadores
+        "STRscore": str(str_score),
+        "DEXscore": str(dex_score),
+        "CONscore": str(con_score),
+        "INTscore": str(int_score),
+        "WISscore": str(wis_score),
+        "CHAscore": str(cha_score),
+        "STRbonus": get_mod_str(str_score),
+        "DEXbonus": get_mod_str(dex_score),
+        "CONbonus": get_mod_str(con_score),
+        "INTbonus": get_mod_str(int_score),
+        "WISbonus": get_mod_str(wis_score),
+        "CHAbonus": get_mod_str(cha_score),
         
-        "STR MOD": get_mod_str(str_score),
-        "STR MOD1": get_mod_str(str_score),
-        "SRT MOD0": get_mod_str(str_score),
-        "DEX MOD": get_mod_str(dex_score),
-        "DEX MOD1": get_mod_str(dex_score),
-        "DEX MOD0": get_mod_str(dex_score),
-        "CON MOD": get_mod_str(con_score),
-        "CON MOD1": get_mod_str(con_score),
-        "CON MOD0": get_mod_str(con_score),
-        "INT MOD": get_mod_str(int_score),
-        "INT MOD1": get_mod_str(int_score),
-        "INT MOD0": get_mod_str(int_score),
-        "WIS MOD": get_mod_str(wis_score),
-        "WIS MOD1": get_mod_str(wis_score),
-        "WIS MOD0": get_mod_str(wis_score),
-        "CHA MOD": get_mod_str(cha_score),
-        "CHA MOD1": get_mod_str(cha_score),
-        "CHA MOD0": get_mod_str(cha_score),
+        # 3. Inspiración, Competencia y Percepción Pasiva
+        "Inspiration": "X" if stats.get("inspiration") else "",
+        "ProfBonus": f"+{prof_bonus}",
+        "PWP": str(10 + wis_mod + (prof_bonus * 2 if "perception" in expertises else prof_bonus if "perception" in skill_profs else 0)),
         
-        "Prof Bonus": f"+{prof_bonus}",
-        "Prof Bonus0": f"+{prof_bonus}",
+        # 4. Tiradas de Salvación
+        "STRsave": f"+{str_save}" if str_save >= 0 else str(str_save),
+        "DEXsave": f"+{dex_save}" if dex_save >= 0 else str(dex_save),
+        "CONsave": f"+{con_save}" if con_save >= 0 else str(con_save),
+        "INTsave": f"+{int_save}" if int_save >= 0 else str(int_save),
+        "WISsave": f"+{wis_save}" if wis_save >= 0 else str(wis_save),
+        "CHAsave": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
         
-        "CA": str(ac),
-        "AC0": str(ac),
-        
-        "INIT": get_mod_str(dex_score),
-        "INIT0": get_mod_str(dex_score),
-        
-        "SPEED": str(stats.get("speed", 30)),
-        "SPEED0": str(stats.get("speed", 30)),
-        
-        "Current HP": str(stats.get("currHP", 8)),
-        "Current HP0": str(stats.get("currHP", 8)),
-        "Max HP": str(stats.get("maxHP", 8)),
-        "Max HP0": str(stats.get("maxHP", 8)),
-        
-        "MAX HD": f"d{character.char_class.hit_die if character.char_class else 8}",
-        "MAX HD0": f"d{character.char_class.hit_die if character.char_class else 8}",
-        "Spent HD": str(stats.get("hitDiceUsed", 0)),
-        "Spent HD0": str(stats.get("hitDiceUsed", 0)),
-        
-        "STR SAVE": f"+{str_save}" if str_save >= 0 else str(str_save),
-        "STR SAVE1": f"+{str_save}" if str_save >= 0 else str(str_save),
-        "DEX SAVE": f"+{dex_save}" if dex_save >= 0 else str(dex_save),
-        "DEX SAVE0": f"+{dex_save}" if dex_save >= 0 else str(dex_save),
-        "CON SAVE": f"+{con_save}" if con_save >= 0 else str(con_save),
-        "CON SAVE0": f"+{con_save}" if con_save >= 0 else str(con_save),
-        "INT SAVE": f"+{int_save}" if int_save >= 0 else str(int_save),
-        "INT SAVE1": f"+{int_save}" if int_save >= 0 else str(int_save),
-        "INT SAVE0": f"+{int_save}" if int_save >= 0 else str(int_save),
-        "WIS SAVE": f"+{wis_save}" if wis_save >= 0 else str(wis_save),
-        "WIS SAVE0": f"+{wis_save}" if wis_save >= 0 else str(wis_save),
-        "CHA SAVE": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
-        "CHA SAVE0": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
-        
-        "STR_SAVE": "/Yes" if 'STR' in prof_saves else "/Off",
-        "CB-STRSAVE2": "/Yes" if 'STR' in prof_saves else "/Off",
-        "DEX_SAVE": "/Yes" if 'DEX' in prof_saves else "/Off",
-        "CB-DEXSAVE2": "/Yes" if 'DEX' in prof_saves else "/Off",
-        "CON_SAVE": "/Yes" if 'CON' in prof_saves else "/Off",
-        "CB-CONSAVE2": "/Yes" if 'CON' in prof_saves else "/Off",
-        "INT_SAVE": "/Yes" if 'INT' in prof_saves else "/Off",
-        "CB-INTSAVE2": "/Yes" if 'INT' in prof_saves else "/Off",
-        "WIS_SAVE": "/Yes" if 'WIS' in prof_saves else "/Off",
-        "CB-WISSAVE2": "/Yes" if 'WIS' in prof_saves else "/Off",
-        "CHA_SAVE": "/Yes" if 'CHA' in prof_saves else "/Off",
-        "CB-CHASAVE2": "/Yes" if 'CHA' in prof_saves else "/Off",
+        "STRsavePROF": "/Yes" if 'STR' in prof_saves else "/Off",
+        "DEXsavePROF": "/Yes" if 'DEX' in prof_saves else "/Off",
+        "CONsavePROF": "/Yes" if 'CON' in prof_saves else "/Off",
+        "INTsavePROF": "/Yes" if 'INT' in prof_saves else "/Off",
+        "WISsavePROF": "/Yes" if 'WIS' in prof_saves else "/Off",
+        "CHAsavePROF": "/Yes" if 'CHA' in prof_saves else "/Off",
     }
     
-    # Habilidades ordenadas para mapeo numérico de checkboxes (alfabético en inglés)
-    skills_order = [
-        'acrobatics', 'animal-handling', 'arcana', 'athletics', 'deception',
-        'history', 'insight', 'intimidation', 'investigation', 'medicine',
-        'nature', 'perception', 'performance', 'persuasion', 'religion',
-        'sleight-of-hand', 'stealth', 'survival'
-    ]
-    
-    # Rellenar bonos y competencias de habilidades
-    for skill_name, (prefix, ability, label) in skills_map.items():
-        is_prof = skill_name in skill_profs
-        is_expert = skill_name in expertises
+    # 5. Rellenar bonos y competencias de habilidades (Skills)
+    for skill_key, (chk_field, pdf_field, ability) in skills_map.items():
+        is_prof = skill_key in skill_profs
+        is_expert = skill_key in expertises
         
         ab_score = stats.get(ability, 10)
         ab_mod = get_mod(ab_score)
@@ -637,96 +572,298 @@ def export_character_pdf(char_id: int,
         bonus = ab_mod + (prof_bonus * 2 if is_expert else prof_bonus if is_prof else 0)
         bonus_str = f"+{bonus}" if bonus >= 0 else str(bonus)
         
-        fields[f"{prefix}_BONUS"] = bonus_str
-        fields[f"{skill_name.upper()}"] = bonus_str
-        fields[f"{skill_name.upper()}0"] = bonus_str
-        fields[f"{skill_name.upper().replace('-', ' ')}"] = bonus_str
-        fields[f"{skill_name.upper().replace('-', ' ')}0"] = bonus_str
-        
-        fields[f"{prefix}_PROF1"] = "/Yes" if is_prof else "/Off"
-        fields[f"{prefix}_PROF2"] = "/Yes" if is_expert else "/Off"
-        
-        # Mapeo de checkboxes secundarios CB-SKILLPROF
-        try:
-            num = skills_order.index(skill_name) + 1
-            fields[f"CB-SKILLPROF{num}"] = "/Yes" if is_prof else "/Off"
-            fields[f"CB-SKILLEXP{num}"] = "/Yes" if is_expert else "/Off"
-        except Exception:
-            pass
-        
-    # Inventario
+        fields[pdf_field] = bonus_str
+        fields[chk_field] = "/Yes" if is_prof or is_expert else "/Off"
+
+    # 6. Combate, Iniciativa y HP
+    fields["AC"] = str(ac)
+    fields["Initiative"] = get_mod_str(dex_score)
+    fields["Speed"] = str(stats.get("speed", 30))
+    fields["HPMax"] = str(stats.get("maxHP", 10))
+    fields["HPCurrent"] = str(stats.get("currHP", 10))
+    fields["HPTemp"] = str(stats.get("tempHP", 0))
+    
+    hit_die_type = cls.hit_die if cls else 8
+    fields["HDTotal"] = f"{level}d{hit_die_type}"
+    fields["HD"] = str(level - stats.get("hitDiceUsed", 0))
+    
+    # 7. Armas y Ataques
+    equipped_weapons = []
+    try:
+        eq_list = json.loads(character.equipment) if isinstance(character.equipment, str) else (character.equipment or [])
+        for item in eq_list:
+            if item.get("category") in ['Weapon', 'Arma']:
+                equipped_weapons.append(item)
+    except Exception:
+        pass
+
+    for idx in range(3):
+        wpn_field = "Wpn Name" if idx == 0 else f"Wpn Name {idx+1}"
+        atk_field = "Wpn1 AtkBonus" if idx == 0 else f"Wpn{idx+1} AtkBonus"
+        if idx == 1:
+            atk_field = "Wpn2 AtkBonus  "
+            dmg_field = "Wpn2 Damage  "
+        elif idx == 2:
+            atk_field = "Wpn3 AtkBonus   "
+            dmg_field = "Wpn3 Damage  "
+        else:
+            dmg_field = "Wpn1 Damage"
+
+        if idx < len(equipped_weapons):
+            w = equipped_weapons[idx]
+            w_name = w.get("name", "")
+            props = [p.lower() for p in w.get("properties", [])]
+            is_finesse = "finesse" in props or "sutil" in props
+            is_ranged = w.get("weapon_range") in ["Ranged", "A distancia"]
+            
+            base_stat = "DEX" if is_ranged else ("DEX" if is_finesse and dex_mod > str_mod else "STR")
+            w_atk_mod = get_mod(stats.get(base_stat, 10)) + prof_bonus
+            w_dmg_mod = get_mod(stats.get(base_stat, 10))
+            
+            fields[wpn_field] = w_name
+            fields[atk_field] = f"+{w_atk_mod}" if w_atk_mod >= 0 else str(w_atk_mod)
+            
+            dmg_dice = w.get("damage_dice", "1d4")
+            dmg_type = w.get("damage_type", "")
+            if isinstance(dmg_type, dict):
+                dmg_type = dmg_type.get("name", "")
+            fields[dmg_field] = f"{dmg_dice}{'+' if w_dmg_mod >= 0 else ''}{w_dmg_mod} {dmg_type}"
+        else:
+            fields[wpn_field] = ""
+            fields[atk_field] = ""
+            fields[dmg_field] = ""
+
+    # Notas generales de combate
+    combat_notes = []
+    if len(equipped_weapons) > 3:
+        overflow_weapons = [w.get("name", "") for w in equipped_weapons[3:]]
+        combat_notes.append("Armas adicionales: " + ", ".join(overflow_weapons))
+    fields["AttacksSpellcasting"] = "\n".join(combat_notes)
+
+    # 8. Monedas y Equipamiento
+    coins = stats.get("coins", {}) or {}
+    fields["CP"] = str(coins.get("cp", 0))
+    fields["SP"] = str(coins.get("sp", 0))
+    fields["EP"] = str(coins.get("ep", 0))
+    fields["GP"] = str(coins.get("gp", 0))
+    fields["PP"] = str(coins.get("pp", 0))
+
     try:
         eq_list = json.loads(character.equipment) if isinstance(character.equipment, str) else (character.equipment or [])
         eq_lines = []
         for eq_item in eq_list:
             n_val = eq_item.get("name", "")
-            c_val = eq_item.get("cost", "")
             qty = eq_item.get("quantity", 1)
-            eq_lines.append(f"- {n_val} (x{qty}) {c_val}")
-        fields["EQUIPMENT1"] = "\n".join(eq_lines)
+            eq_lines.append(f"- {n_val} (x{qty})")
+        
+        all_eq_text = "\n".join(eq_lines)
+        if len(eq_lines) > 25:
+            fields["Equipment"] = "\n".join(eq_lines[:25])
+            fields["Equipment 2"] = "\n".join(eq_lines[25:])
+        else:
+            fields["Equipment"] = all_eq_text
+            fields["Equipment 2"] = ""
     except Exception:
         pass
-        
-    # Armas equipadas
-    try:
-        weapons_data = []
-        eq_list = json.loads(character.equipment) if isinstance(character.equipment, str) else (character.equipment or [])
-        for item in eq_list:
-            if item.get("category") in ['Weapon', 'Arma']:
-                weapons_data.append(item)
-        
-        for idx, w in enumerate(weapons_data[:6]):
-            w_name = w.get("name", "")
-            atk_mod = str_mod
-            props = [p.lower() for p in w.get("properties", [])]
-            if "finesse" in props or w.get("weapon_range"):
-                atk_mod = max(str_mod, dex_mod)
-            atk_bonus = atk_mod + prof_bonus
-            atk_bonus_str = f"+{atk_bonus}" if atk_bonus >= 0 else str(atk_bonus)
-            dmg = w.get("damage_dice", "")
-            dmg_type = w.get("damage_type", "")
-            fields[f"WEAPON NAME {idx+1}"] = f"{w_name} ({atk_bonus_str} | {dmg} {dmg_type})"
-    except Exception:
-        pass
-        
-    # Monedas
-    coins = stats.get("coins", {}) or {}
-    fields["COIN1"] = str(coins.get("cp", 0))
-    fields["COIN2"] = str(coins.get("sp", 0))
-    fields["COIN3"] = str(coins.get("ep", 0))
-    fields["COIN4"] = str(coins.get("gp", 0))
-    fields["COIN5"] = str(coins.get("pp", 0))
-    fields["COIN6"] = str(coins.get("cp", 0))
-    fields["COIN7"] = str(coins.get("sp", 0))
-    fields["COIN8"] = str(coins.get("ep", 0))
-    fields["COIN9"] = str(coins.get("gp", 0))
-    fields["COIN10"] = str(coins.get("pp", 0))
-    
-    # Rasgos y notas
-    fields["TRAITS"] = character.notes or ""
-    fields["TRAITS0"] = character.notes or ""
-    
-    # Idiomas y herramientas calculadas
+
+    # Idiomas y Competencias generales
     lines_langs = []
-    if character.race and character.race.languages:
+    if race and race.languages:
         try:
-            langs = json.loads(character.race.languages)
+            langs = json.loads(race.languages)
             if isinstance(langs, list):
                 lines_langs.extend(langs)
         except Exception:
             pass
-    if character.background and character.background.languages:
+    if bg and bg.languages:
         try:
-            langs = json.loads(character.background.languages)
+            langs = json.loads(bg.languages)
             if isinstance(langs, list):
                 lines_langs.extend(langs)
         except Exception:
             pass
     unique_langs = sorted(list(set(lines_langs)))
+
+    class_profs = []
+    if cls and cls.proficiencies:
+        try:
+            parsed = json.loads(cls.proficiencies)
+            if isinstance(parsed, list):
+                class_profs = parsed
+        except Exception:
+            pass
+
+    prof_summary = []
+    if class_profs:
+        prof_summary.append("Competencias de Clase:\n" + ", ".join(class_profs))
     if unique_langs:
-        fields["LANGUAGES"] = ", ".join(unique_langs)
-        fields["LANGUAGES0"] = ", ".join(unique_langs)
+        prof_summary.append("Idiomas:\n" + ", ".join(unique_langs))
+    fields["ProficienciesLang"] = "\n\n".join(prof_summary)
+
+    # 9. Trasfondo y Personalidad
+    fields["PersonalityTraits  "] = character.personality or ""
+    fields["Ideals"] = character.ideals or ""
+    fields["Bonds"] = character.bonds or ""
+    fields["Flaws"] = character.flaws or ""
+
+    # Rasgos y Características especiales
+    features_list = []
+    if race and race.traits:
+        try:
+            r_traits = json.loads(race.traits)
+            if isinstance(r_traits, list):
+                features_list.extend([t.get("name", t) if isinstance(t, dict) else t for t in r_traits])
+        except Exception:
+            pass
+    if background_name:
+        features_list.append(f"Rasgo de Trasfondo ({background_name})")
+    
+    fields["Features and Traits"] = "\n".join(features_list)
+
+    # 10. Página 2: Aspecto físico, Historia, Aliados y Tesoro
+    fields["Age"] = str(stats.get("age", ""))
+    fields["Height"] = str(stats.get("height", ""))
+    fields["Weight"] = str(stats.get("weight", ""))
+    fields["Eyes"] = str(stats.get("eyes", ""))
+    fields["Skin"] = str(stats.get("skin", ""))
+    fields["Hair"] = str(stats.get("hair", ""))
+    
+    fields["Backstory"] = stats.get("backstory") or character.notes or ""
+
+    allies_text = stats.get("allies", "")
+    if len(allies_text) > 500:
+        fields["Allies"] = allies_text[:500]
+        fields["Allies 2"] = allies_text[500:]
+    else:
+        fields["Allies"] = allies_text
+        fields["Allies 2"] = ""
+
+    treasure_text = stats.get("treasure", "")
+    if len(treasure_text) > 500:
+        fields["Treasure"] = treasure_text[:500]
+        fields["Treasure 2"] = treasure_text[500:]
+    else:
+        fields["Treasure"] = treasure_text
+        fields["Treasure 2"] = ""
+
+    add_traits = stats.get("additionalTraits", "")
+    if len(add_traits) > 500:
+        fields["Feat+Traits"] = add_traits[:500]
+        fields["Feat+Traits 2"] = add_traits[500:]
+    else:
+        fields["Feat+Traits"] = add_traits
+        fields["Feat+Traits 2"] = ""
+
+    # 11. Página 3: Conjuros y Spellcasting
+    is_caster = False
+    spell_stat = "INT"
+    if cn_lower in ['mago', 'artífice']:
+        is_caster = True
+        spell_stat = "INT"
+    elif cn_lower in ['clérigo', 'druida', 'explorador']:
+        is_caster = True
+        spell_stat = "WIS"
+    elif cn_lower in ['bardo', 'hechicero', 'brujo', 'paladín']:
+        is_caster = True
+        spell_stat = "CHA"
+
+    if is_caster:
+        fields["Spellcasting Class 2"] = class_name
+        fields["SpellcastingAbility 2"] = spell_stat
         
+        stat_mod_val = get_mod(stats.get(spell_stat, 10))
+        fields["SpellSaveDC  2"] = str(8 + prof_bonus + stat_mod_val)
+        fields["SpellAtkBonus 2"] = f"+{prof_bonus + stat_mod_val}"
+
+        # Espacios de conjuro
+        spell_slots = stats.get("spellSlots", {}) or {}
+        # SlotsTotal 19 ➔ Nivel 1, SlotsTotal 27 ➔ Nivel 9
+        for lvl in range(1, 10):
+            slot_data = spell_slots.get(str(lvl), {}) or {}
+            max_slots = slot_data.get("max", 0)
+            used_slots = slot_data.get("used", 0)
+            rem_slots = max(0, max_slots - used_slots)
+            
+            fields[f"SlotsTotal {18+lvl}"] = str(max_slots) if max_slots > 0 else ""
+            fields[f"SlotsRemaining {18+lvl}"] = str(rem_slots) if max_slots > 0 else ""
+    else:
+        fields["Spellcasting Class 2"] = ""
+        fields["SpellcastingAbility 2"] = ""
+        fields["SpellSaveDC  2"] = ""
+        fields["SpellAtkBonus 2"] = ""
+        for lvl in range(1, 10):
+            fields[f"SlotsTotal {18+lvl}"] = ""
+            fields[f"SlotsRemaining {18+lvl}"] = ""
+
+    # Conjuros conocidos cargados desde base de datos
+    known_spells_list = []
+    if character.spell_list:
+        try:
+            spell_indices = json.loads(character.spell_list) if isinstance(character.spell_list, str) else character.spell_list
+            if spell_indices:
+                db_spells = db.query(models.Spell).filter(models.Spell.index.in_(spell_indices)).all()
+                known_spells_list = db_spells
+        except Exception:
+            pass
+
+    # Agrupar conjuros por nivel (0 = Truco, 1 a 9)
+    spells_by_level = {l: [] for l in range(10)}
+    for sp in known_spells_list:
+        if sp.level is not None and 0 <= sp.level <= 9:
+            spells_by_level[sp.level].append(sp.name)
+
+    # Rellenar listas de conjuros en el PDF secuencialmente
+    # Rangos de campos:
+    # Nivel 0 (Trucos): Spells 1014 a 1022 (9 campos)
+    for i in range(9):
+        name_list = spells_by_level[0]
+        fields[f"Spells {1014+i}"] = name_list[i] if i < len(name_list) else ""
+        
+    # Nivel 1: Spells 1023 a 1033 (11 campos)
+    for i in range(11):
+        name_list = spells_by_level[1]
+        fields[f"Spells {1023+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 2: Spells 1034 a 1046 (13 campos)
+    for i in range(13):
+        name_list = spells_by_level[2]
+        fields[f"Spells {1034+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 3: Spells 1047 a 1059 (13 campos)
+    for i in range(13):
+        name_list = spells_by_level[3]
+        fields[f"Spells {1047+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 4: Spells 1060 a 1072 (13 campos)
+    for i in range(13):
+        name_list = spells_by_level[4]
+        fields[f"Spells {1060+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 5: Spells 1073 a 1081 (9 campos)
+    for i in range(9):
+        name_list = spells_by_level[5]
+        fields[f"Spells {1073+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 6: Spells 1082 a 1090 (9 campos)
+    for i in range(9):
+        name_list = spells_by_level[6]
+        fields[f"Spells {1082+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 7: Spells 1091 a 1099 (9 campos)
+    for i in range(9):
+        name_list = spells_by_level[7]
+        fields[f"Spells {1091+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 8: Spells 10100 a 10104 (5 campos)
+    for i in range(5):
+        name_list = spells_by_level[8]
+        fields[f"Spells {10100+i}"] = name_list[i] if i < len(name_list) else ""
+
+    # Nivel 9: Spells 10105 a 101013 (9 campos)
+    for i in range(9):
+        name_list = spells_by_level[9]
+        fields[f"Spells {10105+i}"] = name_list[i] if i < len(name_list) else ""
+
     # 5. Cargar plantilla PDF, rellenar y enviar
     router_dir = os.path.dirname(os.path.abspath(__file__))
     api_dir = os.path.dirname(router_dir)
