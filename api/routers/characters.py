@@ -419,10 +419,15 @@ def export_character_pdf(char_id: int,
         except Exception:
             pass
             
-    class_name = character.char_class.name if character.char_class else ""
-    race_name = character.race.name if character.race else ""
-    subclass_name = character.subclass.name if character.subclass else ""
-    background_name = character.background.name if character.background else ""
+    cls = db.query(models.Class).filter(models.Class.id == character.class_id).first()
+    race = db.query(models.Race).filter(models.Race.id == character.race_id).first()
+    subclass = db.query(models.Subclass).filter(models.Subclass.id == character.subclass_id).first() if character.subclass_id else None
+    bg = db.query(models.Background).filter(models.Background.id == character.background_id).first() if character.background_id else None
+
+    class_name = cls.name if cls else ""
+    race_name = race.name if race else ""
+    subclass_name = subclass.name if subclass else ""
+    background_name = bg.name if bg else ""
     
     # Atributos principales
     str_score = stats.get("STR", 10)
@@ -599,19 +604,27 @@ def export_character_pdf(char_id: int,
         "CHA SAVE": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
         "CHA SAVE0": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
         
-        "STR_SAVE": "/On" if 'STR' in prof_saves else "/Off",
-        "CB-STRSAVE2": "/On" if 'STR' in prof_saves else "/Off",
-        "DEX_SAVE": "/On" if 'DEX' in prof_saves else "/Off",
-        "CB-DEXSAVE2": "/On" if 'DEX' in prof_saves else "/Off",
-        "CON_SAVE": "/On" if 'CON' in prof_saves else "/Off",
-        "CB-CONSAVE2": "/On" if 'CON' in prof_saves else "/Off",
-        "INT_SAVE": "/On" if 'INT' in prof_saves else "/Off",
-        "CB-INTSAVE2": "/On" if 'INT' in prof_saves else "/Off",
-        "WIS_SAVE": "/On" if 'WIS' in prof_saves else "/Off",
-        "CB-WISSAVE2": "/On" if 'WIS' in prof_saves else "/Off",
-        "CHA_SAVE": "/On" if 'CHA' in prof_saves else "/Off",
-        "CB-CHASAVE2": "/On" if 'CHA' in prof_saves else "/Off",
+        "STR_SAVE": "/Yes" if 'STR' in prof_saves else "/Off",
+        "CB-STRSAVE2": "/Yes" if 'STR' in prof_saves else "/Off",
+        "DEX_SAVE": "/Yes" if 'DEX' in prof_saves else "/Off",
+        "CB-DEXSAVE2": "/Yes" if 'DEX' in prof_saves else "/Off",
+        "CON_SAVE": "/Yes" if 'CON' in prof_saves else "/Off",
+        "CB-CONSAVE2": "/Yes" if 'CON' in prof_saves else "/Off",
+        "INT_SAVE": "/Yes" if 'INT' in prof_saves else "/Off",
+        "CB-INTSAVE2": "/Yes" if 'INT' in prof_saves else "/Off",
+        "WIS_SAVE": "/Yes" if 'WIS' in prof_saves else "/Off",
+        "CB-WISSAVE2": "/Yes" if 'WIS' in prof_saves else "/Off",
+        "CHA_SAVE": "/Yes" if 'CHA' in prof_saves else "/Off",
+        "CB-CHASAVE2": "/Yes" if 'CHA' in prof_saves else "/Off",
     }
+    
+    # Habilidades ordenadas para mapeo numérico de checkboxes (alfabético en inglés)
+    skills_order = [
+        'acrobatics', 'animal-handling', 'arcana', 'athletics', 'deception',
+        'history', 'insight', 'intimidation', 'investigation', 'medicine',
+        'nature', 'perception', 'performance', 'persuasion', 'religion',
+        'sleight-of-hand', 'stealth', 'survival'
+    ]
     
     # Rellenar bonos y competencias de habilidades
     for skill_name, (prefix, ability, label) in skills_map.items():
@@ -627,9 +640,19 @@ def export_character_pdf(char_id: int,
         fields[f"{prefix}_BONUS"] = bonus_str
         fields[f"{skill_name.upper()}"] = bonus_str
         fields[f"{skill_name.upper()}0"] = bonus_str
+        fields[f"{skill_name.upper().replace('-', ' ')}"] = bonus_str
+        fields[f"{skill_name.upper().replace('-', ' ')}0"] = bonus_str
         
-        fields[f"{prefix}_PROF1"] = "/On" if is_prof else "/Off"
-        fields[f"{prefix}_PROF2"] = "/On" if is_expert else "/Off"
+        fields[f"{prefix}_PROF1"] = "/Yes" if is_prof else "/Off"
+        fields[f"{prefix}_PROF2"] = "/Yes" if is_expert else "/Off"
+        
+        # Mapeo de checkboxes secundarios CB-SKILLPROF
+        try:
+            num = skills_order.index(skill_name) + 1
+            fields[f"CB-SKILLPROF{num}"] = "/Yes" if is_prof else "/Off"
+            fields[f"CB-SKILLEXP{num}"] = "/Yes" if is_expert else "/Off"
+        except Exception:
+            pass
         
     # Inventario
     try:
