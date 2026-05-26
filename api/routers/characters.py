@@ -367,3 +367,351 @@ def get_character_armor(character_id: int, db: Session = Depends(get_db)):
         } for armor in armors ]
     
     return []
+
+
+@router.get("/{char_id}/export-pdf")
+def export_character_pdf(char_id: int, db: Session = Depends(get_db),
+                         current_user: models.User = Depends(get_current_user)):
+    """Exportar ficha de personaje rellenando la plantilla PDF."""
+    from fastapi.responses import StreamingResponse
+    import io
+    import pypdf
+    import os
+    
+    # 1. Obtener personaje de la base de datos
+    character = db.query(models.Character).filter(models.Character.id == char_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+        
+    # Validar permisos
+    is_owner = character.user_id == current_user.id
+    is_dm = False
+    if character.campaign_id:
+        campaign = db.query(models.Campaign).filter(models.Campaign.id == character.campaign_id).first()
+        is_dm = campaign and campaign.dm_user_id == current_user.id
+        
+    if not is_owner and not is_dm:
+        raise HTTPException(status_code=403, detail="No tienes permiso para exportar este personaje")
+        
+    # 2. Extraer stats y compendio
+    stats = {}
+    if character.stats:
+        try:
+            stats = json.loads(character.stats) if isinstance(character.stats, str) else character.stats
+        except Exception:
+            pass
+            
+    class_name = character.char_class.name if character.char_class else ""
+    race_name = character.race.name if character.race else ""
+    subclass_name = character.subclass.name if character.subclass else ""
+    background_name = character.background.name if character.background else ""
+    
+    # Atributos principales
+    str_score = stats.get("STR", 10)
+    dex_score = stats.get("DEX", 10)
+    con_score = stats.get("CON", 10)
+    int_score = stats.get("INT", 10)
+    wis_score = stats.get("WIS", 10)
+    cha_score = stats.get("CHA", 10)
+    
+    def get_mod(score):
+        return (score - 10) // 2
+        
+    def get_mod_str(score):
+        m = get_mod(score)
+        return f"+{m}" if m >= 0 else str(m)
+        
+    str_mod = get_mod(str_score)
+    dex_mod = get_mod(dex_score)
+    con_mod = get_mod(con_score)
+    int_mod = get_mod(int_score)
+    wis_mod = get_mod(wis_score)
+    cha_mod = get_mod(cha_score)
+    
+    # Nivel y bono de competencia
+    level = character.level or 1
+    prof_bonus = (level - 1) // 4 + 2
+    
+    # Determinar salvaciones competentes
+    prof_saves = set()
+    cn_lower = class_name.lower().strip()
+    if cn_lower == 'guerrero' or cn_lower == 'bárbaro':
+        prof_saves.update(['STR', 'CON'])
+    elif cn_lower == 'monje' or cn_lower == 'explorador':
+        prof_saves.update(['STR', 'DEX'])
+    elif cn_lower == 'mago' or cn_lower == 'druida':
+        prof_saves.update(['INT', 'WIS'])
+    elif cn_lower == 'artífice':
+        prof_saves.update(['CON', 'INT'])
+    elif cn_lower in ['clérigo', 'paladín', 'brujo']:
+        prof_saves.update(['WIS', 'CHA'])
+    elif cn_lower == 'pícaro':
+        prof_saves.update(['DEX', 'INT'])
+    elif cn_lower == 'bardo':
+        prof_saves.update(['DEX', 'CHA'])
+    elif cn_lower == 'hechicero':
+        prof_saves.update(['CON', 'CHA'])
+        
+    str_save = str_mod + (prof_bonus if 'STR' in prof_saves else 0)
+    dex_save = dex_mod + (prof_bonus if 'DEX' in prof_saves else 0)
+    con_save = con_mod + (prof_bonus if 'CON' in prof_saves else 0)
+    int_save = int_mod + (prof_bonus if 'INT' in prof_saves else 0)
+    wis_save = wis_mod + (prof_bonus if 'WIS' in prof_saves else 0)
+    cha_save = cha_mod + (prof_bonus if 'CHA' in prof_saves else 0)
+    
+    # Habilidades
+    skill_profs = stats.get("skillProficiencies", []) or []
+    expertises = stats.get("expertise", []) or []
+    
+    skills_map = {
+        'acrobatics': ('ACR', 'DEX', 'Acrobacias'),
+        'animal-handling': ('ANI', 'WIS', 'Trato con Animales'),
+        'arcana': ('ARC', 'INT', 'Arcanos'),
+        'athletics': ('ATH', 'STR', 'Atletismo'),
+        'deception': ('DEC', 'CHA', 'Engaño'),
+        'history': ('HIS', 'INT', 'Historia'),
+        'insight': ('INS', 'WIS', 'Perspicacia'),
+        'intimidation': ('INTI', 'CHA', 'Intimidación'),
+        'investigation': ('INV', 'INT', 'Investigación'),
+        'medicine': ('MED', 'WIS', 'Medicina'),
+        'nature': ('NAT', 'INT', 'Naturaleza'),
+        'perception': ('PER', 'WIS', 'Percepción'),
+        'performance': ('PERF', 'CHA', 'Interpretación'),
+        'persuasion': ('PERSU', 'CHA', 'Persuasión'),
+        'religion': ('REL', 'INT', 'Religión'),
+        'sleight-of-hand': ('SLE', 'DEX', 'Juego de Manos'),
+        'stealth': ('STE', 'DEX', 'Sigilo'),
+        'survival': ('SUR', 'WIS', 'Supervivencia')
+    }
+    
+    ac = 10 + dex_mod
+    try:
+        if character.calculated_stats:
+            calc = json.loads(character.calculated_stats)
+            ac = calc.get("ac", ac)
+    except Exception:
+        pass
+        
+    fields = {
+        "Name": character.name,
+        "Name0": character.name,
+        "Clase": class_name,
+        "Class0": class_name,
+        "Subclase": subclass_name,
+        "Subclass0": subclass_name,
+        "Species": race_name,
+        "Species0": race_name,
+        "Background": background_name,
+        "Background0": background_name,
+        "Level": str(level),
+        "Level0": str(level),
+        
+        "STR SCORE": str(str_score),
+        "STR SCORE1": str(str_score),
+        "STR SORE0": str(str_score),
+        "STR SCORE0": str(str_score),
+        "DEX SCORE": str(dex_score),
+        "DEX SCORE1": str(dex_score),
+        "DEX SCORE0": str(dex_score),
+        "CON SCORE": str(con_score),
+        "CON SCORE1": str(con_score),
+        "CON SCORE0": str(con_score),
+        "INT SCORE": str(int_score),
+        "INT SCORE1": str(int_score),
+        "INTR SCORE0": str(int_score),
+        "WIS SCORE": str(wis_score),
+        "WIS SCORE1": str(wis_score),
+        "WIS SCORE0": str(wis_score),
+        "CHA SCORE": str(cha_score),
+        "CHA SCORE1": str(cha_score),
+        "CHA SCORE0": str(cha_score),
+        
+        "STR MOD": get_mod_str(str_score),
+        "STR MOD1": get_mod_str(str_score),
+        "SRT MOD0": get_mod_str(str_score),
+        "DEX MOD": get_mod_str(dex_score),
+        "DEX MOD1": get_mod_str(dex_score),
+        "DEX MOD0": get_mod_str(dex_score),
+        "CON MOD": get_mod_str(con_score),
+        "CON MOD1": get_mod_str(con_score),
+        "CON MOD0": get_mod_str(con_score),
+        "INT MOD": get_mod_str(int_score),
+        "INT MOD1": get_mod_str(int_score),
+        "INT MOD0": get_mod_str(int_score),
+        "WIS MOD": get_mod_str(wis_score),
+        "WIS MOD1": get_mod_str(wis_score),
+        "WIS MOD0": get_mod_str(wis_score),
+        "CHA MOD": get_mod_str(cha_score),
+        "CHA MOD1": get_mod_str(cha_score),
+        "CHA MOD0": get_mod_str(cha_score),
+        
+        "Prof Bonus": f"+{prof_bonus}",
+        "Prof Bonus0": f"+{prof_bonus}",
+        
+        "CA": str(ac),
+        "AC0": str(ac),
+        
+        "INIT": get_mod_str(dex_score),
+        "INIT0": get_mod_str(dex_score),
+        
+        "SPEED": str(stats.get("speed", 30)),
+        "SPEED0": str(stats.get("speed", 30)),
+        
+        "Current HP": str(stats.get("currHP", 8)),
+        "Current HP0": str(stats.get("currHP", 8)),
+        "Max HP": str(stats.get("maxHP", 8)),
+        "Max HP0": str(stats.get("maxHP", 8)),
+        
+        "MAX HD": f"d{character.char_class.hit_die if character.char_class else 8}",
+        "MAX HD0": f"d{character.char_class.hit_die if character.char_class else 8}",
+        "Spent HD": str(stats.get("hitDiceUsed", 0)),
+        "Spent HD0": str(stats.get("hitDiceUsed", 0)),
+        
+        "STR SAVE": f"+{str_save}" if str_save >= 0 else str(str_save),
+        "STR SAVE1": f"+{str_save}" if str_save >= 0 else str(str_save),
+        "DEX SAVE": f"+{dex_save}" if dex_save >= 0 else str(dex_save),
+        "DEX SAVE0": f"+{dex_save}" if dex_save >= 0 else str(dex_save),
+        "CON SAVE": f"+{con_save}" if con_save >= 0 else str(con_save),
+        "CON SAVE0": f"+{con_save}" if con_save >= 0 else str(con_save),
+        "INT SAVE": f"+{int_save}" if int_save >= 0 else str(int_save),
+        "INT SAVE1": f"+{int_save}" if int_save >= 0 else str(int_save),
+        "INT SAVE0": f"+{int_save}" if int_save >= 0 else str(int_save),
+        "WIS SAVE": f"+{wis_save}" if wis_save >= 0 else str(wis_save),
+        "WIS SAVE0": f"+{wis_save}" if wis_save >= 0 else str(wis_save),
+        "CHA SAVE": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
+        "CHA SAVE0": f"+{cha_save}" if cha_save >= 0 else str(cha_save),
+        
+        "STR_SAVE": "/On" if 'STR' in prof_saves else "/Off",
+        "CB-STRSAVE2": "/On" if 'STR' in prof_saves else "/Off",
+        "DEX_SAVE": "/On" if 'DEX' in prof_saves else "/Off",
+        "CB-DEXSAVE2": "/On" if 'DEX' in prof_saves else "/Off",
+        "CON_SAVE": "/On" if 'CON' in prof_saves else "/Off",
+        "CB-CONSAVE2": "/On" if 'CON' in prof_saves else "/Off",
+        "INT_SAVE": "/On" if 'INT' in prof_saves else "/Off",
+        "CB-INTSAVE2": "/On" if 'INT' in prof_saves else "/Off",
+        "WIS_SAVE": "/On" if 'WIS' in prof_saves else "/Off",
+        "CB-WISSAVE2": "/On" if 'WIS' in prof_saves else "/Off",
+        "CHA_SAVE": "/On" if 'CHA' in prof_saves else "/Off",
+        "CB-CHASAVE2": "/On" if 'CHA' in prof_saves else "/Off",
+    }
+    
+    # Rellenar bonos y competencias de habilidades
+    for skill_name, (prefix, ability, label) in skills_map.items():
+        is_prof = skill_name in skill_profs
+        is_expert = skill_name in expertises
+        
+        ab_score = stats.get(ability, 10)
+        ab_mod = get_mod(ab_score)
+        
+        bonus = ab_mod + (prof_bonus * 2 if is_expert else prof_bonus if is_prof else 0)
+        bonus_str = f"+{bonus}" if bonus >= 0 else str(bonus)
+        
+        fields[f"{prefix}_BONUS"] = bonus_str
+        fields[f"{skill_name.upper()}"] = bonus_str
+        fields[f"{skill_name.upper()}0"] = bonus_str
+        
+        fields[f"{prefix}_PROF1"] = "/On" if is_prof else "/Off"
+        fields[f"{prefix}_PROF2"] = "/On" if is_expert else "/Off"
+        
+    # Inventario
+    try:
+        eq_list = json.loads(character.equipment) if isinstance(character.equipment, str) else (character.equipment or [])
+        eq_lines = []
+        for eq_item in eq_list:
+            n_val = eq_item.get("name", "")
+            c_val = eq_item.get("cost", "")
+            qty = eq_item.get("quantity", 1)
+            eq_lines.append(f"- {n_val} (x{qty}) {c_val}")
+        fields["EQUIPMENT1"] = "\n".join(eq_lines)
+    except Exception:
+        pass
+        
+    # Armas equipadas
+    try:
+        weapons_data = []
+        eq_list = json.loads(character.equipment) if isinstance(character.equipment, str) else (character.equipment or [])
+        for item in eq_list:
+            if item.get("category") in ['Weapon', 'Arma']:
+                weapons_data.append(item)
+        
+        for idx, w in enumerate(weapons_data[:6]):
+            w_name = w.get("name", "")
+            atk_mod = str_mod
+            props = [p.lower() for p in w.get("properties", [])]
+            if "finesse" in props or w.get("weapon_range"):
+                atk_mod = max(str_mod, dex_mod)
+            atk_bonus = atk_mod + prof_bonus
+            atk_bonus_str = f"+{atk_bonus}" if atk_bonus >= 0 else str(atk_bonus)
+            dmg = w.get("damage_dice", "")
+            dmg_type = w.get("damage_type", "")
+            fields[f"WEAPON NAME {idx+1}"] = f"{w_name} ({atk_bonus_str} | {dmg} {dmg_type})"
+    except Exception:
+        pass
+        
+    # Monedas
+    coins = stats.get("coins", {}) or {}
+    fields["COIN1"] = str(coins.get("cp", 0))
+    fields["COIN2"] = str(coins.get("sp", 0))
+    fields["COIN3"] = str(coins.get("ep", 0))
+    fields["COIN4"] = str(coins.get("gp", 0))
+    fields["COIN5"] = str(coins.get("pp", 0))
+    fields["COIN6"] = str(coins.get("cp", 0))
+    fields["COIN7"] = str(coins.get("sp", 0))
+    fields["COIN8"] = str(coins.get("ep", 0))
+    fields["COIN9"] = str(coins.get("gp", 0))
+    fields["COIN10"] = str(coins.get("pp", 0))
+    
+    # Rasgos y notas
+    fields["TRAITS"] = character.notes or ""
+    fields["TRAITS0"] = character.notes or ""
+    
+    # Idiomas y herramientas calculadas
+    lines_langs = []
+    if character.race and character.race.languages:
+        try:
+            langs = json.loads(character.race.languages)
+            if isinstance(langs, list):
+                lines_langs.extend(langs)
+        except Exception:
+            pass
+    if character.background and character.background.languages:
+        try:
+            langs = json.loads(character.background.languages)
+            if isinstance(langs, list):
+                lines_langs.extend(langs)
+        except Exception:
+            pass
+    unique_langs = sorted(list(set(lines_langs)))
+    if unique_langs:
+        fields["LANGUAGES"] = ", ".join(unique_langs)
+        fields["LANGUAGES0"] = ", ".join(unique_langs)
+        
+    # 5. Cargar plantilla PDF, rellenar y enviar
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    pdf_path = os.path.join(base_dir, "static", "images", "Plantilla.pdf")
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=500, detail="Plantilla PDF no encontrada en el servidor.")
+        
+    try:
+        reader = pypdf.PdfReader(pdf_path)
+        writer = pypdf.PdfWriter()
+        writer.append(reader)
+        
+        for page in writer.pages:
+            writer.update_page_form_field_values(page, fields)
+            
+        out_buf = io.BytesIO()
+        writer.write(out_buf)
+        out_buf.seek(0)
+        
+        filename = f"{character.name.replace(' ', '_')}_hoja.pdf"
+        return StreamingResponse(
+            out_buf,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al rellenar el PDF: {e}")

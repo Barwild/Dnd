@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DiceRollingOverlay from '../components/DiceRollingOverlay';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds } from '../api';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds, exportCharacterPdf } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus, Printer } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -393,6 +393,25 @@ export default function CharacterSheet() {
       notes: character.notes
     });
     setSaving(false);
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const res = await exportCharacterPdf(id);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `${character?.name || 'personaje'}_hoja.pdf`.replace(/\s+/g, '_');
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Error exportando PDF:', e);
+      alert('Error al exportar el PDF del personaje.');
+    }
   };
 
   const mod = (val) => Math.floor(((val || 10) - 10) / 2);
@@ -797,8 +816,9 @@ export default function CharacterSheet() {
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/skills`)}><Target size={16} /> Habilidades</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/spells`)}><BookOpen size={16} /> Grimorio</button>
           <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/character/${id}/inventory`)}><Shield size={16} /> Inventario</button>
+          <button className="btn btn-secondary btn-sm" onClick={handleExportPdf}><Printer size={16} /> Exportar Plantilla PDF</button>
           <button className="btn btn-gold btn-sm" onClick={save} disabled={saving}><Save size={16} /> {saving ? 'Guardando...' : 'Guardar'}</button>
-          <button className="btn btn-ghost btn-sm print-trigger" onClick={() => window.print()}><Printer size={16} /> PDF</button>
+          <button className="btn btn-ghost btn-sm print-trigger" onClick={() => window.print()}><Printer size={16} /> PDF Navegador</button>
         </div>
       </div>
 
