@@ -773,17 +773,50 @@ def export_character_pdf(char_id: int,
     fields["Bonds"] = character.bonds or ""
     fields["Flaws"] = character.flaws or ""
 
-    # Rasgos y Características especiales
+    # Rasgos y Características especiales (Traducidos al español)
+    trait_translations = {
+        # Dracónido / Dragonborn
+        "draconic ancestry": "Ascendencia Dracónica",
+        "breath weapon": "Arma de Aliento",
+        "damage resistance": "Resistencia al Daño",
+        # Elfo / Elf
+        "darkvision": "Visión en la Oscuridad",
+        "keen senses": "Sentidos Aguzados",
+        "fey ancestry": "Linaje Feérico",
+        "trance": "Trance",
+        # Enano / Dwarf
+        "dwarven resilience": "Resiliencia Enana",
+        "dwarven combat training": "Entrenamiento de Combate Enano",
+        "tool proficiency": "Competencia con Herramientas",
+        "stonecunning": "Afinidad con la Piedra",
+        # Mediano / Halfling
+        "lucky": "Afortunado",
+        "brave": "Valiente",
+        "halfling nimbleness": "Agilidad Mediana",
+        # Trasfondos / Backgrounds
+        "charlatan": "Charlatán",
+        "acolyte": "Acólito",
+        "soldier": "Soldado",
+        "criminal": "Criminal",
+        "folk hero": "Héroe del Pueblo",
+        "noble": "Noble",
+        "sage": "Sabio"
+    }
+
     features_list = []
     if race and race.traits:
         try:
             r_traits = json.loads(race.traits)
             if isinstance(r_traits, list):
-                features_list.extend([t.get("name", t) if isinstance(t, dict) else t for t in r_traits])
+                for t in r_traits:
+                    t_name = t.get("name", t) if isinstance(t, dict) else t
+                    t_name_lower = t_name.lower().strip()
+                    features_list.append(trait_translations.get(t_name_lower, t_name))
         except Exception:
             pass
     if background_name:
-        features_list.append(f"Rasgo de Trasfondo ({background_name})")
+        bg_translated = trait_translations.get(background_name.lower().strip(), background_name)
+        features_list.append(f"Rasgo de Trasfondo ({bg_translated})")
     
     fields["Features and Traits"] = "\n".join(features_list)
 
