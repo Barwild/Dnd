@@ -754,7 +754,37 @@ def export_character_pdf(char_id: int,
         try:
             parsed = json.loads(cls.proficiencies)
             if isinstance(parsed, list):
-                class_profs = parsed
+                # Traducir competencias de clase al español
+                prof_translations = {
+                    "light armor": "Armadura ligera",
+                    "medium armor": "Armadura media",
+                    "heavy armor": "Armadura pesada",
+                    "shields": "Escudos",
+                    "simple weapons": "Armas simples",
+                    "martial weapons": "Armas marciales",
+                    "saving throws": "Tiradas de salvación",
+                    "saving throw": "Tiradas de salvación",
+                    "saving throw: dex": "Salvar Destreza",
+                    "saving throw: cha": "Salvar Carisma",
+                    "saving throw: str": "Salvar Fuerza",
+                    "saving throw: con": "Salvar Constitución",
+                    "saving throw: int": "Salvar Inteligencia",
+                    "saving throw: wis": "Salvar Sabiduría",
+                    "longswords": "Espadas largas",
+                    "rapiers": "Estoques",
+                    "shortswords": "Espadas cortas",
+                    "hand crossbows": "Ballestas de mano",
+                    "daggers": "Dagas",
+                    "darts": "Dardos",
+                    "slings": "Hondas",
+                    "quarterstaffs": "Bastones",
+                    "light crossbows": "Ballestas ligeras"
+                }
+                translated_profs = []
+                for p in parsed:
+                    p_clean = p.lower().strip()
+                    translated_profs.append(prof_translations.get(p_clean, p))
+                class_profs = translated_profs
         except Exception:
             pass
 
