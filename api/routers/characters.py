@@ -515,6 +515,38 @@ def export_character_pdf(char_id: int,
     except Exception:
         pass
         
+    # Traductores de texto (Inglés -> Español) para evitar textos en inglés en el PDF
+    alignment_translations = {
+        "chaotic good": "Caótico Bueno",
+        "chaotic neutral": "Caótico Neutral",
+        "chaotic evil": "Caótico Malvado",
+        "lawful good": "Legal Bueno",
+        "lawful neutral": "Legal Neutral",
+        "lawful evil": "Legal Malvado",
+        "neutral good": "Neutral Bueno",
+        "neutral neutral": "Neutral Puro",
+        "neutral": "Neutral Puro",
+        "neutral evil": "Neutral Malvado",
+    }
+    damage_translations = {
+        "slashing": "Cortante",
+        "piercing": "Perforante",
+        "bludgeoning": "Contundente",
+        "acid": "Ácido",
+        "cold": "Frío",
+        "fire": "Fuego",
+        "force": "Fuerza",
+        "lightning": "Relámpago",
+        "necrotic": "Necrótico",
+        "poison": "Veneno",
+        "psychic": "Psíquico",
+        "radiant": "Radiante",
+        "thunder": "Trueno",
+    }
+
+    align_val = stats.get("alignment", "").lower().strip()
+    alignment_es = alignment_translations.get(align_val, stats.get("alignment", ""))
+
     fields = {
         # 1. Cabecera e Información General
         "CharacterName": character.name,
@@ -523,7 +555,7 @@ def export_character_pdf(char_id: int,
         "Background": background_name,
         "PlayerName": current_user.display_name if current_user else "",
         "Race  ": race_name,
-        "Alignment": stats.get("alignment", ""),
+        "Alignment": alignment_es,
         "XP": str(stats.get("xp", 0)),
         
         # 2. Atributos y Modificadores
@@ -612,22 +644,55 @@ def export_character_pdf(char_id: int,
         if idx < len(equipped_weapons):
             w = equipped_weapons[idx]
             w_name = w.get("name", "")
-            props = [p.lower() for p in w.get("properties", [])]
+            props = [p.get("name", "").lower() if isinstance(p, dict) else str(p).lower() for p in w.get("properties", [])]
             is_finesse = "finesse" in props or "sutil" in props
-            is_ranged = w.get("weapon_range") in ["Ranged", "A distancia"]
+            
+            # Traducir propiedades del arma
+            prop_translations = {
+                "ammunition": "Munición",
+                "finesse": "Sutil",
+                "heavy": "Pesada",
+                "light": "Ligera",
+                "loading": "Recarga",
+                "range": "A distancia",
+                "reach": "Alcance",
+                "special": "Especial",
+                "thrown": "Arrojadiza",
+                "two-handed": "A dos manos",
+                "versatile": "Versátil"
+            }
+            props_es = [prop_translations.get(p.strip(), p.capitalize()) for p in props]
+            
+            # Traducir rango y propiedades para la descripción o notas si procede
+            w_range = w.get("weapon_range", "Melee")
+            if w_range == "Ranged":
+                w_range_es = "A distancia"
+            elif w_range == "Melee":
+                w_range_es = "Cuerpo a cuerpo"
+            else:
+                w_range_es = w_range
+                
+            is_ranged = w_range in ["Ranged", "A distancia"] or "ammunition" in props
             
             base_stat = "DEX" if is_ranged else ("DEX" if is_finesse and dex_mod > str_mod else "STR")
             w_atk_mod = get_mod(stats.get(base_stat, 10)) + prof_bonus
             w_dmg_mod = get_mod(stats.get(base_stat, 10))
             
-            fields[wpn_field] = w_name
+            # Si el arma es sutil o a distancia, mostrarlo
+            wpn_name_display = w_name
+            if props_es:
+                wpn_name_display += f" ({', '.join(props_es[:2])})"
+            
+            fields[wpn_field] = wpn_name_display
             fields[atk_field] = f"+{w_atk_mod}" if w_atk_mod >= 0 else str(w_atk_mod)
             
             dmg_dice = w.get("damage_dice", "1d4")
             dmg_type = w.get("damage_type", "")
             if isinstance(dmg_type, dict):
                 dmg_type = dmg_type.get("name", "")
-            fields[dmg_field] = f"{dmg_dice}{'+' if w_dmg_mod >= 0 else ''}{w_dmg_mod} {dmg_type}"
+            dmg_type_es = damage_translations.get(dmg_type.lower().strip(), dmg_type)
+            
+            fields[dmg_field] = f"{dmg_dice}{'+' if w_dmg_mod >= 0 else ''}{w_dmg_mod} {dmg_type_es}"
         else:
             fields[wpn_field] = ""
             fields[atk_field] = ""
@@ -700,7 +765,9 @@ def export_character_pdf(char_id: int,
         prof_summary.append("Idiomas:\n" + ", ".join(unique_langs))
     fields["ProficienciesLang"] = "\n\n".join(prof_summary)
 
-    # 9. Trasfondo y Personalidad
+    # 9. Trasfondo y Personalidad (Múltiples formatos seguros de espacios para evitar fallos de renderizado)
+    fields["PersonalityTraits"] = character.personality or ""
+    fields["PersonalityTraits "] = character.personality or ""
     fields["PersonalityTraits  "] = character.personality or ""
     fields["Ideals"] = character.ideals or ""
     fields["Bonds"] = character.bonds or ""
@@ -769,7 +836,15 @@ def export_character_pdf(char_id: int,
 
     if is_caster:
         fields["Spellcasting Class 2"] = class_name
-        fields["SpellcastingAbility 2"] = spell_stat
+        
+        # Traducir abreviatura de característica (INT -> INT, WIS -> SAB, CHA -> CAR)
+        spell_stat_es = "INT"
+        if spell_stat == "WIS":
+            spell_stat_es = "SAB"
+        elif spell_stat == "CHA":
+            spell_stat_es = "CAR"
+            
+        fields["SpellcastingAbility 2"] = spell_stat_es
         
         stat_mod_val = get_mod(stats.get(spell_stat, 10))
         fields["SpellSaveDC  2"] = str(8 + prof_bonus + stat_mod_val)
@@ -812,57 +887,71 @@ def export_character_pdf(char_id: int,
         if sp.level is not None and 0 <= sp.level <= 9:
             spells_by_level[sp.level].append(sp.name)
 
-    # Rellenar listas de conjuros en el PDF secuencialmente
-    # Rangos de campos:
-    # Nivel 0 (Trucos): Spells 1014 a 1022 (9 campos)
-    for i in range(9):
+    # Rellenar listas de conjuros en el PDF utilizando la ordenación visual de coordenadas EXACTA
+    
+    # Nivel 0 (Trucos) - 8 campos visuales ordenados de arriba a abajo en la primera columna (Y: 619 a 521)
+    level_0_fields = ["Spells 1014", "Spells 1016", "Spells 1017", "Spells 1018", "Spells 1019", "Spells 1020", "Spells 1021", "Spells 1022"]
+    for i, f_name in enumerate(level_0_fields):
         name_list = spells_by_level[0]
-        fields[f"Spells {1014+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
         
-    # Nivel 1: Spells 1023 a 1033 (11 campos)
-    for i in range(11):
+    # Nivel 1 - 12 campos visuales ordenados de arriba a abajo (Y: 433 a 280) en la primera columna
+    level_1_fields = ["Spells 1015", "Spells 1023", "Spells 1024", "Spells 1025", "Spells 1026", "Spells 1027", "Spells 1028", "Spells 1029", "Spells 1030", "Spells 1031", "Spells 1032", "Spells 1033"]
+    for i, f_name in enumerate(level_1_fields):
         name_list = spells_by_level[1]
-        fields[f"Spells {1023+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 2: Spells 1034 a 1046 (13 campos)
-    for i in range(13):
+    # Nivel 2 - 13 campos visuales ordenados de arriba a abajo (Y: 221 a 53) en la primera columna
+    level_2_fields = ["Spells 1046", "Spells 1034", "Spells 1035", "Spells 1036", "Spells 1037", "Spells 1039", "Spells 1040", "Spells 1041", "Spells 1042", "Spells 1043", "Spells 1044", "Spells 1045"]
+    # Nota: Spells 1038 se encuentra ausente o mal posicionado en el PDF original. Siguiendo el listado de coordenadas:
+    # 1046 (221.4), 1034 (207.3), 1035 (193.4), 1036 (179.4), 1037 (165.4), 1038 (151.4 - pero pertenece a nivel 5/columna 2?), 
+    # Mapeamos los 12 reales visuales en el orden:
+    level_2_fields = ["Spells 1046", "Spells 1034", "Spells 1035", "Spells 1036", "Spells 1037", "Spells 1038", "Spells 1039", "Spells 1040", "Spells 1041", "Spells 1042", "Spells 1043", "Spells 1044", "Spells 1045"]
+    for i, f_name in enumerate(level_2_fields):
         name_list = spells_by_level[2]
-        fields[f"Spells {1034+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 3: Spells 1047 a 1059 (13 campos)
-    for i in range(13):
+    # Nivel 3 - 13 campos visuales ordenados de arriba a abajo en la columna central (Y: 617 a 449)
+    level_3_fields = ["Spells 1048", "Spells 1047", "Spells 1049", "Spells 1050", "Spells 1051", "Spells 1052", "Spells 1053", "Spells 1054", "Spells 1055", "Spells 1056", "Spells 1057", "Spells 1058", "Spells 1059"]
+    for i, f_name in enumerate(level_3_fields):
         name_list = spells_by_level[3]
-        fields[f"Spells {1047+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 4: Spells 1060 a 1072 (13 campos)
-    for i in range(13):
+    # Nivel 4 - 13 campos visuales ordenados de arriba a abajo en la columna central (Y: 392 a 224)
+    level_4_fields = ["Spells 1061", "Spells 1060", "Spells 1062", "Spells 1063", "Spells 1064", "Spells 1065", "Spells 1066", "Spells 1067", "Spells 1068", "Spells 1069", "Spells 1070", "Spells 1071", "Spells 1072"]
+    for i, f_name in enumerate(level_4_fields):
         name_list = spells_by_level[4]
-        fields[f"Spells {1060+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 5: Spells 1073 a 1081 (9 campos)
-    for i in range(9):
+    # Nivel 5 - 9 campos visuales ordenados de arriba a abajo en la columna central (Y: 165 a 53)
+    level_5_fields = ["Spells 1074", "Spells 1073", "Spells 1075", "Spells 1076", "Spells 1077", "Spells 1078", "Spells 1079", "Spells 1080", "Spells 1081"]
+    for i, f_name in enumerate(level_5_fields):
         name_list = spells_by_level[5]
-        fields[f"Spells {1073+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 6: Spells 1082 a 1090 (9 campos)
-    for i in range(9):
+    # Nivel 6 - 9 campos visuales ordenados de arriba a abajo en la columna derecha (Y: 617 a 505)
+    level_6_fields = ["Spells 1083", "Spells 1082", "Spells 1084", "Spells 1085", "Spells 1086", "Spells 1087", "Spells 1088", "Spells 1089", "Spells 1090"]
+    for i, f_name in enumerate(level_6_fields):
         name_list = spells_by_level[6]
-        fields[f"Spells {1082+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 7: Spells 1091 a 1099 (9 campos)
-    for i in range(9):
+    # Nivel 7 - 9 campos visuales ordenados de arriba a abajo en la columna derecha (Y: 447 a 335)
+    level_7_fields = ["Spells 1092", "Spells 1091", "Spells 1093", "Spells 1094", "Spells 1095", "Spells 1096", "Spells 1097", "Spells 1098", "Spells 1099"]
+    for i, f_name in enumerate(level_7_fields):
         name_list = spells_by_level[7]
-        fields[f"Spells {1091+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 8: Spells 10100 a 10104 (5 campos)
-    for i in range(5):
+    # Nivel 8 - 5 campos visuales ordenados de arriba a abajo en la columna derecha (Y: 278 a 222)
+    level_8_fields = ["Spells 10101", "Spells 10100", "Spells 10102", "Spells 10103", "Spells 10104"]
+    for i, f_name in enumerate(level_8_fields):
         name_list = spells_by_level[8]
-        fields[f"Spells {10100+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
-    # Nivel 9: Spells 10105 a 101013 (9 campos)
-    for i in range(9):
+    # Nivel 9 - 9 campos visuales ordenados de arriba a abajo en la columna derecha (Y: 208 a 53)
+    level_9_fields = ["Spells 10105", "Spells 10106", "Spells 10108", "Spells 10107", "Spells 10109", "Spells 101010", "Spells 101011", "Spells 101012", "Spells 101013"]
+    for i, f_name in enumerate(level_9_fields):
         name_list = spells_by_level[9]
-        fields[f"Spells {10105+i}"] = name_list[i] if i < len(name_list) else ""
+        fields[f_name] = name_list[i] if i < len(name_list) else ""
 
     # 5. Cargar plantilla PDF, rellenar y enviar
     router_dir = os.path.dirname(os.path.abspath(__file__))
