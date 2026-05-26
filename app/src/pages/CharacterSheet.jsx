@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DiceRollingOverlay from '../components/DiceRollingOverlay';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds, exportCharacterPdf } from '../api';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds, exportCharacterPdf, getImageUrl } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus, Printer } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -395,48 +395,18 @@ export default function CharacterSheet() {
     setSaving(false);
   };
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = () => {
     try {
-      const res = await exportCharacterPdf(id);
-      const blob = new Blob([res.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const filename = `${character?.name || 'personaje'}_hoja.pdf`.replace(/\s+/g, '_');
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Error: No se encontró sesión activa. Vuelve a iniciar sesión.');
+        return;
+      }
+      const downloadUrl = getImageUrl(`/characters/${id}/export-pdf?token=${token}`);
+      window.open(downloadUrl, '_blank');
     } catch (e) {
       console.error('Error exportando PDF:', e);
-      let errorMsg = 'Error al exportar el PDF del personaje.';
-      if (e.response && e.response.data) {
-        if (e.response.data instanceof Blob) {
-          try {
-            const reader = new FileReader();
-            reader.onload = () => {
-              try {
-                const resJson = JSON.parse(reader.result);
-                alert(`Error del Servidor: ${resJson.detail || errorMsg}`);
-              } catch {
-                alert(`Error del Servidor: ${reader.result || errorMsg}`);
-              }
-            };
-            reader.readAsText(e.response.data);
-            return;
-          } catch (err) {
-            console.error('Error reading blob:', err);
-          }
-        } else if (typeof e.response.data === 'object') {
-          alert(`Error del Servidor: ${e.response.data.detail || errorMsg}`);
-          return;
-        } else if (typeof e.response.data === 'string') {
-          alert(`Error: ${e.response.data}`);
-          return;
-        }
-      }
-      alert(errorMsg);
+      alert('Error al exportar el PDF del personaje.');
     }
   };
 

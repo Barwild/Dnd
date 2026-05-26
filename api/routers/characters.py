@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import json
@@ -6,7 +7,7 @@ import json
 from database import get_db
 import models
 import schemas
-from auth import get_current_user
+from auth import get_current_user, security
 
 router = APIRouter(prefix="/characters", tags=["characters"])
 
@@ -370,15 +371,32 @@ def get_character_armor(character_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{char_id}/export-pdf")
-def export_character_pdf(char_id: int, db: Session = Depends(get_db),
-                         current_user: models.User = Depends(get_current_user)):
+def export_character_pdf(char_id: int, 
+                         token: Optional[str] = None,
+                         db: Session = Depends(get_db),
+                         credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
     """Exportar ficha de personaje rellenando la plantilla PDF."""
     from fastapi.responses import StreamingResponse
     import io
     import pypdf
     import os
+    from auth import decode_token
     
-    # 1. Obtener personaje de la base de datos
+    # 1. Autenticar usuario
+    user_id = None
+    if token:
+        user_id = decode_token(token)
+    elif credentials:
+        user_id = decode_token(credentials.credentials)
+        
+    if not user_id:
+        raise HTTPException(status_code=401, detail="No autorizado. Falta token de autenticación.")
+        
+    current_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado.")
+        
+    # Obtener personaje de la base de datos
     character = db.query(models.Character).filter(models.Character.id == char_id).first()
     if not character:
         raise HTTPException(status_code=404, detail="Personaje no encontrado")
