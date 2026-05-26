@@ -83,7 +83,18 @@ export default function PlayerCreator() {
   const [customFlaws, setCustomFlaws] = useState('');
 
   useEffect(() => {
-    Promise.all([getRaces(), getClasses(), getBackgrounds(), getCampaigns(), getSpells({ limit: 500 })])
+    const handleErr = (label) => (err) => {
+      console.error(`Error loading ${label}:`, err);
+      return { data: [] };
+    };
+
+    Promise.all([
+      getRaces().catch(handleErr('races')),
+      getClasses().catch(handleErr('classes')),
+      getBackgrounds().catch(handleErr('backgrounds')),
+      getCampaigns().catch(handleErr('campaigns')),
+      getSpells({ limit: 500 }).catch(handleErr('spells'))
+    ])
       .then(([r, c, b, camp, spl]) => {
         setRaces(r.data || []);
         setClasses(c.data || []);
