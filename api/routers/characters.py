@@ -429,6 +429,30 @@ def export_character_pdf(char_id: int,
     subclass_name = subclass.name if subclass else ""
     background_name = bg.name if bg else ""
     
+    # Mapeo general de traducción al español para clases, subclases y razas comunes
+    class_translations = {
+        "barbarian": "Bárbaro", "bard": "Bardo", "cleric": "Clérigo", "druid": "Druida",
+        "fighter": "Guerrero", "monk": "Monje", "paladin": "Paladín", "ranger": "Explorador",
+        "rogue": "Pícaro", "sorcerer": "Hechicero", "warlock": "Brujo", "wizard": "Mago",
+        "artificer": "Artífice"
+    }
+    race_translations = {
+        "dragonborn": "Dracónido", "dwarf": "Enano", "elf": "Elfo", "gnome": "Gnomo",
+        "half-elf": "Semielfo", "half-orc": "Semiorco", "halfling": "Mediano", "human": "Humano",
+        "tiefling": "Tiefling"
+    }
+    subclass_translations = {
+        "berserker": "Berserker", "champion": "Campeón", "devotion": "Devoción",
+        "draconic": "Línea Dracónica", "evocation": "Evocación", "fiend": "El Infernal",
+        "hunter": "Cazador", "land": "La Tierra", "life": "Vida", "lore": "Saber",
+        "open-hand": "Mano Abierta", "thief": "Ladrón"
+    }
+    
+    class_name = class_translations.get(class_name.lower().strip(), class_name)
+    race_name = race_translations.get(race_name.lower().strip(), race_name)
+    subclass_name = subclass_translations.get(subclass_name.lower().strip(), subclass_name)
+    background_name = class_translations.get(background_name.lower().strip(), background_name) # background uses similar naming 
+    
     # Atributos principales
     str_score = stats.get("STR", 10)
     dex_score = stats.get("DEX", 10)
