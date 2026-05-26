@@ -412,19 +412,29 @@ export default function CharacterSheet() {
       console.error('Error exportando PDF:', e);
       let errorMsg = 'Error al exportar el PDF del personaje.';
       if (e.response && e.response.data) {
-        try {
-          const reader = new FileReader();
-          reader.onload = () => {
-            try {
-              const resJson = JSON.parse(reader.result);
-              alert(`Error del Servidor: ${resJson.detail || errorMsg}`);
-            } catch {
-              alert(`Error del Servidor: ${reader.result || errorMsg}`);
-            }
-          };
-          reader.readAsText(e.response.data);
+        if (e.response.data instanceof Blob) {
+          try {
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const resJson = JSON.parse(reader.result);
+                alert(`Error del Servidor: ${resJson.detail || errorMsg}`);
+              } catch {
+                alert(`Error del Servidor: ${reader.result || errorMsg}`);
+              }
+            };
+            reader.readAsText(e.response.data);
+            return;
+          } catch (err) {
+            console.error('Error reading blob:', err);
+          }
+        } else if (typeof e.response.data === 'object') {
+          alert(`Error del Servidor: ${e.response.data.detail || errorMsg}`);
           return;
-        } catch (_) {}
+        } else if (typeof e.response.data === 'string') {
+          alert(`Error: ${e.response.data}`);
+          return;
+        }
       }
       alert(errorMsg);
     }
