@@ -10,14 +10,7 @@ from database import engine
 # Create all tables
 models.Base.metadata.create_all(bind=engine)
 
-# Sync reference/compendium data from SQLite to the active database
-try:
-    from sync_data import sync_reference_data
-    sync_reference_data(engine)
-except Exception as e:
-    print(f"[startup] Data sync skipped: {e}")
-
-# Ensure database schema contains the starting_equipment column for characters
+# Ensure database schema contains the missing columns for characters and backgrounds FIRST
 inspector = inspect(engine)
 if 'characters' in inspector.get_table_names():
     columns = [c['name'] for c in inspector.get_columns('characters')]
@@ -52,7 +45,6 @@ if 'characters' in inspector.get_table_names():
             except Exception:
                 pass
 
-# Add missing backgrounds columns
 if 'backgrounds' in inspector.get_table_names():
     bg_cols = [c['name'] for c in inspector.get_columns('backgrounds')]
     for col_name in ['description', 'personality_traits', 'ideals', 'bonds', 'flaws']:
@@ -63,6 +55,26 @@ if 'backgrounds' in inspector.get_table_names():
                     connection.commit()
             except Exception:
                 pass
+
+# Sync reference/compendium data from SQLite to the active database SECOND (now columns exist!)
+try:
+    from sync_data import sync_reference_data
+    sync_reference_data(engine)
+except Exception as e:
+    print(f"[startup] Data sync skipped: {e}")
+
+# Automatically seed/patch backgrounds on startup to ensure they are fully populated in prod
+try:
+    from database import SessionLocal
+    from scripts.patch_backgrounds_full import patch_backgrounds
+    db = SessionLocal()
+    try:
+        res = patch_backgrounds(db)
+        print(f"[startup] Auto-seeded backgrounds: {res}")
+    finally:
+        db.close()
+except Exception as e:
+    print(f"[startup] Background seeding skipped: {e}")
 
 # Migrate column types for PostgreSQL compatibility
 if 'vehicles' in inspector.get_table_names():
