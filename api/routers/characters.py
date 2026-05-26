@@ -687,10 +687,11 @@ def export_character_pdf(char_id: int, db: Session = Depends(get_db),
         fields["LANGUAGES0"] = ", ".join(unique_langs)
         
     # 5. Cargar plantilla PDF, rellenar y enviar
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    pdf_path = os.path.join(base_dir, "static", "images", "Plantilla.pdf")
+    router_dir = os.path.dirname(os.path.abspath(__file__))
+    api_dir = os.path.dirname(router_dir)
+    pdf_path = os.path.join(api_dir, "static", "images", "Plantilla.pdf")
     if not os.path.exists(pdf_path):
-        raise HTTPException(status_code=500, detail="Plantilla PDF no encontrada en el servidor.")
+        raise HTTPException(status_code=500, detail=f"Plantilla PDF no encontrada en el servidor. Ruta: {pdf_path}")
         
     try:
         reader = pypdf.PdfReader(pdf_path)
