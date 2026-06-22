@@ -6,7 +6,7 @@ import models
 # EN_TO_ES obsolete since we use name_en
 
 def extract_coins(item_name):
-    match = re.match(r'^(\d+)\s*(po|gp|sp|pp|cp|ep|pc|pe|pt|ppt)\s*$', str(item_name).strip().lower())
+    match = re.search(r'\b(\d+)\s*(po|gp|sp|pp|cp|ep|pc|pe|pt|ppt)\b', str(item_name).strip().lower())
     if match:
         amount = int(match.group(1))
         unit = match.group(2)
@@ -60,6 +60,7 @@ def process_equipment_list(eq_list, stats_coins, item_by_name):
             item["id"] = db_item.id
             item["name"] = db_item.name
             item["category"] = db_item.category
+            item["item_index"] = db_item.index
             
         new_list.append(item)
         

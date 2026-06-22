@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DiceRollingOverlay from '../components/DiceRollingOverlay';
-import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds, exportCharacterPdf, getImageUrl } from '../api';
+import { getCharacter, updateCharacter, getRace, getClass as getClassApi, getItems, rollDice, getCharacters, getCharacterEquipment, getCharacterWeapons, getCharacterArmor, equipItem, unequipItem, getSubclasses, getLevelingEntry, getSpells, getBackgrounds, exportCharacterPdf, getImageUrl, levelUpCharacter } from '../api';
 import { Save, BookOpen, Heart, Shield, Swords, ArrowUp, Moon, Sunrise, Plus, Minus, Dice5, Target, UserCircle, Flame, Activity, Brain, Eye, Hammer, ShieldPlus, Printer } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -511,7 +511,34 @@ export default function CharacterSheet() {
     });
   };
 
-  const levelUp = async () => {
+  const rollBackgroundTrait = async (key) => {
+    if (!backgroundObject) return;
+    try {
+      let options = [];
+      const dbKey = key === 'personality' ? 'personality_traits' : (key === 'ideals' ? 'ideals' : (key === 'bonds' ? 'bonds' : 'flaws'));
+      const raw = JSON.parse(backgroundObject[dbKey] || '[]');
+      options = dbKey === 'ideals' ? raw.map(i => i.desc) : raw;
+      if (options.length === 0) return;
+      
+      const rolledValue = options[Math.floor(Math.random() * options.length)];
+      
+      // Update local state first
+      setCharacter(prev => ({
+        ...prev,
+        [key]: rolledValue
+      }));
+      
+      // Persist to backend
+      await updateCharacter(id, {
+        [key]: rolledValue
+      });
+    } catch (e) {
+      console.error("Error rolling background trait:", e);
+      alert("Error al guardar el rasgo del trasfondo.");
+    }
+  };
+
+  const handleLevelUpClick = async () => {
     try {
       const res = await levelUpCharacter(id);
       const data = res.data;
@@ -811,7 +838,7 @@ export default function CharacterSheet() {
         <p style={{ color: 'var(--accent-gold)', fontSize: '1rem', margin: '0.3rem 0' }}>
           Nivel {character.level} {raceName ? `• ${raceName}` : ''} {className ? `• ${className}` : ''}{subclassName ? ` → ${subclassName}` : ''} {!raceName && !className && '• Monstruo'}
           {character.level < 20 && (
-            <button className="btn btn-ghost btn-sm" onClick={levelUp} style={{ marginLeft: '10px', padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>
+            <button className="btn btn-ghost btn-sm" onClick={handleLevelUpClick} style={{ marginLeft: '10px', padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}>
               <ArrowUp size={12} style={{marginRight: '3px'}}/> Subir de Nivel
             </button>
           )}
@@ -959,11 +986,35 @@ export default function CharacterSheet() {
               <strong style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{backgroundObject.feature_name}:</strong>
               <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0.3rem 0 0' }}>{backgroundObject.feature_desc}</p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.5rem', fontSize: '0.8rem', marginBottom: '0.8rem' }}>
-              <div><strong style={{ color: 'var(--accent-gold)' }}>Personalidad:</strong> <span style={{ color: '#ccc' }}>{character?.personality || '—'}</span></div>
-              <div><strong style={{ color: 'var(--accent-gold)' }}>Ideal:</strong> <span style={{ color: '#ccc' }}>{character?.ideals || '—'}</span></div>
-              <div><strong style={{ color: 'var(--accent-gold)' }}>Vínculo:</strong> <span style={{ color: '#ccc' }}>{character?.bonds || '—'}</span></div>
-              <div><strong style={{ color: 'var(--accent-gold)' }}>Defecto:</strong> <span style={{ color: '#ccc' }}>{character?.flaws || '—'}</span></div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.8rem', fontSize: '0.8rem', marginBottom: '0.8rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <strong style={{ color: 'var(--accent-gold)' }}>Personalidad:</strong>
+                  <button className="btn btn-ghost btn-xs" title="Tirar al azar" onClick={() => rollBackgroundTrait('personality')} style={{ padding: '0 4px', minHeight: 'auto', height: '18px', fontSize: '0.75rem', border: '1px solid rgba(200,155,60,0.3)', background: 'rgba(200,155,60,0.05)' }}>🎲</button>
+                </div>
+                <div style={{ color: '#ccc', minHeight: '1.2rem', paddingLeft: '0.2rem' }}>{character?.personality || '—'}</div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <strong style={{ color: 'var(--accent-gold)' }}>Ideal:</strong>
+                  <button className="btn btn-ghost btn-xs" title="Tirar al azar" onClick={() => rollBackgroundTrait('ideals')} style={{ padding: '0 4px', minHeight: 'auto', height: '18px', fontSize: '0.75rem', border: '1px solid rgba(200,155,60,0.3)', background: 'rgba(200,155,60,0.05)' }}>🎲</button>
+                </div>
+                <div style={{ color: '#ccc', minHeight: '1.2rem', paddingLeft: '0.2rem' }}>{character?.ideals || '—'}</div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <strong style={{ color: 'var(--accent-gold)' }}>Vínculo:</strong>
+                  <button className="btn btn-ghost btn-xs" title="Tirar al azar" onClick={() => rollBackgroundTrait('bonds')} style={{ padding: '0 4px', minHeight: 'auto', height: '18px', fontSize: '0.75rem', border: '1px solid rgba(200,155,60,0.3)', background: 'rgba(200,155,60,0.05)' }}>🎲</button>
+                </div>
+                <div style={{ color: '#ccc', minHeight: '1.2rem', paddingLeft: '0.2rem' }}>{character?.bonds || '—'}</div>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <strong style={{ color: 'var(--accent-gold)' }}>Defecto:</strong>
+                  <button className="btn btn-ghost btn-xs" title="Tirar al azar" onClick={() => rollBackgroundTrait('flaws')} style={{ padding: '0 4px', minHeight: 'auto', height: '18px', fontSize: '0.75rem', border: '1px solid rgba(200,155,60,0.3)', background: 'rgba(200,155,60,0.05)' }}>🎲</button>
+                </div>
+                <div style={{ color: '#ccc', minHeight: '1.2rem', paddingLeft: '0.2rem' }}>{character?.flaws || '—'}</div>
+              </div>
             </div>
           </div>
         )}

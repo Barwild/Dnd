@@ -69,6 +69,8 @@ def test_coin_extraction():
     assert extract_coins("20 pp") == (20, "sp")  # pp in Spanish translation is pieces of silver (sp)
     assert extract_coins("8 ppt") == (8, "pp")   # ppt in Spanish translation is pieces of platinum (pp)
     assert extract_coins("3 ep") == (3, "ep")
+    assert extract_coins("Bolsa con 15 po") == (15, "gp")
+    assert extract_coins("Monedero conteniendo 25 po") == (25, "gp")
     assert extract_coins("no coins") == (None, None)
 
 

@@ -683,6 +683,19 @@ def clean_bg_index(s: str) -> str:
 def patch_backgrounds(db_session):
     """Actualiza o crea todos los trasfondos en la base de datos."""
     from models import Background, Character
+    import json
+    
+    def get_bg_score(bg):
+        score = 0
+        for attr in ["personality_traits", "ideals", "bonds", "flaws"]:
+            val = getattr(bg, attr, "[]") or "[]"
+            try:
+                lst = json.loads(val)
+                if isinstance(lst, list) and len(lst) > 0:
+                    score += len(lst)
+            except Exception:
+                pass
+        return score
     
     # 1. Deduplicación de trasfondos existentes
     all_bgs = db_session.query(Background).all()
@@ -697,8 +710,9 @@ def patch_backgrounds(db_session):
     
     for norm_index, bgs in grouped.items():
         if len(bgs) > 1:
-            # Ordenar por ID ascendente para mantener el más antiguo/estable
-            bgs.sort(key=lambda x: x.id)
+            # REGLA DE PURGA ESTRICTA: Ordenar por completitud descendente para mantener la versión modular,
+            # y por ID ascendente en caso de empate.
+            bgs.sort(key=lambda x: (-get_bg_score(x), x.id))
             kept = bgs[0]
             dups = bgs[1:]
             

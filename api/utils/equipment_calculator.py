@@ -73,9 +73,9 @@ def check_armor_proficiency(character, equipped_items: dict, items_db: dict, db:
                 
     # 3. Comprobar armadura equipada
     armor_id = equipped_items.get('armor')
-    if armor_id and str(armor_id) in items_db:
-        armor = items_db[str(armor_id)]
-        if armor.armor_class_base and armor.category in ['Armor', 'Armadura']:
+    if armor_id:
+        armor = items_db.get(str(armor_id)) or items_db.get(armor_id)
+        if armor and armor.armor_class_base and armor.category in ['Armor', 'Armadura']:
             if is_heavy_armor(armor.name):
                 if not has_heavy:
                     return f"No tienes competencia con armaduras pesadas ({armor.name}). Tienes desventaja en tiradas de Fuerza/Destreza y no puedes lanzar conjuros."
@@ -89,9 +89,9 @@ def check_armor_proficiency(character, equipped_items: dict, items_db: dict, db:
                     
     # 4. Comprobar escudo equipado
     shield_id = equipped_items.get('shield')
-    if shield_id and str(shield_id) in items_db:
-        shield = items_db[str(shield_id)]
-        if shield.category in ['Shield', 'Escudo'] or 'escudo' in shield.name.lower() or 'shield' in shield.name.lower():
+    if shield_id:
+        shield = items_db.get(str(shield_id)) or items_db.get(shield_id)
+        if shield and (shield.category in ['Shield', 'Escudo'] or 'escudo' in shield.name.lower() or 'shield' in shield.name.lower()):
             if not has_shields:
                 return f"No tienes competencia con escudos ({shield.name}). Tienes desventaja en tiradas de Fuerza/Destreza y no puedes lanzar conjuros."
                 
@@ -105,12 +105,11 @@ def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db:
     dex_mod = (character_stats.get('DEX', 10) - 10) // 2
     ac = 10 + dex_mod
     armor_proficiency_issue = None
-    
     # Aplicar armadura equipada
     armor_id = equipped_items.get('armor')
-    if armor_id and str(armor_id) in items_db:
-        armor = items_db[str(armor_id)]
-        if armor.armor_class_base:
+    if armor_id:
+        armor = items_db.get(str(armor_id)) or items_db.get(armor_id)
+        if armor and armor.armor_class_base:
             ac = armor.armor_class_base
             # Si es armadura pesada, no sumamos modificador de DES
             if is_heavy_armor(armor.name):
@@ -124,9 +123,9 @@ def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db:
     
     # Aplicar escudo
     shield_id = equipped_items.get('shield')
-    if shield_id and str(shield_id) in items_db:
-        shield = items_db[str(shield_id)]
-        if shield.armor_class_base:
+    if shield_id:
+        shield = items_db.get(str(shield_id)) or items_db.get(shield_id)
+        if shield and shield.armor_class_base:
             ac += shield.armor_class_base
     
     return {'ac': ac, 'armor_proficiency_issue': armor_proficiency_issue}
@@ -143,10 +142,10 @@ def calculate_weapon_damage(weapon_id: int, items_db: Dict) -> Dict[str, Any]:
     Returns:
         Dict: Información del daño
     """
-    if str(weapon_id) not in items_db:
+    weapon = items_db.get(str(weapon_id)) or items_db.get(weapon_id)
+    if not weapon:
         return {"damage_dice": "", "damage_type": "", "name": "Unknown"}
     
-    weapon = items_db[str(weapon_id)]
     return {
         "damage_dice": weapon.damage_dice or "",
         "damage_type": weapon.damage_type or "",
@@ -183,28 +182,29 @@ def get_equipment_by_slot(equipped_items: Dict, items_db: Dict) -> Dict[str, Any
     }
     
     for slot, item_id in equipped_items.items():
-        if str(item_id) in items_db:
-            item = items_db[str(item_id)]
-            slots[slot] = {
-                'id': item.id,
-                'name': item.name,
-                'category': item.category,
-                'cost': f"{item.cost_quantity} {item.cost_unit}",
-                'weight': item.weight,
-                'description': item.description
-            }
-            
-            # Añadir propiedades específicas de armas y armaduras
-            if item.category in ['Weapon', 'Arma', 'Armor', 'Armadura', 'Shield', 'Escudo']:
-                slots[slot].update({
-                    'damage_dice': item.damage_dice,
-                    'damage_type': item.damage_type,
-                    'weapon_range': item.weapon_range,
-                    'armor_class_base': item.armor_class_base,
-                    'armor_class_dex_bonus': item.armor_class_dex_bonus,
-                    'stealth_disadvantage': item.stealth_disadvantage,
-                    'properties': json.loads(item.properties) if item.properties else []
-                })
+        if item_id:
+            item = items_db.get(str(item_id)) or items_db.get(item_id)
+            if item:
+                slots[slot] = {
+                    'id': item.id,
+                    'name': item.name,
+                    'category': item.category,
+                    'cost': f"{item.cost_quantity} {item.cost_unit}",
+                    'weight': item.weight,
+                    'description': item.description
+                }
+                
+                # Añadir propiedades específicas de armas y armaduras
+                if item.category in ['Weapon', 'Arma', 'Armor', 'Armadura', 'Shield', 'Escudo']:
+                    slots[slot].update({
+                        'damage_dice': item.damage_dice,
+                        'damage_type': item.damage_type,
+                        'weapon_range': item.weapon_range,
+                        'armor_class_base': item.armor_class_base,
+                        'armor_class_dex_bonus': item.armor_class_dex_bonus,
+                        'stealth_disadvantage': item.stealth_disadvantage,
+                        'properties': json.loads(item.properties) if item.properties else []
+                    })
     
     return slots
 
@@ -238,16 +238,49 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
     except Exception:
         equip_list = []
     
-    # Obtener todos los IDs de items de la lista de equipo y de ranuras equipadas
-    item_ids = [item['id'] for item in equip_list if isinstance(item, dict) and 'id' in item]
+    # Obtener todos los IDs y indexes de items de la lista de equipo y de ranuras equipadas
+    int_ids = []
+    str_indexes = []
+    
+    for item in equip_list:
+        if isinstance(item, dict):
+            i_id = item.get('id')
+            if i_id:
+                if isinstance(i_id, int) or (isinstance(i_id, str) and i_id.isdigit()):
+                    int_ids.append(int(i_id))
+                else:
+                    str_indexes.append(str(i_id))
+            idx = item.get('item_index') or item.get('index')
+            if idx:
+                str_indexes.append(str(idx))
+                
     for slot, item_id in equipped_items.items():
-        if item_id and item_id not in item_ids:
-            item_ids.append(item_id)
+        if item_id:
+            if isinstance(item_id, int) or (isinstance(item_id, str) and item_id.isdigit()):
+                int_ids.append(int(item_id))
+            else:
+                str_indexes.append(str(item_id))
             
     # Obtener todos los items de la base de datos
     from models import Item
-    character_items = db.query(Item).filter(Item.id.in_(item_ids)).all() if item_ids else []
-    items_db = {str(item.id): item for item in character_items}
+    from sqlalchemy import or_
+    
+    query_filters = []
+    if int_ids:
+        query_filters.append(Item.id.in_(int_ids))
+    if str_indexes:
+        query_filters.append(Item.index.in_(str_indexes))
+        
+    character_items = []
+    if query_filters:
+        character_items = db.query(Item).filter(or_(*query_filters)).all()
+        
+    items_db = {}
+    for item in character_items:
+        items_db[str(item.id)] = item
+        items_db[item.id] = item
+        if item.index:
+            items_db[item.index] = item
     
     # Calcular CA
     ac_result = calculate_armor_class(base_stats, equipped_items, items_db)
@@ -265,9 +298,10 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
     # Detectar penalizaciones
     stealth_disadvantage = False
     armor_id = equipped_items.get('armor')
-    if armor_id and str(armor_id) in items_db:
-        armor = items_db[str(armor_id)]
-        stealth_disadvantage = armor.stealth_disadvantage
+    if armor_id:
+        armor = items_db.get(str(armor_id)) or items_db.get(armor_id)
+        if armor:
+            stealth_disadvantage = armor.stealth_disadvantage
     
     armor_proficiency_issue = check_armor_proficiency(character, equipped_items, items_db, db)
     
@@ -299,7 +333,10 @@ def apply_equipment_to_character(character_id: int, item_id: int, slot: str, db:
     
     # Obtener personaje y item
     character = db.query(Character).filter(Character.id == character_id).first()
-    item = db.query(Item).filter(Item.id == item_id).first()
+    if isinstance(item_id, int) or (isinstance(item_id, str) and item_id.isdigit()):
+        item = db.query(Item).filter(Item.id == int(item_id)).first()
+    else:
+        item = db.query(Item).filter(Item.index == str(item_id)).first()
     
     if not character or not item:
         return {"success": False, "error": "Personaje o item no encontrado"}
