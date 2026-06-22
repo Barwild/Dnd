@@ -214,6 +214,11 @@ class CharacterCreate(BaseModel):
     ideals: str = ""
     bonds: str = ""
     flaws: str = ""
+    current_hit_dice: int = 1
+    exhaustion_levels: int = 0
+    death_saves_successes: int = 0
+    death_saves_failures: int = 0
+    temporary_hp: int = 0
 
 
 class CharacterUpdate(BaseModel):
@@ -232,6 +237,13 @@ class CharacterUpdate(BaseModel):
     ideals: Optional[str] = None
     bonds: Optional[str] = None
     flaws: Optional[str] = None
+    current_hit_dice: Optional[int] = None
+    exhaustion_levels: Optional[int] = None
+    death_saves_successes: Optional[int] = None
+    death_saves_failures: Optional[int] = None
+    temporary_hp: Optional[int] = None
+    feats: Optional[List[str]] = None
+    features: Optional[List[str]] = None
 
 
 class CharacterResponse(BaseModel):
@@ -255,6 +267,14 @@ class CharacterResponse(BaseModel):
     ideals: str = ""
     bonds: str = ""
     flaws: str = ""
+    current_hit_dice: int
+    exhaustion_levels: int
+    death_saves_successes: int
+    death_saves_failures: int
+    temporary_hp: int
+    active_conditions: List[str] = []
+    feats: List[str] = []
+    features: List[str] = []
     created_at: Optional[str] = None
     owner_name: Optional[str] = ""
     race_name: Optional[str] = ""
@@ -492,6 +512,7 @@ class SessionNoteResponse(BaseModel):
 
 class DiceRollRequest(BaseModel):
     campaign_id: Optional[int] = None
+    character_id: Optional[int] = None
     character_name: str = ""
     roll_type: str = "custom"
     dice_formula: str = "1d20"
@@ -510,6 +531,8 @@ class DiceRollResponse(BaseModel):
     description: str
     created_at: Optional[str] = None
     roller_name: Optional[str] = ""
+    advantage: Optional[bool] = False
+    disadvantage: Optional[bool] = False
 
     class Config:
         from_attributes = True

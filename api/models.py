@@ -83,6 +83,11 @@ class Character(Base):
     ideals = Column(Text, default="")
     bonds = Column(Text, default="")
     flaws = Column(Text, default="")
+    current_hit_dice = Column(Integer, default=1)
+    exhaustion_levels = Column(Integer, default=0)
+    death_saves_successes = Column(Integer, default=0)
+    death_saves_failures = Column(Integer, default=0)
+    temporary_hp = Column(Integer, default=0)
     created_at = Column(String, default=lambda: datetime.now().isoformat())
 
     owner = relationship("User", back_populates="characters")
@@ -479,3 +484,36 @@ class DiceLog(Base):
     total = Column(Integer, default=0)
     description = Column(String(200), default="")
     created_at = Column(String, default=lambda: datetime.now().isoformat())
+
+
+# ═══════════════════════════════════════════════════════
+# CONDICIONES, DOTES Y RASGOS DEL PERSONAJE
+# ═══════════════════════════════════════════════════════
+
+class CharacterCondition(Base):
+    __tablename__ = "character_conditions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=False)
+    condition_index = Column(String(50), nullable=False)  # ej. "blinded", "prone"
+    applied_at = Column(String, default=lambda: datetime.now().isoformat())
+    duration_rounds = Column(Integer, nullable=True)  # Duración opcional en combate
+
+
+class CharacterFeat(Base):
+    __tablename__ = "character_feats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=False)
+    feat_index = Column(String(100), nullable=False)
+    custom_modifiers = Column(Text, default="{}")  # JSON: modificadores pasivos
+
+
+class CharacterFeature(Base):
+    __tablename__ = "character_features"
+
+    id = Column(Integer, primary_key=True, index=True)
+    character_id = Column(Integer, ForeignKey("characters.id"), nullable=False)
+    feature_index = Column(String(100), nullable=False)
+    custom_modifiers = Column(Text, default="{}")  # JSON: modificadores pasivos
+

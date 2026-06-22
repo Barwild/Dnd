@@ -237,6 +237,12 @@ def list_languages(db: Session = Depends(get_db)):
     return db.query(models.Language).all()
 
 
+@router.get("/feats")
+def list_feats(db: Session = Depends(get_db)):
+    return db.query(models.Feat).all()
+
+
+
 # ═══════════════════════════════════════════════════════
 # EQUIPMENT: MOUNTS, VEHICLES, TRADE GOODS, TOOLS, PACKS
 # ═══════════════════════════════════════════════════════

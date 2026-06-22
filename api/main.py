@@ -45,6 +45,23 @@ if 'characters' in inspector.get_table_names():
             except Exception:
                 pass
 
+    # Add D&D 5e status columns if missing
+    new_status_cols = {
+        'current_hit_dice': ('INTEGER', '1'),
+        'exhaustion_levels': ('INTEGER', '0'),
+        'death_saves_successes': ('INTEGER', '0'),
+        'death_saves_failures': ('INTEGER', '0'),
+        'temporary_hp': ('INTEGER', '0')
+    }
+    for col_name, (col_type, col_default) in new_status_cols.items():
+        if col_name not in columns:
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text(f"ALTER TABLE characters ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))
+                    connection.commit()
+            except Exception:
+                pass
+
 if 'backgrounds' in inspector.get_table_names():
     bg_cols = [c['name'] for c in inspector.get_columns('backgrounds')]
     for col_name in ['description', 'personality_traits', 'ideals', 'bonds', 'flaws']:

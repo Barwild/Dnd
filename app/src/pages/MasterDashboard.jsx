@@ -7,7 +7,7 @@ import {
   getSessionNotes, createSessionNote, updateSessionNote, deleteSessionNote,
   rollDice, getDiceLog, getCampaignMembers, updateCharacter, createCharacter
 } from '../api';
-import { Users, Sword, BookOpen, Plus, Trash2, Play, Pause, SkipForward, Dice5, ScrollText, ChevronDown, ChevronUp, Search, Shield, Heart, Zap, AlertTriangle, Hammer, X, UserCog, ArrowRight } from 'lucide-react';
+import { Users, Sword, BookOpen, Plus, Trash2, Play, Pause, SkipForward, Dice5, ScrollText, ChevronDown, ChevronUp, Search, Shield, Heart, Zap, AlertTriangle, Hammer, X, UserCog, ArrowRight, Eye } from 'lucide-react';
 
 const CONDITIONS_LIST = [
   'Cegado', 'Encantado', 'Ensordecido', 'Asustado', 'Agarrado',
@@ -88,6 +88,7 @@ export default function MasterDashboard() {
   // Character management
   const [unassignedChars, setUnassignedChars] = useState([]);
   const [showLinker, setShowLinker] = useState(false);
+  const [inspectingChar, setInspectingChar] = useState(null);
 
   const normalizeCombatantDetail = (detail) => {
     if (!detail) return null;
@@ -523,9 +524,14 @@ export default function MasterDashboard() {
                 <div key={ch.id} style={{ padding: '0.6rem 0', borderBottom: '1px solid #222' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
                     <span style={{ color: '#ddd', fontWeight: 'bold' }}>{ch.name} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 'normal' }}>{ch.class_name ? `Nv${ch.level} ${ch.class_name}` : '(Monstruo)'}</span></span>
-                    <button className="btn btn-secondary btn-sm" onClick={() => addCombatant(ch, 'player')} style={{ padding: '0.2rem 0.5rem' }}>
-                      <Plus size={12} /> Inic
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setInspectingChar(ch)} style={{ padding: '0.2rem 0.4rem', color: 'var(--accent-gold)' }} title="Inspeccionar Ficha">
+                        <Eye size={14} />
+                      </button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => addCombatant(ch, 'player')} style={{ padding: '0.2rem 0.5rem' }}>
+                        <Plus size={12} /> Inic
+                      </button>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: '#888' }}>
@@ -902,6 +908,102 @@ export default function MasterDashboard() {
           </div>
         </div>
       )}
+      
+      {inspectingChar && (() => {
+        let statsObj = {};
+        try { statsObj = JSON.parse(inspectingChar.stats || '{}'); } catch {}
+        const mod = (score) => Math.floor(((score || 10) - 10) / 2);
+        const modStr = (score) => {
+          const m = mod(score);
+          return m >= 0 ? `+${m}` : `${m}`;
+        };
+        
+        return (
+          <div className="modal-backdrop" style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            zIndex: 9999, padding: '1.5rem'
+          }} onClick={() => setInspectingChar(null)}>
+            <div className="glass-panel" style={{
+              maxWidth: '700px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+              borderTop: '4px solid var(--accent-gold)', position: 'relative',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+            }} onClick={e => e.stopPropagation()}>
+              <button className="btn btn-ghost" style={{
+                position: 'absolute', top: '1rem', right: '1rem', padding: '0.2rem', color: '#888'
+              }} onClick={() => setInspectingChar(null)}><X size={20} /></button>
+
+              <h2 style={{ margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-gold)' }}>
+                🛡️ Ficha Rápida: {inspectingChar.name}
+              </h2>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '0.8rem', borderRadius: '8px' }}>
+                <div><strong>Clase/Nivel:</strong> Nv{inspectingChar.level} {inspectingChar.class_name}</div>
+                <div><strong>Raza:</strong> {inspectingChar.race_name}</div>
+                <div><strong>Vida:</strong> {statsObj.currHP || 0} / {statsObj.maxHP || 10}</div>
+                <div><strong>Vida Temporal:</strong> {inspectingChar.temporary_hp || 0} PG</div>
+                <div><strong>Agotamiento:</strong> Nivel {inspectingChar.exhaustion_levels || 0}</div>
+                <div><strong>Salvaciones Muerte:</strong> Éxitos: {inspectingChar.death_saves_successes || 0}/3, Fallos: {inspectingChar.death_saves_failures || 0}/3</div>
+              </div>
+
+              <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '0.3rem', margin: '0 0 0.8rem' }}>Atributos</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+                {['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].map(key => {
+                  const score = statsObj[key] || 10;
+                  return (
+                    <div key={key} style={{ background: 'rgba(255,255,255,0.03)', padding: '0.5rem', borderRadius: '6px', border: '1px solid #333' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{key}</div>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{score}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', fontWeight: 'bold' }}>{modStr(score)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {inspectingChar.active_conditions && inspectingChar.active_conditions.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '0.3rem', margin: '0 0 0.5rem' }}>Condiciones Activas</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {inspectingChar.active_conditions.map(cond => (
+                      <span key={cond} className="badge badge-red" style={{ fontSize: '0.8rem', textTransform: 'capitalize' }}>
+                        ⚠️ {t(cond)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '0.3rem', margin: '0 0 0.5rem' }}>Equipamiento</h3>
+                  <div style={{ maxHeight: '150px', overflowY: 'auto', fontSize: '0.85rem', color: '#ccc' }}>
+                    {(() => {
+                      try {
+                        const eq = JSON.parse(inspectingChar.equipment || '[]');
+                        if (eq.length === 0) return <p style={{ color: '#666', margin: 0 }}>Sin equipo.</p>;
+                        return eq.map((item, idx) => (
+                          <div key={idx} style={{ padding: '0.2rem 0', borderBottom: '1px solid #222' }}>
+                            • {item.name || item.index} {item.quantity > 1 && `(x${item.quantity})`}
+                          </div>
+                        ));
+                      } catch {
+                        return <p style={{ color: '#666', margin: 0 }}>Error cargando equipo.</p>;
+                      }
+                    })()}
+                  </div>
+                </div>
+                <div>
+                  <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '0.3rem', margin: '0 0 0.5rem' }}>Notas del Personaje</h3>
+                  <div style={{ maxHeight: '150px', overflowY: 'auto', fontSize: '0.85rem', color: '#aaa', whiteSpace: 'pre-wrap' }}>
+                    {inspectingChar.notes || "Sin notas."}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

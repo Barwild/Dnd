@@ -187,13 +187,6 @@ export default function Spellbook() {
     const spellLevel = getSpellLevel(sp);
     if (spellLevel > 0 && spellLevel > maxSpellLevelAllowed) return false;
     if (spellLevel === 0) return currentCantrips < maxCantrips;
-    
-    // Bloquear si el número de conjuros de este nivel ya alcanza el máximo de espacios (ranuras) del nivel
-    if (spellLevel > 0) {
-      const slotMax = statsObj.spellSlots?.[spellLevel]?.max || 0;
-      const currentAtLevel = knownByLevel[spellLevel]?.length || 0;
-      if (currentAtLevel >= slotMax) return false;
-    }
 
     if (maxSpells > 0) return currentNonCantrips < maxSpells;
     return true;
@@ -203,8 +196,21 @@ export default function Spellbook() {
     if (knownSpells.includes(spellIndex)) {
       setStatsObj(prev => ({ ...prev, spells: prev.spells.filter(s => s !== spellIndex) }));
     } else {
-      if (!canAdd(spellIndex)) return;
-      setStatsObj(prev => ({ ...prev, spells: [...prev.spells, spellIndex] }));
+      if (!canAdd(spellIndex)) {
+        const sp = allSpells.find(s => s.index === spellIndex);
+        if (sp) {
+          const spellLevel = getSpellLevel(sp);
+          if (spellLevel === 0 && currentCantrips >= maxCantrips) {
+            alert(`Límite de trucos (cantrips) alcanzado (${maxCantrips} máximo).`);
+          } else if (spellLevel > 0 && currentNonCantrips >= maxSpells) {
+            alert(`Límite de conjuros ${PREPARED_CASTERS.includes(cn) ? 'preparados' : 'conocidos'} alcanzado (${maxSpells} máximo).`);
+          } else if (spellLevel > maxSpellLevelAllowed) {
+            alert(`No puedes preparar conjuros de nivel ${spellLevel} porque no tienes ranuras disponibles de ese nivel.`);
+          }
+        }
+        return;
+      }
+      setStatsObj(prev => ({ ...prev, spells: [...(prev.spells || []), spellIndex] }));
     }
   };
 

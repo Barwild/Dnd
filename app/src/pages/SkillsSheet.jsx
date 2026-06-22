@@ -221,7 +221,7 @@ export default function SkillsSheet() {
 
   const passivePerception = 10 + getSkillMod(SKILLS.find(s => s.index === 'perception'));
 
-  const handleRoll = async (formula, desc) => {
+  const handleRoll = async (formula, desc, rollType = 'check') => {
     const parseDieType = (form) => {
       const match = form.toLowerCase().match(/d(\d+)/);
       if (match) {
@@ -243,7 +243,14 @@ export default function SkillsSheet() {
     });
 
     try {
-      const res = await rollDice({ dice_formula: formula, character_name: character?.name || '', description: desc, roll_type: 'check' });
+      const res = await rollDice({ 
+        dice_formula: formula, 
+        character_name: character?.name || '', 
+        description: desc, 
+        roll_type: rollType, 
+        character_id: character?.id,
+        campaign_id: character?.campaign_id
+      });
       
       const elapsed = Date.now() - startTime;
       const remaining = 1300 - elapsed;
@@ -275,13 +282,13 @@ export default function SkillsSheet() {
   const rollSkill = (skill) => {
     const total = getSkillMod(skill);
     const formula = `1d20${total >= 0 ? '+' : ''}${total}`;
-    handleRoll(formula, `${skill.name} (${ABILITY_SHORT[skill.ability]})`);
+    handleRoll(formula, `${skill.name} (${ABILITY_SHORT[skill.ability]})`, 'check');
   };
 
   const rollSave = (ability) => {
     const total = getSaveMod(ability);
     const formula = `1d20${total >= 0 ? '+' : ''}${total}`;
-    handleRoll(formula, `Salvación de ${ABILITY_NAMES[ability]}`);
+    handleRoll(formula, `Salvación de ${ABILITY_NAMES[ability]}`, 'save');
   };
 
   const save = async () => {

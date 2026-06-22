@@ -106,7 +106,12 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
         personality=data.personality or "",
         ideals=data.ideals or "",
         bonds=data.bonds or "",
-        flaws=data.flaws or ""
+        flaws=data.flaws or "",
+        current_hit_dice=data.current_hit_dice if data.current_hit_dice is not None else data.level,
+        exhaustion_levels=data.exhaustion_levels if data.exhaustion_levels is not None else 0,
+        death_saves_successes=data.death_saves_successes if data.death_saves_successes is not None else 0,
+        death_saves_failures=data.death_saves_failures if data.death_saves_failures is not None else 0,
+        temporary_hp=data.temporary_hp if data.temporary_hp is not None else 0
     )
     db.add(character)
     db.commit()
@@ -184,6 +189,20 @@ def update_character(char_id: int, data: schemas.CharacterUpdate, db: Session = 
             _validate_skills(stats_obj, cls.name if cls else None)
         except json.JSONDecodeError:
             pass
+            
+    if 'feats' in update_data:
+        feats_list = update_data.pop('feats')
+        if feats_list is not None:
+            db.query(models.CharacterFeat).filter(models.CharacterFeat.character_id == character.id).delete()
+            for f_idx in feats_list:
+                db.add(models.CharacterFeat(character_id=character.id, feat_index=f_idx))
+                
+    if 'features' in update_data:
+        features_list = update_data.pop('features')
+        if features_list is not None:
+            db.query(models.CharacterFeature).filter(models.CharacterFeature.character_id == character.id).delete()
+            for feat_idx in features_list:
+                db.add(models.CharacterFeature(character_id=character.id, feature_index=feat_idx))
     
     for key, value in update_data.items():
         setattr(character, key, value)
@@ -226,6 +245,12 @@ def _char_response(char, db):
     race = db.query(models.Race).filter(models.Race.id == char.race_id).first()
     cls = db.query(models.Class).filter(models.Class.id == char.class_id).first()
     bg = db.query(models.Background).filter(models.Background.id == char.background_id).first() if char.background_id else None
+    
+    # Query conditions, feats, features
+    conditions = db.query(models.CharacterCondition).filter(models.CharacterCondition.character_id == char.id).all()
+    feats = db.query(models.CharacterFeat).filter(models.CharacterFeat.character_id == char.id).all()
+    features = db.query(models.CharacterFeature).filter(models.CharacterFeature.character_id == char.id).all()
+    
     return schemas.CharacterResponse(
         id=char.id, name=char.name, level=char.level,
         race_id=char.race_id, class_id=char.class_id,
@@ -243,7 +268,15 @@ def _char_response(char, db):
         personality=char.personality or "",
         ideals=char.ideals or "",
         bonds=char.bonds or "",
-        flaws=char.flaws or ""
+        flaws=char.flaws or "",
+        current_hit_dice=char.current_hit_dice if char.current_hit_dice is not None else char.level,
+        exhaustion_levels=char.exhaustion_levels if char.exhaustion_levels is not None else 0,
+        death_saves_successes=char.death_saves_successes if char.death_saves_successes is not None else 0,
+        death_saves_failures=char.death_saves_failures if char.death_saves_failures is not None else 0,
+        temporary_hp=char.temporary_hp if char.temporary_hp is not None else 0,
+        active_conditions=[c.condition_index for c in conditions],
+        feats=[f.feat_index for f in feats],
+        features=[f.feature_index for f in features]
     )
 
 
@@ -1091,3 +1124,171 @@ def export_character_pdf(char_id: int,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al rellenar el PDF: {e}")
+
+
+@router.post("/{char_id}/short-rest")
+def short_rest(char_id: int, request: dict, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Realizar un descanso corto.
+    El cuerpo debe contener: { "dice_spent": int, "rolls": List[int] }
+    """
+    character = db.query(models.Character).filter(models.Character.id == char_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+    
+    # Check permission (owner or DM)
+    is_owner = character.user_id == current_user.id
+    is_dm = False
+    if character.campaign_id:
+        campaign = db.query(models.Campaign).filter(models.Campaign.id == character.campaign_id).first()
+        is_dm = campaign and campaign.dm_user_id == current_user.id
+    if not is_owner and not is_dm:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar este personaje")
+        
+    dice_spent = request.get("dice_spent", 0)
+    rolls = request.get("rolls", [])
+    
+    # Get constitution modifier from stats
+    try:
+        stats = json.loads(character.stats or "{}")
+    except Exception:
+        stats = {}
+    con_score = stats.get("CON", 10)
+    con_modifier = (con_score - 10) // 2
+    
+    from utils.mechanics_engine import apply_short_rest
+    try:
+        res = apply_short_rest(character, dice_spent, con_modifier, rolls, db)
+        return {"status": "ok", "message": f"Descanso corto completado. Curado {res['healed']} PG.", "details": res}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{char_id}/long-rest")
+def long_rest(char_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """Realizar un descanso largo."""
+    character = db.query(models.Character).filter(models.Character.id == char_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+    
+    # Check permission
+    is_owner = character.user_id == current_user.id
+    is_dm = False
+    if character.campaign_id:
+        campaign = db.query(models.Campaign).filter(models.Campaign.id == character.campaign_id).first()
+        is_dm = campaign and campaign.dm_user_id == current_user.id
+    if not is_owner and not is_dm:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar este personaje")
+        
+    from utils.mechanics_engine import apply_long_rest
+    res = apply_long_rest(character, db)
+    return {"status": "ok", "message": "Descanso largo completado. PG al máximo, ranuras y dados de golpe restaurados.", "details": res}
+
+
+@router.post("/{char_id}/level-up")
+def level_up_character(char_id: int, request: dict, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    """
+    Sube de nivel a un personaje aplicando los cambios oficiales.
+    El cuerpo puede opcionalmente contener: { "new_level": int } (de lo contrario incrementa en 1).
+    Usa with_for_update() para evitar condiciones de carrera (Race Conditions) y aplica
+    el promedio de vida oficial de la clase para incrementar los puntos de golpe máximos.
+    """
+    # Adquirir un bloqueo exclusivo en la fila del personaje para evitar race conditions
+    character = db.query(models.Character).filter(models.Character.id == char_id).with_for_update().first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Personaje no encontrado")
+        
+    # Validar permisos (dueño o DM)
+    is_owner = character.user_id == current_user.id
+    is_dm = False
+    if character.campaign_id:
+        campaign = db.query(models.Campaign).filter(models.Campaign.id == character.campaign_id).first()
+        is_dm = campaign and campaign.dm_user_id == current_user.id
+    if not is_owner and not is_dm:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar este personaje")
+        
+    old_level = character.level
+    requested_level = request.get("new_level")
+    new_level = requested_level if requested_level is not None else old_level + 1
+    
+    if new_level <= old_level:
+        raise HTTPException(status_code=400, detail="El nuevo nivel debe ser mayor que el nivel actual.")
+    if new_level > 20:
+        raise HTTPException(status_code=400, detail="El nivel máximo es 20.")
+        
+    # Obtener el promedio de HP oficial de la clase para aumentar la vida máxima
+    cls = character.char_class
+    if not cls:
+        cls = db.query(models.Class).filter(models.Class.id == character.class_id).first()
+        
+    if not cls:
+        raise HTTPException(status_code=400, detail="El personaje no posee una clase válida asociada.")
+        
+    cls_name = cls.name.lower().strip()
+    
+    # Promedio oficial de dados de golpe:
+    # d6 (Mago, Hechicero) -> 4
+    # d8 (Bardo, Clérigo, Druida, Monje, Pícaro, Brujo, Artífice) -> 5
+    # d10 (Guerrero, Paladín, Explorador) -> 6
+    # d12 (Bárbaro) -> 7
+    hit_die_averages = {
+        "wizard": 4, "mago": 4,
+        "sorcerer": 4, "hechicero": 4,
+        "bard": 5, "bardo": 5,
+        "cleric": 5, "clérigo": 5,
+        "druid": 5, "druida": 5,
+        "monk": 5, "monje": 5,
+        "rogue": 5, "pícaro": 5,
+        "warlock": 5, "brujo": 5,
+        "artificer": 5, "artífice": 5,
+        "fighter": 6, "guerrero": 6,
+        "paladin": 6, "paladín": 6,
+        "ranger": 6, "explorador": 6,
+        "barbarian": 7, "bárbaro": 7
+    }
+    
+    avg_hp_increase = hit_die_averages.get(cls_name, 5)
+    
+    # Calcular modificador de Constitución
+    try:
+        stats = json.loads(character.stats or "{}")
+    except Exception:
+        stats = {}
+        
+    con_score = stats.get("CON", 10)
+    con_modifier = (con_score - 10) // 2
+    
+    # Incremento total de vida por cada nivel ganado
+    levels_gained = new_level - old_level
+    hp_gained_per_level = max(1, avg_hp_increase + con_modifier)
+    total_hp_gained = hp_gained_per_level * levels_gained
+    
+    # Actualizar HP máximo y HP actual
+    max_hp = stats.get("maxHP", 10)
+    curr_hp = stats.get("currHP", 10)
+    
+    stats["maxHP"] = max_hp + total_hp_gained
+    stats["currHP"] = curr_hp + total_hp_gained  # Se incrementa la vida actual correspondientemente
+    
+    character.stats = json.dumps(stats)
+    character.level = new_level
+    character.current_hit_dice = min(new_level, (character.current_hit_dice or 1) + levels_gained)
+    
+    # Aplicar el motor universal de subida de nivel para rasgos y elecciones
+    from utils.mechanics_engine import handle_level_up_universal
+    res = handle_level_up_universal(character, old_level, new_level, db)
+    
+    db.commit()
+    
+    return {
+        "status": "ok",
+        "old_level": old_level,
+        "new_level": new_level,
+        "hp_gained": total_hp_gained,
+        "new_max_hp": stats["maxHP"],
+        "requires_choice": res["requires_choice"],
+        "choice_type": res["choice_type"],
+        "added_features": res["added_features"]
+    }
+
+

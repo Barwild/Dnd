@@ -78,6 +78,7 @@ export const getCharacters = (campaignId) =>
 export const getCharacter = (id) => api.get(`/characters/${id}`);
 export const createCharacter = (data) => api.post('/characters', data);
 export const updateCharacter = (id, data) => api.put(`/characters/${id}`, data);
+export const levelUpCharacter = (id, data = {}) => api.post(`/characters/${id}/level-up`, data);
 export const deleteCharacter = (id) => api.delete(`/characters/${id}`);
 export const exportCharacterPdf = (id) => api.get(`/characters/${id}/export-pdf`, { responseType: 'blob' });
 
