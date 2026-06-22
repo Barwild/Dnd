@@ -220,15 +220,33 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
     Returns:
         Dict: Estadísticas calculadas
     """
-    # Parsear estadísticas base
-    base_stats = json.loads(character.stats) if character.stats else {}
-    equipped_items = json.loads(character.equipped_items) if character.equipped_items else {}
+    # Parsear estadísticas base de forma segura
+    try:
+        base_stats = json.loads(character.stats) if character.stats else {}
+    except Exception:
+        base_stats = {}
+        
+    try:
+        equipped_items = json.loads(character.equipped_items) if character.equipped_items else {}
+    except Exception:
+        equipped_items = {}
+        
+    try:
+        equip_list = json.loads(character.equipment) if character.equipment else []
+        if not isinstance(equip_list, list):
+            equip_list = []
+    except Exception:
+        equip_list = []
     
-    # Obtener todos los items del personaje
+    # Obtener todos los IDs de items de la lista de equipo y de ranuras equipadas
+    item_ids = [item['id'] for item in equip_list if isinstance(item, dict) and 'id' in item]
+    for slot, item_id in equipped_items.items():
+        if item_id and item_id not in item_ids:
+            item_ids.append(item_id)
+            
+    # Obtener todos los items de la base de datos
     from models import Item
-    character_items = db.query(Item).filter(
-        Item.id.in_([item['id'] for item in json.loads(character.equipment) if 'id' in item])
-    ).all()
+    character_items = db.query(Item).filter(Item.id.in_(item_ids)).all() if item_ids else []
     items_db = {str(item.id): item for item in character_items}
     
     # Calcular CA

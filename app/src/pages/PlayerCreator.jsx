@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getRaces, getClasses, getBackgrounds, createCharacter, getCampaigns, getSpells } from '../api';
+import { getRaces, getClasses, getBackgrounds, createCharacter, getCampaigns, getSpells, getLanguages, getTools } from '../api';
 import { Sword, Shield, BookOpen, Sparkles, Users, ChevronRight, ChevronLeft, Dice5, Heart, Zap, X } from 'lucide-react';
 
 const STAT_NAMES = { STR: 'Fuerza', DEX: 'Destreza', CON: 'Constitución', INT: 'Inteligencia', WIS: 'Sabiduría', CHA: 'Carisma' };
@@ -81,6 +81,10 @@ export default function PlayerCreator() {
   const [customIdeals, setCustomIdeals] = useState('');
   const [customBonds, setCustomBonds] = useState('');
   const [customFlaws, setCustomFlaws] = useState('');
+  const [allLanguages, setAllLanguages] = useState([]);
+  const [allTools, setAllTools] = useState([]);
+  const [customBgLangs, setCustomBgLangs] = useState(['', '']);
+  const [customBgTools, setCustomBgTools] = useState(['']);
 
   useEffect(() => {
     const handleErr = (label) => (err) => {
@@ -93,15 +97,19 @@ export default function PlayerCreator() {
       getClasses().catch(handleErr('classes')),
       getBackgrounds().catch(handleErr('backgrounds')),
       getCampaigns().catch(handleErr('campaigns')),
-      getSpells({ limit: 500 }).catch(handleErr('spells'))
+      getSpells({ limit: 500 }).catch(handleErr('spells')),
+      getLanguages().catch(handleErr('languages')),
+      getTools().catch(handleErr('tools'))
     ])
-      .then(([r, c, b, camp, spl]) => {
+      .then(([r, c, b, camp, spl, langs, tls]) => {
         setRaces(r.data || []);
         setClasses(c.data || []);
         setBackgrounds(b.data || []);
         setCampaigns(camp.data || []);
         setCantrips((spl.data || []).filter(s => s.level === 0));
         setLevel1Spells((spl.data || []).filter(s => s.level === 1));
+        setAllLanguages(langs.data || []);
+        setAllTools(tls.data || []);
       });
   }, []);
 
@@ -158,7 +166,50 @@ export default function PlayerCreator() {
       }
       return { name: entry.name || JSON.stringify(entry), quantity: entry.quantity || 1, ...entry };
     }
-    return { name: String(entry) };
+  };
+
+  const getLanguageChoiceCount = () => {
+    if (!selectedBg) return 0;
+    try {
+      const langs = JSON.parse(selectedBg.languages || '[]');
+      let count = 0;
+      langs.forEach(l => {
+        if (l.includes('Dos idiomas')) count += 2;
+        else if (l.includes('Un idioma') || l.includes('de tu elección')) count += 1;
+      });
+      return count;
+    } catch {
+      return 0;
+    }
+  };
+
+  const getToolChoiceCount = () => {
+    if (!selectedBg) return 0;
+    try {
+      const tools = JSON.parse(selectedBg.tool_proficiencies || '[]');
+      let count = 0;
+      tools.forEach(t => {
+        if (t.includes('de tu elección')) count += 1;
+      });
+      return count;
+    } catch {
+      return 0;
+    }
+  };
+
+  const getFilteredTools = (choiceText) => {
+    if (!choiceText) return allTools;
+    const txt = choiceText.toLowerCase();
+    if (txt.includes('artesano') || txt.includes('artisan')) {
+      return allTools.filter(t => (t.tool_type || '').toLowerCase().includes('artisan') || (t.name || '').toLowerCase().includes('artesano'));
+    }
+    if (txt.includes('musical') || txt.includes('instrumento')) {
+      return allTools.filter(t => (t.tool_type || '').toLowerCase().includes('musical') || (t.name || '').toLowerCase().includes('instrumento') || (t.name || '').toLowerCase().includes('lira') || (t.name || '').toLowerCase().includes('flauta'));
+    }
+    if (txt.includes('juego') || txt.includes('mesa') || txt.includes('gaming')) {
+      return allTools.filter(t => (t.tool_type || '').toLowerCase().includes('gaming') || (t.name || '').toLowerCase().includes('juego') || (t.name || '').toLowerCase().includes('cartas') || (t.name || '').toLowerCase().includes('dados'));
+    }
+    return allTools;
   };
 
   const gatherStartingEquipment = () => {
@@ -312,16 +363,19 @@ export default function PlayerCreator() {
         background_skills: bgSkills,
         saveProficiencies: saveProfs, expertise: [],
         background_id: charData.background_id, asiHistory: [], hitDiceUsed: 0,
-        attunedItems: []
+        attunedItems: [],
+        languages: customBgLangs.filter(Boolean),
+        toolProficiencies: customBgTools.filter(Boolean),
+        coins: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 }
       };
 
       const startingEquipment = gatherStartingEquipment();
       const equipmentPayload = startingEquipment.length ? startingEquipment : [];
 
-      const finalPersonality = bgPersonality === '__custom__' ? customPersonality : bgPersonality;
-      const finalIdeals = bgIdeals === '__custom__' ? customIdeals : bgIdeals;
-      const finalBonds = bgBonds === '__custom__' ? customBonds : bgBonds;
-      const finalFlaws = bgFlaws === '__custom__' ? customFlaws : bgFlaws;
+      const finalPersonality = bgPersonality && bgPersonality !== '__custom__' ? bgPersonality : customPersonality;
+      const finalIdeals = bgIdeals && bgIdeals !== '__custom__' ? bgIdeals : customIdeals;
+      const finalBonds = bgBonds && bgBonds !== '__custom__' ? bgBonds : customBonds;
+      const finalFlaws = bgFlaws && bgFlaws !== '__custom__' ? bgFlaws : customFlaws;
 
       await createCharacter({
         name: charData.name, level: 1,
@@ -418,7 +472,15 @@ export default function PlayerCreator() {
                 try { skills = JSON.parse(b.skill_proficiencies || '[]'); } catch {}
                 return (
                   <div key={b.id} className="glass-panel clickable"
-                    onClick={() => { setCharData({ ...charData, background_id: isSelected ? null : b.id }); setBgPersonality(''); setBgIdeals(''); setBgBonds(''); setBgFlaws(''); }}
+                    onClick={() => {
+                      setCharData({ ...charData, background_id: isSelected ? null : b.id });
+                      setBgPersonality('');
+                      setBgIdeals('');
+                      setBgBonds('');
+                      setBgFlaws('');
+                      setCustomBgLangs(['', '']);
+                      setCustomBgTools(['']);
+                    }}
                     style={{
                       padding: '0.7rem', textAlign: 'center', cursor: 'pointer',
                       borderColor: isSelected ? 'var(--accent-gold)' : '',
@@ -464,6 +526,67 @@ export default function PlayerCreator() {
                   <strong style={{ color: 'var(--accent-gold)' }}>{selectedBg.feature_name}</strong>
                   <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0.3rem 0 0' }}>{selectedBg.feature_desc}</p>
                 </div>
+
+                {/* Desplegables de Idiomas de Trasfondo (de tu elección) */}
+                {getLanguageChoiceCount() > 0 && (
+                  <div style={{ marginBottom: '1rem', background: 'rgba(200,155,60,0.06)', padding: '0.8rem', borderRadius: '8px', border: '1px solid rgba(200,155,60,0.15)' }}>
+                    <strong style={{ color: 'var(--accent-gold)', fontSize: '0.8rem', display: 'block', marginBottom: '0.4rem' }}>
+                      Selecciona tus {getLanguageChoiceCount() === 2 ? 'dos idiomas' : 'un idioma'} de elección por trasfondo:
+                    </strong>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {Array.from({ length: getLanguageChoiceCount() }).map((_, i) => (
+                        <select
+                          key={i}
+                          value={customBgLangs[i] || ''}
+                          onChange={e => {
+                            const newLangs = [...customBgLangs];
+                            newLangs[i] = e.target.value;
+                            setCustomBgLangs(newLangs);
+                          }}
+                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.3rem', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid #555', borderRadius: '4px' }}
+                        >
+                          <option value="">— Elegir Idioma —</option>
+                          {allLanguages.map(l => (
+                            <option key={l.id} value={l.name}>{l.name}</option>
+                          ))}
+                        </select>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Desplegables de Herramientas de Trasfondo (de tu elección) */}
+                {getToolChoiceCount() > 0 && (
+                  <div style={{ marginBottom: '1rem', background: 'rgba(200,155,60,0.06)', padding: '0.8rem', borderRadius: '8px', border: '1px solid rgba(200,155,60,0.15)' }}>
+                    <strong style={{ color: 'var(--accent-gold)', fontSize: '0.8rem', display: 'block', marginBottom: '0.4rem' }}>
+                      Selecciona tu competencia de herramienta de elección por trasfondo:
+                    </strong>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {Array.from({ length: getToolChoiceCount() }).map((_, i) => {
+                        const toolsArray = (() => { try { return JSON.parse(selectedBg.tool_proficiencies || '[]'); } catch { return []; } })();
+                        const choiceStr = toolsArray.filter(t => t.includes('de tu elección'))[i] || '';
+                        const filteredOptions = getFilteredTools(choiceStr);
+                        return (
+                          <select
+                            key={i}
+                            value={customBgTools[i] || ''}
+                            onChange={e => {
+                              const newTools = [...customBgTools];
+                              newTools[i] = e.target.value;
+                              setCustomBgTools(newTools);
+                            }}
+                            style={{ flex: 1, fontSize: '0.75rem', padding: '0.3rem', background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid #555', borderRadius: '4px' }}
+                          >
+                            <option value="">— Elegir Herramienta —</option>
+                            {filteredOptions.map(t => (
+                              <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                          </select>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Personality Traits / Ideals / Bonds / Flaws Selectors */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.8rem' }}>

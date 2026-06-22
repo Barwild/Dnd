@@ -59,3 +59,25 @@ def test_multiclass_requirements():
     # Paladin needs STR >= 13 and CHA >= 13
     assert validate_multiclass_requirements("paladin", {"STR": 13, "CHA": 13}) is True
     assert validate_multiclass_requirements("paladin", {"STR": 12, "CHA": 13}) is False
+
+
+def test_coin_extraction():
+    from utils.equipment_fixer import extract_coins
+    assert extract_coins("15 po") == (15, "gp")
+    assert extract_coins("10 gp") == (10, "gp")
+    assert extract_coins("5 cp") == (5, "cp")
+    assert extract_coins("20 pp") == (20, "sp")  # pp in Spanish translation is pieces of silver (sp)
+    assert extract_coins("8 ppt") == (8, "pp")   # ppt in Spanish translation is pieces of platinum (pp)
+    assert extract_coins("3 ep") == (3, "ep")
+    assert extract_coins("no coins") == (None, None)
+
+
+def test_currency_normalization():
+    import json
+    from schemas import CharacterCreate
+    
+    # Test normalization of empty/missing stats
+    payload = CharacterCreate(name="Test", stats="")
+    assert "coins" in json.loads(payload.stats)
+    coins = json.loads(payload.stats)["coins"]
+    assert coins == {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}

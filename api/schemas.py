@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 
 
@@ -220,6 +220,32 @@ class CharacterCreate(BaseModel):
     death_saves_failures: int = 0
     temporary_hp: int = 0
 
+    @field_validator("stats")
+    @classmethod
+    def validate_stats_coins(cls, v: str) -> str:
+        if not v:
+            import json
+            return json.dumps({"coins": {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}})
+        import json
+        try:
+            stats_dict = json.loads(v)
+            if not isinstance(stats_dict, dict):
+                return v
+            default_coins = {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}
+            if "coins" not in stats_dict or not isinstance(stats_dict["coins"], dict):
+                stats_dict["coins"] = default_coins
+            else:
+                stats_dict["coins"] = {
+                    "cp": stats_dict["coins"].get("cp", 0),
+                    "sp": stats_dict["coins"].get("sp", 0),
+                    "ep": stats_dict["coins"].get("ep", 0),
+                    "gp": stats_dict["coins"].get("gp", 0),
+                    "pp": stats_dict["coins"].get("pp", 0)
+                }
+            return json.dumps(stats_dict, ensure_ascii=False)
+        except Exception:
+            return v
+
 
 class CharacterUpdate(BaseModel):
     name: Optional[str] = None
@@ -244,6 +270,34 @@ class CharacterUpdate(BaseModel):
     temporary_hp: Optional[int] = None
     feats: Optional[List[str]] = None
     features: Optional[List[str]] = None
+
+    @field_validator("stats")
+    @classmethod
+    def validate_stats_coins(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        if not v:
+            import json
+            return json.dumps({"coins": {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}})
+        import json
+        try:
+            stats_dict = json.loads(v)
+            if not isinstance(stats_dict, dict):
+                return v
+            default_coins = {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}
+            if "coins" not in stats_dict or not isinstance(stats_dict["coins"], dict):
+                stats_dict["coins"] = default_coins
+            else:
+                stats_dict["coins"] = {
+                    "cp": stats_dict["coins"].get("cp", 0),
+                    "sp": stats_dict["coins"].get("sp", 0),
+                    "ep": stats_dict["coins"].get("ep", 0),
+                    "gp": stats_dict["coins"].get("gp", 0),
+                    "pp": stats_dict["coins"].get("pp", 0)
+                }
+            return json.dumps(stats_dict, ensure_ascii=False)
+        except Exception:
+            return v
 
 
 class CharacterResponse(BaseModel):

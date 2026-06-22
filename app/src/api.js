@@ -110,6 +110,7 @@ export const getClass = (id) => api.get(`/compendium/classes/${id}`);
 export const getSubclasses = (classId) =>
   api.get(`/compendium/subclasses${classId ? `?class_id=${classId}` : ''}`);
 export const getBackgrounds = () => api.get('/compendium/backgrounds');
+export const getLanguages = () => api.get('/compendium/languages');
 
 export const getMonsters = (params = {}) => {
   const qs = new URLSearchParams(params).toString();

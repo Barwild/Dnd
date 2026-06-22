@@ -680,11 +680,46 @@ def export_character_pdf(char_id: int,
     equipped_weapons = []
     try:
         eq_list = json.loads(character.equipment) if isinstance(character.equipment, str) else (character.equipment or [])
-        for item in eq_list:
-            if item.get("category") in ['Weapon', 'Arma']:
-                equipped_weapons.append(item)
-    except Exception:
-        pass
+        weapon_ids = [item.get("id") for item in eq_list if isinstance(item, dict) and item.get("id")]
+        
+        eq_items = {}
+        if character.equipped_items:
+            try:
+                eq_items = json.loads(character.equipped_items)
+            except Exception:
+                pass
+                
+        weapon_id = eq_items.get("weapon")
+        if weapon_id and weapon_id not in weapon_ids:
+            weapon_ids.append(weapon_id)
+            
+        if weapon_ids:
+            db_weapons = db.query(models.Item).filter(models.Item.id.in_(weapon_ids)).all()
+            db_weapons_dict = {w.id: w for w in db_weapons}
+            
+            # First, add the equipped weapon
+            if weapon_id and weapon_id in db_weapons_dict:
+                item_obj = db_weapons_dict[weapon_id]
+                equipped_weapons.append({
+                    "name": item_obj.name,
+                    "weapon_range": item_obj.weapon_range or "Melee",
+                    "damage_dice": item_obj.damage_dice or "1d4",
+                    "damage_type": item_obj.damage_type or "",
+                    "properties": json.loads(item_obj.properties) if item_obj.properties else []
+                })
+                
+            # Then add other weapons
+            for w_id, item_obj in db_weapons_dict.items():
+                if w_id != weapon_id and item_obj.category in ['Weapon', 'Arma']:
+                    equipped_weapons.append({
+                        "name": item_obj.name,
+                        "weapon_range": item_obj.weapon_range or "Melee",
+                        "damage_dice": item_obj.damage_dice or "1d4",
+                        "damage_type": item_obj.damage_type or "",
+                        "properties": json.loads(item_obj.properties) if item_obj.properties else []
+                    })
+    except Exception as e:
+        print("Error populating weapons for PDF:", e)
 
     for idx in range(3):
         wpn_field = "Wpn Name" if idx == 0 else f"Wpn Name {idx+1}"
@@ -797,11 +832,24 @@ def export_character_pdf(char_id: int,
                 lines_langs.extend(langs)
         except Exception:
             pass
+            
+    # Intentar cargar idiomas personalizados del JSON de stats del personaje
+    try:
+        stats_data = json.loads(character.stats or "{}")
+        custom_langs = stats_data.get("languages", [])
+        if isinstance(custom_langs, list):
+            lines_langs.extend(custom_langs)
+    except Exception:
+        pass
+
     if bg and bg.languages:
         try:
             langs = json.loads(bg.languages)
             if isinstance(langs, list):
-                lines_langs.extend(langs)
+                # Filtrar cadenas genéricas como "Dos de tu elección"
+                for l in langs:
+                    if "elección" not in l.lower() and "choice" not in l.lower():
+                        lines_langs.append(l)
         except Exception:
             pass
             
@@ -866,9 +914,32 @@ def export_character_pdf(char_id: int,
         except Exception:
             pass
 
+    # Extraer competencias de herramientas de trasfondo/personalizadas
+    tools_list = []
+    if bg and bg.tool_proficiencies:
+        try:
+            tools = json.loads(bg.tool_proficiencies)
+            if isinstance(tools, list):
+                for t in tools:
+                    if "elección" not in t.lower() and "choice" not in t.lower():
+                        tools_list.append(t)
+        except Exception:
+            pass
+            
+    try:
+        stats_data = json.loads(character.stats or "{}")
+        custom_tools = stats_data.get("toolProficiencies", [])
+        if isinstance(custom_tools, list):
+            tools_list.extend(custom_tools)
+    except Exception:
+        pass
+
     prof_summary = []
     if class_profs:
         prof_summary.append("Competencias de Clase:\n" + ", ".join(class_profs))
+    if tools_list:
+        unique_tools = sorted(list(set(tools_list)))
+        prof_summary.append("Herramientas:\n" + ", ".join(unique_tools))
     if unique_langs:
         prof_summary.append("Idiomas:\n" + ", ".join(unique_langs))
     fields["ProficienciesLang"] = "\n\n".join(prof_summary)
@@ -1184,6 +1255,71 @@ def long_rest(char_id: int, db: Session = Depends(get_db), current_user: models.
     res = apply_long_rest(character, db)
     return {"status": "ok", "message": "Descanso largo completado. PG al máximo, ranuras y dados de golpe restaurados.", "details": res}
 
+def initialize_missing_background_fields(character, db: Session):
+    """
+    Inicializa campos de trasfondo ausentes en el personaje con valores por defecto o del trasfondo.
+    """
+    import json
+    import random
+    
+    # Asegurar que no sean None
+    if character.personality is None:
+        character.personality = ""
+    if character.ideals is None:
+        character.ideals = ""
+    if character.bonds is None:
+        character.bonds = ""
+    if character.flaws is None:
+        character.flaws = ""
+        
+    # Si alguno está vacío, intentar rellenar con tirada de dado aleatoria de su trasfondo
+    if character.background_id and (not character.personality or not character.ideals or not character.bonds or not character.flaws):
+        bg = db.query(models.Background).filter(models.Background.id == character.background_id).first()
+        if bg:
+            if not character.personality:
+                try:
+                    traits = json.loads(bg.personality_traits or "[]")
+                    if traits:
+                        character.personality = random.choice(traits)
+                except Exception:
+                    pass
+                if not character.personality:
+                    character.personality = "Rasgo de personalidad por defecto"
+                    
+            if not character.ideals:
+                try:
+                    ideals = json.loads(bg.ideals or "[]")
+                    if ideals:
+                        item = random.choice(ideals)
+                        if isinstance(item, dict):
+                            character.ideals = item.get("desc", "Ideal por defecto")
+                        else:
+                            character.ideals = str(item)
+                except Exception:
+                    pass
+                if not character.ideals:
+                    character.ideals = "Ideal por defecto"
+                    
+            if not character.bonds:
+                try:
+                    bonds = json.loads(bg.bonds or "[]")
+                    if bonds:
+                        character.bonds = random.choice(bonds)
+                except Exception:
+                    pass
+                if not character.bonds:
+                    character.bonds = "Vínculo por defecto"
+                    
+            if not character.flaws:
+                try:
+                    flaws = json.loads(bg.flaws or "[]")
+                    if flaws:
+                        character.flaws = random.choice(flaws)
+                except Exception:
+                    pass
+                if not character.flaws:
+                    character.flaws = "Defecto por defecto"
+
 
 @router.post("/{char_id}/level-up")
 def level_up_character(char_id: int, request: dict, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
@@ -1206,6 +1342,26 @@ def level_up_character(char_id: int, request: dict, db: Session = Depends(get_db
         is_dm = campaign and campaign.dm_user_id == current_user.id
     if not is_owner and not is_dm:
         raise HTTPException(status_code=403, detail="No tienes permiso para modificar este personaje")
+        
+    # Sanar datos corruptos de inventario y trasfondos antes de proceder
+    try:
+        from utils.equipment_fixer import fix_character_equipment
+        fix_character_equipment(character, db)
+    except Exception as e:
+        print(f"Error repairing equipment on level up: {e}")
+        if not character.equipment:
+            character.equipment = "[]"
+        if not character.equipped_items:
+            character.equipped_items = "{}"
+
+    try:
+        initialize_missing_background_fields(character, db)
+    except Exception as e:
+        print(f"Error initializing background fields on level up: {e}")
+        if not character.personality: character.personality = "Rasgo por defecto"
+        if not character.ideals: character.ideals = "Ideal por defecto"
+        if not character.bonds: character.bonds = "Vínculo por defecto"
+        if not character.flaws: character.flaws = "Defecto por defecto"
         
     old_level = character.level
     requested_level = request.get("new_level")

@@ -670,34 +670,98 @@ BACKGROUNDS_DATA = [
 ]
 
 
+def clean_bg_index(s: str) -> str:
+    import unicodedata
+    import re
+    # strip accents, convert to lower, replace space and underscore with hyphen
+    s = "".join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+    s = s.lower().strip()
+    s = re.sub(r'[^a-z0-9\s_-]', '', s)
+    s = re.sub(r'[\s_-]+', '-', s)
+    return s.strip('-')
+
 def patch_backgrounds(db_session):
     """Actualiza o crea todos los trasfondos en la base de datos."""
-    from models import Background
+    from models import Background, Character
     
+    # 1. Deduplicación de trasfondos existentes
+    all_bgs = db_session.query(Background).all()
+    grouped = {}
+    for bg in all_bgs:
+        norm = clean_bg_index(bg.index or bg.name or "")
+        if norm:
+            grouped[norm] = grouped.get(norm, []) + [bg]
+            
+    duplicates_removed = 0
+    characters_remapped = 0
+    
+    for norm_index, bgs in grouped.items():
+        if len(bgs) > 1:
+            # Ordenar por ID ascendente para mantener el más antiguo/estable
+            bgs.sort(key=lambda x: x.id)
+            kept = bgs[0]
+            dups = bgs[1:]
+            
+            # Asegurar que el que se mantiene tenga el index normalizado correcto
+            kept.index = norm_index
+            
+            for dup in dups:
+                # Buscar personajes asociados al duplicado y remapearlos
+                chars_to_update = db_session.query(Character).filter(Character.background_id == dup.id).all()
+                for char in chars_to_update:
+                    char.background_id = kept.id
+                    characters_remapped += 1
+                
+                # Eliminar el duplicado
+                db_session.delete(dup)
+                duplicates_removed += 1
+                
+    db_session.commit()
+    
+    # 2. Seeding / actualización de los trasfondos oficiales
     patched = 0
     created = 0
     
     for bg_data in BACKGROUNDS_DATA:
-        existing = db_session.query(Background).filter(Background.index == bg_data["index"]).first()
+        norm_idx = clean_bg_index(bg_data["index"])
+        
+        # Buscar por el index normalizado para evitar duplicados
+        existing = db_session.query(Background).filter(
+            (Background.index == bg_data["index"]) | 
+            (Background.index == norm_idx)
+        ).first()
+        
+        # Sobrescribir con el index limpio normalizado
+        bg_data_copy = dict(bg_data)
+        bg_data_copy["index"] = norm_idx
         
         if existing:
-            for key, value in bg_data.items():
+            for key, value in bg_data_copy.items():
                 setattr(existing, key, value)
             patched += 1
         else:
-            new_bg = Background(**bg_data)
+            new_bg = Background(**bg_data_copy)
             db_session.add(new_bg)
             created += 1
-    
+            
     db_session.commit()
-    return {"patched": patched, "created": created, "total": len(BACKGROUNDS_DATA)}
+    return {
+        "patched": patched,
+        "created": created,
+        "total": len(BACKGROUNDS_DATA),
+        "duplicates_removed": duplicates_removed,
+        "characters_remapped": characters_remapped
+    }
 
 
 if __name__ == "__main__":
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from database import SessionLocal
     db = SessionLocal()
     try:
         result = patch_backgrounds(db)
-        print(f"✅ Trasfondos actualizados: {result}")
+        print(f"Trasfondos actualizados: {result}")
     finally:
         db.close()

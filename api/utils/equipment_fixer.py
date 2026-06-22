@@ -6,14 +6,15 @@ import models
 # EN_TO_ES obsolete since we use name_en
 
 def extract_coins(item_name):
-    match = re.match(r'^(\d+)\s*(po|gp|sp|pp|cp|ep|pc|pp|pe)\s*$', str(item_name).strip().lower())
+    match = re.match(r'^(\d+)\s*(po|gp|sp|pp|cp|ep|pc|pe|pt|ppt)\s*$', str(item_name).strip().lower())
     if match:
         amount = int(match.group(1))
         unit = match.group(2)
         if unit in ['po', 'gp']: return amount, 'gp'
         if unit in ['pc', 'cp']: return amount, 'cp'
-        if unit in ['pp', 'sp']: return amount, 'sp'
-        if unit == 'pe': return amount, 'ep'
+        if unit in ['pp', 'sp']: return amount, 'sp'  # 'pp' is piezas de plata (silver) in Spanish translation
+        if unit in ['pe', 'ep']: return amount, 'ep'
+        if unit in ['pt', 'ppt']: return amount, 'pp'  # 'ppt' or 'pt' is piezas de platino in Spanish translation
         return amount, 'gp'
     return None, None
 
@@ -111,11 +112,20 @@ def fix_character_equipment(character, db: Session):
     """
     try:
         stats = json.loads(character.stats) if character.stats else {}
-    except:
+    except Exception:
         stats = {}
         
-    if "coins" not in stats:
-        stats["coins"] = {"gp": 0, "sp": 0, "cp": 0}
+    default_coins = {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0}
+    if "coins" not in stats or not isinstance(stats["coins"], dict):
+        stats["coins"] = default_coins
+    else:
+        stats["coins"] = {
+            "cp": stats["coins"].get("cp", 0),
+            "sp": stats["coins"].get("sp", 0),
+            "ep": stats["coins"].get("ep", 0),
+            "gp": stats["coins"].get("gp", 0),
+            "pp": stats["coins"].get("pp", 0)
+        }
         
     try:
         eq = json.loads(character.equipment) if character.equipment else []
