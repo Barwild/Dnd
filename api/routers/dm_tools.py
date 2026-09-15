@@ -243,7 +243,14 @@ def roll_dice(data: schemas.DiceRollRequest, db: Session = Depends(get_db),
                         results.append({"die": "mod", "result": mod})
                         total += mod
                     except ValueError:
-                        pass
+                        dice_match = re.match(r'(\d+)d(\d+)', part)
+                        if dice_match:
+                            num_dice = int(dice_match.group(1))
+                            die_size = int(dice_match.group(2))
+                            for _ in range(num_dice):
+                                roll = random.randint(1, die_size)
+                                results.append({"die": f"d{die_size}", "result": roll * sign})
+                                total += roll * sign
         
         desc = data.description + desc_suffix
     else:

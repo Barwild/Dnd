@@ -38,7 +38,7 @@ _CLASS_SKILL_COUNT = {
 }
 
 
-def _validate_skills(stats: dict, class_name: Optional[str]):
+def _validate_skills(stats: dict, class_name: Optional[str], racial_skills: Optional[List[str]] = None):
     """Valida que las competencias del personaje cumplan con el reglamento."""
     if not class_name:
         return
@@ -46,15 +46,16 @@ def _validate_skills(stats: dict, class_name: Optional[str]):
     options = _CLASS_SKILLS.get(cn, [])
     limit = _CLASS_SKILL_COUNT.get(cn, 2)
     bg_skills = stats.get('background_skills', []) or []
+    racial_skills_list = racial_skills or stats.get('racial_skills', []) or []
     profs = stats.get('skillProficiencies', []) or []
     expertise = stats.get('expertise', []) or []
 
-    # Contar competencias de clase (excluyendo trasfondo)
+    # Contar competencias de clase (excluyendo trasfondo y raza)
     class_count = 0
     for s in profs:
-        if s in options and s not in bg_skills:
+        if s in options and s not in bg_skills and s not in racial_skills_list:
             class_count += 1
-        elif s not in options and s not in bg_skills:
+        elif s not in options and s not in bg_skills and s not in racial_skills_list:
             # Intentar coincidencia por nombre traducido
             name_match = False
             for bg in bg_skills:
@@ -120,6 +121,7 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
     try:
         from utils.equipment_fixer import fix_character_equipment
         fix_character_equipment(character, db)
+        db.commit()
     except Exception as e:
         print("Error fixing equipment on creation:", e)
         
@@ -156,6 +158,7 @@ def get_character(char_id: int, db: Session = Depends(get_db),
     try:
         from utils.equipment_fixer import fix_character_equipment
         fix_character_equipment(character, db)
+        db.commit()
     except Exception as e:
         print("Error fixing equipment:", e)
         
@@ -213,6 +216,7 @@ def update_character(char_id: int, data: schemas.CharacterUpdate, db: Session = 
     try:
         from utils.equipment_fixer import fix_character_equipment
         fix_character_equipment(character, db)
+        db.commit()
     except Exception as e:
         print("Error fixing equipment on update:", e)
     
@@ -686,6 +690,8 @@ def export_character_pdf(char_id: int,
         if character.equipped_items:
             try:
                 eq_items = json.loads(character.equipped_items)
+                if not isinstance(eq_items, dict):
+                    eq_items = {}
             except Exception:
                 pass
                 

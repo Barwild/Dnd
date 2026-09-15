@@ -275,7 +275,9 @@ export default function CharacterSheet() {
   useEffect(() => {
     if (!classObject || !character) return;
     const cn = classObject.name?.toLowerCase() || '';
-    if (['guerrero', 'bárbaro', 'monje', 'pícaro'].includes(cn)) return;
+    const hasSpells = (() => { try { const sl = JSON.parse(character?.spell_list || '[]'); return sl.length > 0; } catch { return false; } })();
+    const nonCasters = ['bárbaro', 'monje'];
+    if (!hasSpells && nonCasters.includes(cn)) return;
     
     // Auto-sanado si todos los slots de conjuro son cero
     const allZero = [1,2,3,4,5,6,7,8,9].every(lvl => (stats.spellSlots?.[lvl]?.max || 0) === 0);
@@ -786,7 +788,12 @@ export default function CharacterSheet() {
   
   // Use equipped armor CA if available, then monster/natural ac, otherwise 10 + DEX
   const ac = equipmentStats?.armor_class || stats.ac || (10 + mod(stats.DEX));
-  const initiative = mod(stats.DEX);
+  const initiative = (() => {
+    const dexMod = mod(stats.DEX || 10);
+    const isBard = className?.toLowerCase() === 'bardo';
+    const hasJoAT = isBard && (character?.level || 1) >= 2;
+    return hasJoAT ? dexMod + Math.floor(profBonus / 2) : dexMod;
+  })();
   const speed = stats.speed || 30;
 
   return (
@@ -915,7 +922,11 @@ export default function CharacterSheet() {
         </div>
 
         {/* Spell Slots Block */}
-        {!['guerrero', 'bárbaro', 'monje', 'pícaro'].includes(className.toLowerCase()) && (
+        {(() => {
+          const hasSpells = (() => { try { const sl = JSON.parse(character?.spell_list || '[]'); return sl.length > 0; } catch { return false; } })();
+          const nonCasters = ['bárbaro', 'monje'];
+          return hasSpells || !nonCasters.includes(className?.toLowerCase() || '');
+        })() && (
           <div className="glass-panel" style={{ borderLeft: '3px solid var(--accent-red)', height: '100%' }}>
             <h3 style={{ margin: '0 0 1rem' }}><Flame size={18} style={{ color: 'var(--accent-red)' }} /> Espacios de Conjuro</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -1086,8 +1097,9 @@ export default function CharacterSheet() {
               {weapons.map((w, idx) => {
                 const propsArr = Array.isArray(w.properties) ? w.properties : (() => { try { return JSON.parse(w.properties || '[]'); } catch { return []; } })();
                 const isFinesse = propsArr.some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                const isThrown = propsArr.some(p => { const n = typeof p === 'string' ? p : p?.name || p?.index || ''; return n.toLowerCase().includes('thrown') || n.toLowerCase().includes('arrojadiza'); });
                 const isRanged = w.weapon_range === 'Ranged';
-                const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
+                const baseStat = isFinesse || (isThrown && isRanged) ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : (isRanged ? 'DEX' : 'STR');
                 const attackMod = mod(stats[baseStat]) + profBonus;
                 const dmgMod = mod(stats[baseStat]);
                 
@@ -1448,7 +1460,18 @@ export default function CharacterSheet() {
 
                   <div className="ps-passive-box">
                     <div className="ps-passive-val">
-                      {10 + mod(stats.WIS || 10) + (printSkills.find(s => s.index === 'perception')?.prof ? profBonus : 0)}
+                      {(() => {
+                        const wisMod = mod(stats.WIS || 10);
+                        const isPerceptionProficient = printSkills.find(s => s.index === 'perception')?.prof;
+                        const isPerceptionExpert = printSkills.find(s => s.index === 'perception')?.expert;
+                        const isBard = className?.toLowerCase() === 'bardo';
+                        const hasJoAT = isBard && (character.level || 1) >= 2;
+                        let bonus = 0;
+                        if (isPerceptionExpert) bonus = profBonus * 2;
+                        else if (isPerceptionProficient) bonus = profBonus;
+                        else if (hasJoAT) bonus = Math.floor(profBonus / 2);
+                        return 10 + wisMod + bonus;
+                      })()}
                     </div>
                     <span className="ps-passive-label">SABIDURÍA PASIVA (PERCEPCIÓN)</span>
                   </div>
@@ -1589,8 +1612,9 @@ export default function CharacterSheet() {
                           {weapons.slice(0, 3).map((w, idx) => {
                             const propsArr = Array.isArray(w.properties) ? w.properties : (() => { try { return JSON.parse(w.properties || '[]'); } catch { return []; } })();
                             const isFinesse = propsArr.some(p => p?.index === 'finesse' || p?.name?.toLowerCase().includes('sutil'));
+                            const isThrown = propsArr.some(p => { const n = typeof p === 'string' ? p : p?.name || p?.index || ''; return n.toLowerCase().includes('thrown') || n.toLowerCase().includes('arrojadiza'); });
                             const isRanged = w.weapon_range === 'Ranged';
-                            const baseStat = isRanged ? 'DEX' : (isFinesse ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : 'STR');
+                            const baseStat = isFinesse || (isThrown && isRanged) ? (stats.DEX > stats.STR ? 'DEX' : 'STR') : (isRanged ? 'DEX' : 'STR');
                             const atkMod = mod(stats[baseStat]) + profBonus;
                             const dmgMod = mod(stats[baseStat]);
                             return (

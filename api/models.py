@@ -88,6 +88,11 @@ class Character(Base):
     death_saves_successes = Column(Integer, default=0)
     death_saves_failures = Column(Integer, default=0)
     temporary_hp = Column(Integer, default=0)
+    alignment = Column(String(50), default="")  # e.g. "Leal bueno", "Caótico neutral"
+    xp = Column(Integer, default=0)  # Experience points for standard leveling
+    inspiration = Column(Boolean, default=False)  # PHB core mechanic
+    speed = Column(Integer, default=30)  # Base walking speed in feet
+    hit_dice_detail = Column(Text, default="{}")  # JSON: {"d10": 3, "d6": 2} for multiclass tracking
     created_at = Column(String, default=lambda: datetime.now().isoformat())
 
     owner = relationship("User", back_populates="characters")
@@ -96,6 +101,9 @@ class Character(Base):
     char_class = relationship("Class")
     subclass = relationship("Subclass")
     background = relationship("Background")
+    conditions = relationship("CharacterCondition", backref="character", cascade="all, delete-orphan")
+    character_feats = relationship("CharacterFeat", backref="character", cascade="all, delete-orphan")
+    character_features = relationship("CharacterFeature", backref="character", cascade="all, delete-orphan")
 
 
 # ═══════════════════════════════════════════════════════
@@ -229,6 +237,8 @@ class Spell(Base):
     classes = Column(Text, default="[]")  # JSON array of class indexes
     damage_type = Column(String(50), default="")
     damage_at_slot_level = Column(Text, default="{}")  # JSON
+    aoe_type = Column(String(20), default="")  # cone, sphere, cube, line, cylinder
+    aoe_size = Column(Integer, nullable=True)  # Size in feet
 
 
 class Item(Base):
@@ -250,8 +260,9 @@ class Item(Base):
     weapon_range = Column(String(20), default="")
     # Armor specifics
     armor_class_base = Column(Integer, nullable=True)
-    armor_class_dex_bonus = Column(Boolean, default=False)
+    armor_class_max_dex_bonus = Column(Integer, nullable=True)  # None=full DEX, 2=medium armor cap, 0=heavy armor
     stealth_disadvantage = Column(Boolean, default=False)
+    strength_requirement = Column(Integer, nullable=True)  # Min STR for heavy armor (e.g. 13 for Chain Mail, 15 for Plate)
 
 
 class MagicItem(Base):

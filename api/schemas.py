@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 from typing import Optional, List
 
 
@@ -8,7 +8,7 @@ from typing import Optional, List
 
 class UserRegister(BaseModel):
     username: str
-    password: str
+    password: str = Field(..., min_length=8, max_length=64)
     display_name: str
     role: str = "player"  # "player" or "dm"
 
@@ -219,6 +219,11 @@ class CharacterCreate(BaseModel):
     death_saves_successes: int = 0
     death_saves_failures: int = 0
     temporary_hp: int = 0
+    alignment: str = ""
+    xp: int = 0
+    inspiration: bool = False
+    speed: int = 30
+    hit_dice_detail: str = "{}"
 
     @field_validator("stats")
     @classmethod
@@ -268,6 +273,11 @@ class CharacterUpdate(BaseModel):
     death_saves_successes: Optional[int] = None
     death_saves_failures: Optional[int] = None
     temporary_hp: Optional[int] = None
+    alignment: Optional[str] = None
+    xp: Optional[int] = None
+    inspiration: Optional[bool] = None
+    speed: Optional[int] = None
+    hit_dice_detail: Optional[str] = None
     feats: Optional[List[str]] = None
     features: Optional[List[str]] = None
 
@@ -326,6 +336,11 @@ class CharacterResponse(BaseModel):
     death_saves_successes: int
     death_saves_failures: int
     temporary_hp: int
+    alignment: str = ""
+    xp: int = 0
+    inspiration: bool = False
+    speed: int = 30
+    hit_dice_detail: str = "{}"
     active_conditions: List[str] = []
     feats: List[str] = []
     features: List[str] = []
@@ -414,6 +429,8 @@ class SpellResponse(BaseModel):
     higher_levels: str
     classes: str
     damage_type: str
+    aoe_type: str = ""
+    aoe_size: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -434,8 +451,9 @@ class ItemResponse(BaseModel):
     damage_type: str
     weapon_range: str = ""
     armor_class_base: Optional[int] = None
-    armor_class_dex_bonus: bool = False
+    armor_class_max_dex_bonus: Optional[int] = None
     stealth_disadvantage: bool = False
+    strength_requirement: Optional[int] = None
     class Config:
         from_attributes = True
 

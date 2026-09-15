@@ -352,7 +352,10 @@ export default function PlayerCreator() {
       if (prepareAllClasses.includes(cn)) {
         const prepAbilityStat = cn === 'artífice' ? final.INT : final.WIS;
         const prepMod = Math.floor((prepAbilityStat - 10) / 2);
-        const maxPrepared = Math.max(1, prepMod + 1);
+        const isArtificer = cn === 'artífice';
+        const maxPrepared = isArtificer 
+          ? Math.max(1, Math.floor((charData.level || 1) / 2) + prepMod)
+          : Math.max(1, prepMod + (charData.level || 1));
         spellList = spellList.slice(0, maxPrepared);
       }
 

@@ -21,12 +21,32 @@ def clean_index(name: str) -> str:
 def get_proficiency_bonus(level: int) -> int:
     return 1 + math.ceil(level / 4)
 
-# Percepción Pasiva oficial
-def calculate_passive_perception(wisdom_score: int, proficient_in_perception: bool, level: int, has_advantage: bool = False, has_disadvantage: bool = False) -> int:
+def calculate_passive_perception(
+    wisdom_score: int,
+    proficient_in_perception: bool,
+    level: int,
+    has_advantage: bool = False,
+    has_disadvantage: bool = False,
+    has_expertise: bool = False,
+    has_jack_of_all_trades: bool = False,
+    has_observant_feat: bool = False
+) -> int:
+    """Calcula Percepción Pasiva según PHB p.175."""
     wis_mod = math.floor((wisdom_score - 10) / 2)
-    pb = get_proficiency_bonus(level) if proficient_in_perception else 0
+    pb = get_proficiency_bonus(level)
+    
+    prof_bonus = 0
+    if has_expertise and proficient_in_perception:
+        prof_bonus = pb * 2  # Expertise: doble competencia
+    elif proficient_in_perception:
+        prof_bonus = pb
+    elif has_jack_of_all_trades:
+        prof_bonus = pb // 2  # JoAT: media competencia redondeada abajo
+    
     adj = 5 if has_advantage else (-5 if has_disadvantage else 0)
-    return 10 + wis_mod + pb + adj
+    observant_bonus = 5 if has_observant_feat else 0
+    
+    return 10 + wis_mod + prof_bonus + adj + observant_bonus
 
 # Lógica de Descanso Corto
 def apply_short_rest(character: models.Character, dice_spent: int, con_modifier: int, rolls: List[int], db: Session) -> Dict:
@@ -126,8 +146,8 @@ def calculate_multiclass_spell_slots(classes_levels: List[Tuple[str, int]]) -> L
         elif cls_clean in ["paladin", "ranger", "paladín", "explorador"]:
             combined_level += lvl // 2
         elif cls_clean in ["artificer", "artífice"]:
-            # CRÍTICO: Redondeado hacia abajo en multiclase para evitar bugs de niveles mágicos
-            combined_level += lvl // 2
+            # TCoE: Artificers redondean hacia ARRIBA en multiclase (único caso en 5E)
+            combined_level += math.ceil(lvl / 2)
             
     if combined_level == 0:
         return [0] * 9
@@ -163,13 +183,38 @@ MULTICLASS_REQUIREMENTS = {
     "artífice": [("INT", 13)],
 }
 
-def validate_multiclass_requirements(char_class_index: str, stats: Dict[str, int]) -> bool:
-    reqs = MULTICLASS_REQUIREMENTS.get(char_class_index.lower().strip(), [])
-    if not reqs:
-        return True
-    if char_class_index.lower().strip() in ["fighter", "guerrero"]:
-        return any(stats.get(attr, 10) >= val for attr, val in reqs)
-    return all(stats.get(attr, 10) >= val for attr, val in reqs)
+def validate_multiclass_requirements(new_class_index: str, stats: Dict[str, int], current_class_index: str = "") -> Tuple[bool, str]:
+    """Valida requisitos de multiclase según PHB p.163: se deben cumplir los requisitos de AMBAS clases."""
+    errors = []
+    
+    # Verificar requisitos de la clase ACTUAL (para salir de ella)
+    if current_class_index:
+        current_reqs = MULTICLASS_REQUIREMENTS.get(current_class_index.lower().strip(), [])
+        if current_reqs:
+            cls_key = current_class_index.lower().strip()
+            if cls_key in ["fighter", "guerrero"]:
+                if not any(stats.get(attr, 10) >= val for attr, val in current_reqs):
+                    errors.append(f"No cumples los requisitos para multiclasear DESDE {current_class_index}: necesitas FUE 13 o DES 13")
+            else:
+                for attr, val in current_reqs:
+                    if stats.get(attr, 10) < val:
+                        errors.append(f"No cumples {attr} >= {val} para multiclasear desde {current_class_index}")
+    
+    # Verificar requisitos de la clase NUEVA (para entrar en ella)
+    new_reqs = MULTICLASS_REQUIREMENTS.get(new_class_index.lower().strip(), [])
+    if new_reqs:
+        cls_key = new_class_index.lower().strip()
+        if cls_key in ["fighter", "guerrero"]:
+            if not any(stats.get(attr, 10) >= val for attr, val in new_reqs):
+                errors.append(f"No cumples los requisitos para multiclasear HACIA {new_class_index}: necesitas FUE 13 o DES 13")
+        else:
+            for attr, val in new_reqs:
+                if stats.get(attr, 10) < val:
+                    errors.append(f"No cumples {attr} >= {val} para multiclasear hacia {new_class_index}")
+    
+    if errors:
+        return False, "; ".join(errors)
+    return True, ""
 
 
 # MOTOR UNIVERSAL DE SUBIDA DE NIVEL

@@ -62,6 +62,23 @@ if 'characters' in inspector.get_table_names():
             except Exception:
                 pass
 
+    # Add new D&D 5E fields
+    new_char_cols = {
+        'alignment': ('TEXT', "''"),
+        'xp': ('INTEGER', '0'),
+        'inspiration': ('INTEGER', '0'),
+        'speed': ('INTEGER', '30'),
+        'hit_dice_detail': ('TEXT', "'{}'")
+    }
+    for col_name, (col_type, col_default) in new_char_cols.items():
+        if col_name not in columns:
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text(f"ALTER TABLE characters ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))
+                    connection.commit()
+            except Exception:
+                pass
+
 if 'backgrounds' in inspector.get_table_names():
     bg_cols = [c['name'] for c in inspector.get_columns('backgrounds')]
     for col_name in ['description', 'personality_traits', 'ideals', 'bonds', 'flaws']:
@@ -121,7 +138,7 @@ for tbl, col in bool_fixes:
         if 'integer' in col_type or 'int' == col_type:
             try:
                 with engine.connect() as conn:
-                    conn.execute(text(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE BOOLEAN USING {col}::boolean"))
+                    conn.execute(text(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE BOOLEAN USING {col}::integer::boolean"))
                     conn.commit()
             except Exception:
                 pass
@@ -132,13 +149,24 @@ app = FastAPI(
     version="2.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS config
+cors_origins_str = os.environ.get("CORS_ORIGINS", "*")
+if cors_origins_str == "*":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in cors_origins_str.split(",")],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Mount static folder for images
 base_dir = os.path.dirname(__file__)

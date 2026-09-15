@@ -98,30 +98,56 @@ def check_armor_proficiency(character, equipped_items: dict, items_db: dict, db:
     return None
 
 
-def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db: Dict) -> Dict:
+def calculate_armor_class(character_stats: Dict, equipped_items: Dict, items_db: Dict, class_index: str = "", subclass_index: str = "") -> Dict:
     """
-    Calcula la Clase de Armadura (CA) del personaje
+    Calcula la Clase de Armadura (CA) del personaje según PHB Cap. 5
+    Incluye: Armaduras, Escudos, Defensa sin Armadura, Armadura Natural, Resistencia Dracónica
     """
     dex_mod = (character_stats.get('DEX', 10) - 10) // 2
-    ac = 10 + dex_mod
+    con_mod = (character_stats.get('CON', 10) - 10) // 2
+    wis_mod = (character_stats.get('WIS', 10) - 10) // 2
+    
     armor_proficiency_issue = None
+    has_armor = False
+    ac = 10 + dex_mod  # Base sin armadura
+    
     # Aplicar armadura equipada
     armor_id = equipped_items.get('armor')
     if armor_id:
         armor = items_db.get(str(armor_id)) or items_db.get(armor_id)
         if armor and armor.armor_class_base:
+            has_armor = True
             ac = armor.armor_class_base
-            # Si es armadura pesada, no sumamos modificador de DES
+            # Armadura pesada: no suma DEX
             if is_heavy_armor(armor.name):
                 pass
-            # Si es armadura media, sumamos modificador de DES hasta un máximo de +2
+            # Armadura media: DEX hasta máximo +2
             elif is_medium_armor(armor.name):
-                ac += min(dex_mod, 2) if dex_mod > 0 else dex_mod
-            # Si es armadura ligera, sumamos el modificador completo de DES
+                ac += min(dex_mod, 2)
+            # Armadura ligera: DEX completo
             else:
                 ac += dex_mod
     
-    # Aplicar escudo
+    # Si NO lleva armadura, aplicar Defensa sin Armadura según clase (PHB)
+    if not has_armor:
+        cls = class_index.lower().strip() if class_index else ""
+        if cls in ["barbarian", "bárbaro"]:
+            # Bárbaro PHB p.48: 10 + DEX mod + CON mod
+            unarmored_ac = 10 + dex_mod + con_mod
+            ac = max(ac, unarmored_ac)
+        elif cls in ["monk", "monje"]:
+            # Monje PHB p.78: 10 + DEX mod + WIS mod
+            unarmored_ac = 10 + dex_mod + wis_mod
+            ac = max(ac, unarmored_ac)
+        
+        # Resistencia Dracónica (Hechicero - Linaje Dracónico)
+        sc = subclass_index.lower().strip() if subclass_index else ""
+        if cls in ["sorcerer", "hechicero"] and any(k in sc for k in ["draconic", "dracónico", "draconico", "dragon"]):
+            # PHB p.102: 13 + DEX mod
+            draconic_ac = 13 + dex_mod
+            ac = max(ac, draconic_ac)
+    
+    # Aplicar escudo (+2 CA por PHB)
     shield_id = equipped_items.get('shield')
     if shield_id:
         shield = items_db.get(str(shield_id)) or items_db.get(shield_id)
@@ -282,8 +308,22 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
         if item.index:
             items_db[item.index] = item
     
+    class_index = ""
+    if getattr(character, "class_id", None):
+        from models import Class
+        cls = db.query(Class).filter(Class.id == character.class_id).first()
+        if cls:
+            class_index = cls.index
+            
+    subclass_index = ""
+    if getattr(character, "subclass_id", None):
+        from models import Subclass
+        subclass = db.query(Subclass).filter(Subclass.id == character.subclass_id).first()
+        if subclass:
+            subclass_index = subclass.index
+
     # Calcular CA
-    ac_result = calculate_armor_class(base_stats, equipped_items, items_db)
+    ac_result = calculate_armor_class(base_stats, equipped_items, items_db, class_index, subclass_index)
     armor_class = ac_result['ac']
     
     # Calcular daño del arma principal
@@ -305,6 +345,36 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
     
     armor_proficiency_issue = check_armor_proficiency(character, equipped_items, items_db, db)
     
+    # Calcular peso total del equipo y capacidad de carga (PHB p.176)
+    total_weight = 0.0
+    for item in character_items:
+        try:
+            w = float(item.weight) if item.weight else 0.0
+        except (ValueError, TypeError):
+            w = 0.0
+        # Contar cantidad si está en la lista de equipo
+        count = 1
+        for eq in equip_list:
+            if isinstance(eq, dict):
+                eq_id = eq.get('id') or eq.get('item_index') or eq.get('index')
+                if str(eq_id) == str(item.id) or str(eq_id) == item.index:
+                    count = eq.get('quantity', 1)
+                    break
+        total_weight += w * count
+    
+    str_score = base_stats.get('STR', 10)
+    carrying_capacity = str_score * 15  # PHB p.176
+    encumbered_threshold = str_score * 5  # Velocidad -10 pies (variante)
+    heavily_encumbered_threshold = str_score * 10  # Velocidad -20 pies, desventaja (variante)
+    
+    encumbrance_status = "normal"
+    if total_weight > carrying_capacity:
+        encumbrance_status = "over_capacity"
+    elif total_weight > heavily_encumbered_threshold:
+        encumbrance_status = "heavily_encumbered"
+    elif total_weight > encumbered_threshold:
+        encumbrance_status = "encumbered"
+
     return {
         'armor_class': armor_class,
         'weapon_damage': weapon_damage,
@@ -312,7 +382,10 @@ def calculate_character_stats(character, db: Session) -> Dict[str, Any]:
         'stealth_disadvantage': stealth_disadvantage,
         'armor_proficiency_issue': armor_proficiency_issue,
         'base_stats': base_stats,
-        'equipped_items': equipped_items
+        'equipped_items': equipped_items,
+        'total_weight': round(total_weight, 1),
+        'carrying_capacity': carrying_capacity,
+        'encumbrance_status': encumbrance_status,
     }
 
 

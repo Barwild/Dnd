@@ -14,3 +14,7 @@ venv.bak/
 # SQLite
 *.sqlite3
 # dnd_nexus.db
+
+# Scratch and debug files
+api/scratch/
+nul

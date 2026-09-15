@@ -22,8 +22,8 @@ def register(data: schemas.UserRegister, db: Session = Depends(get_db)):
     
     if len(data.username.strip()) < 3:
         raise HTTPException(status_code=400, detail="El nombre de usuario debe tener al menos 3 caracteres")
-    if len(data.password) < 4:
-        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 4 caracteres")
+    if len(data.password) < 8:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
     if data.role not in ("player", "dm"):
         raise HTTPException(status_code=400, detail="El rol debe ser 'player' o 'dm'")
 
