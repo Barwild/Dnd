@@ -429,8 +429,6 @@ class SpellResponse(BaseModel):
     higher_levels: str
     classes: str
     damage_type: str
-    aoe_type: str = ""
-    aoe_size: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -451,9 +449,8 @@ class ItemResponse(BaseModel):
     damage_type: str
     weapon_range: str = ""
     armor_class_base: Optional[int] = None
-    armor_class_max_dex_bonus: Optional[int] = None
+    armor_class_dex_bonus: bool = False
     stealth_disadvantage: bool = False
-    strength_requirement: Optional[int] = None
     class Config:
         from_attributes = True
 

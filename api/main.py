@@ -63,10 +63,11 @@ if 'characters' in inspector.get_table_names():
                 pass
 
     # Add new D&D 5E fields
+    is_pg = str(engine.url).startswith("postgresql")
     new_char_cols = {
         'alignment': ('TEXT', "''"),
         'xp': ('INTEGER', '0'),
-        'inspiration': ('INTEGER', '0'),
+        'inspiration': ('BOOLEAN' if is_pg else 'INTEGER', 'FALSE' if is_pg else '0'),
         'speed': ('INTEGER', '30'),
         'hit_dice_detail': ('TEXT', "'{}'")
     }
@@ -76,8 +77,8 @@ if 'characters' in inspector.get_table_names():
                 with engine.connect() as connection:
                     connection.execute(text(f"ALTER TABLE characters ADD COLUMN {col_name} {col_type} DEFAULT {col_default}"))
                     connection.commit()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[startup] Migration notice for characters.{col_name}: {e}")
 
 if 'backgrounds' in inspector.get_table_names():
     bg_cols = [c['name'] for c in inspector.get_columns('backgrounds')]
@@ -130,18 +131,20 @@ bool_fixes = [
     ("items", "armor_class_dex_bonus"),
     ("items", "stealth_disadvantage"),
     ("magic_items", "requires_attunement"),
+    ("characters", "inspiration"),
 ]
-for tbl, col in bool_fixes:
-    if tbl in inspector.get_table_names():
-        tcols = {c['name']: c for c in inspector.get_columns(tbl)}
-        col_type = str(tcols.get(col, {}).get('type', '')).lower()
-        if 'integer' in col_type or 'int' == col_type:
-            try:
-                with engine.connect() as conn:
-                    conn.execute(text(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE BOOLEAN USING {col}::integer::boolean"))
-                    conn.commit()
-            except Exception:
-                pass
+if is_pg:
+    for tbl, col in bool_fixes:
+        if tbl in inspector.get_table_names():
+            tcols = {c['name']: c for c in inspector.get_columns(tbl)}
+            col_type = str(tcols.get(col, {}).get('type', '')).lower()
+            if 'integer' in col_type or 'int' == col_type:
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(text(f"ALTER TABLE {tbl} ALTER COLUMN {col} TYPE BOOLEAN USING {col}::integer::boolean"))
+                        conn.commit()
+                except Exception as e:
+                    print(f"[startup] Bool fix notice for {tbl}.{col}: {e}")
 
 app = FastAPI(
     title="D&D 5E Nexus API",

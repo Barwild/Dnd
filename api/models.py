@@ -237,8 +237,6 @@ class Spell(Base):
     classes = Column(Text, default="[]")  # JSON array of class indexes
     damage_type = Column(String(50), default="")
     damage_at_slot_level = Column(Text, default="{}")  # JSON
-    aoe_type = Column(String(20), default="")  # cone, sphere, cube, line, cylinder
-    aoe_size = Column(Integer, nullable=True)  # Size in feet
 
 
 class Item(Base):
@@ -260,9 +258,8 @@ class Item(Base):
     weapon_range = Column(String(20), default="")
     # Armor specifics
     armor_class_base = Column(Integer, nullable=True)
-    armor_class_max_dex_bonus = Column(Integer, nullable=True)  # None=full DEX, 2=medium armor cap, 0=heavy armor
+    armor_class_dex_bonus = Column(Boolean, default=False)
     stealth_disadvantage = Column(Boolean, default=False)
-    strength_requirement = Column(Integer, nullable=True)  # Min STR for heavy armor (e.g. 13 for Chain Mail, 15 for Plate)
 
 
 class MagicItem(Base):

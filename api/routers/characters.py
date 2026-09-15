@@ -112,7 +112,12 @@ def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db
         exhaustion_levels=data.exhaustion_levels if data.exhaustion_levels is not None else 0,
         death_saves_successes=data.death_saves_successes if data.death_saves_successes is not None else 0,
         death_saves_failures=data.death_saves_failures if data.death_saves_failures is not None else 0,
-        temporary_hp=data.temporary_hp if data.temporary_hp is not None else 0
+        temporary_hp=data.temporary_hp if data.temporary_hp is not None else 0,
+        alignment=data.alignment or "",
+        xp=data.xp or 0,
+        inspiration=bool(data.inspiration),
+        speed=data.speed or 30,
+        hit_dice_detail=data.hit_dice_detail or "{}"
     )
     db.add(character)
     db.commit()
@@ -278,6 +283,11 @@ def _char_response(char, db):
         death_saves_successes=char.death_saves_successes if char.death_saves_successes is not None else 0,
         death_saves_failures=char.death_saves_failures if char.death_saves_failures is not None else 0,
         temporary_hp=char.temporary_hp if char.temporary_hp is not None else 0,
+        alignment=getattr(char, "alignment", None) or "",
+        xp=getattr(char, "xp", None) or 0,
+        inspiration=bool(getattr(char, "inspiration", False)),
+        speed=getattr(char, "speed", None) or 30,
+        hit_dice_detail=getattr(char, "hit_dice_detail", None) or "{}",
         active_conditions=[c.condition_index for c in conditions],
         feats=[f.feat_index for f in feats],
         features=[f.feature_index for f in features]
