@@ -80,57 +80,67 @@ def _validate_skills(stats: dict, class_name: Optional[str], racial_skills: Opti
 def create_character(data: schemas.CharacterCreate, db: Session = Depends(get_db),
                      current_user: models.User = Depends(get_current_user)):
     """Crear un nuevo personaje."""
-    # Validar competencias antes de crear
     try:
-        stats_obj = json.loads(data.stats) if isinstance(data.stats, str) else data.stats
-        cls = db.query(models.Class).filter(models.Class.id == data.class_id).first()
-        _validate_skills(stats_obj, cls.name if cls else None)
-    except json.JSONDecodeError:
-        pass
+        # Validar competencias antes de crear
+        try:
+            stats_obj = json.loads(data.stats) if isinstance(data.stats, str) else data.stats
+            cls = db.query(models.Class).filter(models.Class.id == data.class_id).first()
+            _validate_skills(stats_obj, cls.name if cls else None)
+        except json.JSONDecodeError:
+            pass
 
-    character = models.Character(
-        name=data.name.strip(),
-        level=data.level,
-        race_id=data.race_id,
-        class_id=data.class_id,
-        subclass_id=data.subclass_id,
-        background_id=data.background_id,
-        campaign_id=data.campaign_id,
-        user_id=current_user.id,
-        stats=data.stats,
-        equipment=data.equipment,
-        starting_equipment=data.starting_equipment or data.equipment,
-        equipped_items=data.equipped_items,
-        spell_list=data.spell_list,
-        notes=data.notes,
-        portrait_url=data.portrait_url,
-        personality=data.personality or "",
-        ideals=data.ideals or "",
-        bonds=data.bonds or "",
-        flaws=data.flaws or "",
-        current_hit_dice=data.current_hit_dice if data.current_hit_dice is not None else data.level,
-        exhaustion_levels=data.exhaustion_levels if data.exhaustion_levels is not None else 0,
-        death_saves_successes=data.death_saves_successes if data.death_saves_successes is not None else 0,
-        death_saves_failures=data.death_saves_failures if data.death_saves_failures is not None else 0,
-        temporary_hp=data.temporary_hp if data.temporary_hp is not None else 0,
-        alignment=data.alignment or "",
-        xp=data.xp or 0,
-        inspiration=bool(data.inspiration),
-        speed=data.speed or 30,
-        hit_dice_detail=data.hit_dice_detail or "{}"
-    )
-    db.add(character)
-    db.commit()
-    db.refresh(character)
-    
-    try:
-        from utils.equipment_fixer import fix_character_equipment
-        fix_character_equipment(character, db)
+        character = models.Character(
+            name=data.name.strip(),
+            level=data.level,
+            race_id=data.race_id,
+            class_id=data.class_id,
+            subclass_id=data.subclass_id,
+            background_id=data.background_id,
+            campaign_id=data.campaign_id,
+            user_id=current_user.id,
+            stats=data.stats,
+            equipment=data.equipment,
+            starting_equipment=data.starting_equipment or data.equipment,
+            equipped_items=data.equipped_items,
+            spell_list=data.spell_list,
+            notes=data.notes,
+            portrait_url=data.portrait_url,
+            personality=data.personality or "",
+            ideals=data.ideals or "",
+            bonds=data.bonds or "",
+            flaws=data.flaws or "",
+            current_hit_dice=data.current_hit_dice if data.current_hit_dice is not None else data.level,
+            exhaustion_levels=data.exhaustion_levels if data.exhaustion_levels is not None else 0,
+            death_saves_successes=data.death_saves_successes if data.death_saves_successes is not None else 0,
+            death_saves_failures=data.death_saves_failures if data.death_saves_failures is not None else 0,
+            temporary_hp=data.temporary_hp if data.temporary_hp is not None else 0,
+            alignment=data.alignment or "",
+            xp=data.xp or 0,
+            inspiration=bool(data.inspiration),
+            speed=data.speed or 30,
+            hit_dice_detail=data.hit_dice_detail or "{}"
+        )
+        db.add(character)
         db.commit()
-    except Exception as e:
-        print("Error fixing equipment on creation:", e)
+        db.refresh(character)
         
-    return _char_response(character, db)
+        try:
+            from utils.equipment_fixer import fix_character_equipment
+            fix_character_equipment(character, db)
+            db.commit()
+        except Exception as e:
+            print("Error fixing equipment on creation:", e)
+            
+        return _char_response(character, db)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        import traceback
+        err_msg = f"{type(e).__name__}: {str(e)}"
+        print(f"Error in create_character: {err_msg}\n{traceback.format_exc()}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creando personaje: {err_msg}")
 
 
 @router.get("", response_model=List[schemas.CharacterResponse])
@@ -255,10 +265,19 @@ def _char_response(char, db):
     cls = db.query(models.Class).filter(models.Class.id == char.class_id).first()
     bg = db.query(models.Background).filter(models.Background.id == char.background_id).first() if char.background_id else None
     
-    # Query conditions, feats, features
-    conditions = db.query(models.CharacterCondition).filter(models.CharacterCondition.character_id == char.id).all()
-    feats = db.query(models.CharacterFeat).filter(models.CharacterFeat.character_id == char.id).all()
-    features = db.query(models.CharacterFeature).filter(models.CharacterFeature.character_id == char.id).all()
+    # Query conditions, feats, features safely
+    try:
+        conditions = db.query(models.CharacterCondition).filter(models.CharacterCondition.character_id == char.id).all()
+    except Exception:
+        conditions = []
+    try:
+        feats = db.query(models.CharacterFeat).filter(models.CharacterFeat.character_id == char.id).all()
+    except Exception:
+        feats = []
+    try:
+        features = db.query(models.CharacterFeature).filter(models.CharacterFeature.character_id == char.id).all()
+    except Exception:
+        features = []
     
     return schemas.CharacterResponse(
         id=char.id, name=char.name, level=char.level,
